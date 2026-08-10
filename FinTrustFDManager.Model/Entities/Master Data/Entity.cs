@@ -17,12 +17,17 @@ namespace FinTrustFDManager.Model.Entities
         [MaxLength(150)]
         public string EntityName { get; set; } = string.Empty;
 
+        [Required]
         public int CountryId { get; set; }
 
+        [MaxLength(500)]
         public string? Description { get; set; }
 
+        // Navigation property
         public Country? Country { get; set; }
 
-        public ICollection<BankAccount>? BankAccounts { get; set; }
+        // Navigation property
+        public ICollection<BankAccount> BankAccounts { get; set; }
+            = new List<BankAccount>();
     }
 }
