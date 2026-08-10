@@ -102,6 +102,68 @@ namespace FinTrustFDManager.DAL.Data
                 .HasIndex(x => x.AccountNumber)
                 .IsUnique();
 
+            // =========================
+            // CORE DATA CONFIGURATION
+            // =========================
+
+            modelBuilder.Entity<Investment>()
+                .HasOne(x => x.Entity)
+                .WithMany()
+                .HasForeignKey(x => x.EntityId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            modelBuilder.Entity<Investment>()
+                .HasOne(x => x.Country)
+                .WithMany()
+                .HasForeignKey(x => x.CountryId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            modelBuilder.Entity<Investment>()
+                .HasOne(x => x.Currency)
+                .WithMany()
+                .HasForeignKey(x => x.CurrencyId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            modelBuilder.Entity<Investment>()
+                .HasOne(x => x.Bank)
+                .WithMany()
+                .HasForeignKey(x => x.BankId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            modelBuilder.Entity<Investment>()
+                .HasOne(x => x.BankAccount)
+                .WithMany()
+                .HasForeignKey(x => x.BankAccountId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            modelBuilder.Entity<Investment>()
+                .HasOne(x => x.InterestFrequency)
+                .WithMany()
+                .HasForeignKey(x => x.InterestFrequencyId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            modelBuilder.Entity<Investment>()
+                .HasOne(x => x.DayCountConvention)
+                .WithMany()
+                .HasForeignKey(x => x.DayCountConventionId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            modelBuilder.Entity<Investment>()
+                .HasIndex(x => x.InvestmentReferenceNo)
+                .IsUnique();
+
+            modelBuilder.Entity<CashFlow>()
+                .HasOne(x => x.Investment)
+                .WithMany(x => x.CashFlows)
+                .HasForeignKey(x => x.InvestmentId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            modelBuilder.Entity<InvestmentApproval>()
+                .HasOne(x => x.Investment)
+                .WithMany(x => x.Approvals)
+                .HasForeignKey(x => x.InvestmentId)
+                .OnDelete(DeleteBehavior.Cascade);
+
 
             // =========================
             // Interest Frequency Seed
