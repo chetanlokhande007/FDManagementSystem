@@ -8,15 +8,9 @@ namespace FinTrustFDManager.API.Controllers
     [ApiController]
     [Route("api/[controller]")]
     //[Authorize]
-    public class BankAccountController : ControllerBase
+    public class BankAccountController(IBankAccountService service) : ControllerBase
     {
-        private readonly IBankAccountService _service;
-
-        public BankAccountController(
-            IBankAccountService service)
-        {
-            _service = service;
-        }
+        private readonly IBankAccountService _service = service;
 
         // GET: api/BankAccount
         [HttpGet]

@@ -5,24 +5,9 @@ using Microsoft.EntityFrameworkCore;
 
 namespace FinTrustFDManager.DAL.Data
 {
-    public class ApplicationDbContext : DbContext
+    public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options) : DbContext(options)
     {
-        public ApplicationDbContext(
-            DbContextOptions<ApplicationDbContext> options)
-            : base(options)
-        {
-        }
-
-        // =========================
-        // User
-        // =========================
-
         public DbSet<User> Users => Set<User>();
-
-
-        // =========================
-        // MASTER DATA
-        // =========================
 
         public DbSet<Country> Countries => Set<Country>();
 
@@ -35,11 +20,6 @@ namespace FinTrustFDManager.DAL.Data
         public DbSet<BankAccount> BankAccounts => Set<BankAccount>();
 
         public DbSet<CounterParty> CounterParties => Set<CounterParty>();
-
-
-        // =========================
-        // CORE DATA
-        // =========================
 
         public DbSet<Investment> Investments => Set<Investment>();
 
@@ -56,10 +36,7 @@ namespace FinTrustFDManager.DAL.Data
             => Set<DayCountConvention>();
 
 
-        // =========================
-        // MODEL CONFIGURATION
-        // =========================
-
+       
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             base.OnModelCreating(modelBuilder);
@@ -102,10 +79,7 @@ namespace FinTrustFDManager.DAL.Data
                 .HasIndex(x => x.AccountNumber)
                 .IsUnique();
 
-            // =========================
-            // CORE DATA CONFIGURATION
-            // =========================
-
+            
             modelBuilder.Entity<Investment>()
                 .HasOne(x => x.Entity)
                 .WithMany()
@@ -165,10 +139,6 @@ namespace FinTrustFDManager.DAL.Data
                 .OnDelete(DeleteBehavior.Cascade);
 
 
-            // =========================
-            // Interest Frequency Seed
-            // =========================
-
             modelBuilder.Entity<InterestFrequency>().HasData(
 
                 new InterestFrequency
@@ -203,9 +173,6 @@ namespace FinTrustFDManager.DAL.Data
             );
 
 
-            // =========================
-            // Day Count Convention Seed
-            // =========================
 
             modelBuilder.Entity<DayCountConvention>().HasData(
 

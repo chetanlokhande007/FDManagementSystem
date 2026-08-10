@@ -22,7 +22,6 @@ namespace FinTrustFDManager.Model.Entities.MasterData
         [Required]
         public int CurrencyId { get; set; }
 
-        public bool IsActive { get; set; } = true;
 
         public Bank? Bank { get; set; }
 
