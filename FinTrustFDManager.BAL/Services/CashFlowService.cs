@@ -8,10 +8,12 @@ namespace FinTrustFDManager.BAL.Services
     public class CashFlowService : ICashFlowService
     {
         private readonly ICashFlowRepository _repository;
+        private readonly IInvestmentRepository _investmentRepository;
 
-        public CashFlowService(ICashFlowRepository repository)
+        public CashFlowService(ICashFlowRepository repository, IInvestmentRepository investmentRepository)
         {
             _repository = repository;
+            _investmentRepository = investmentRepository;
         }
 
         public async Task<List<CashFlowDto>> GetAllAsync()
@@ -35,6 +37,12 @@ namespace FinTrustFDManager.BAL.Services
 
         public async Task<CashFlowDto> CreateAsync(CreateCashFlowDto dto)
         {
+            var investment = await _investmentRepository.GetByIdAsync(dto.InvestmentId);
+            if (investment == null)
+            {
+                throw new InvalidOperationException($"Investment with ID {dto.InvestmentId} does not exist.");
+            }
+
             var entity = new CashFlow
             {
                 InvestmentId = dto.InvestmentId,
@@ -56,6 +64,12 @@ namespace FinTrustFDManager.BAL.Services
         {
             var entity = await _repository.GetByIdAsync(id);
             if (entity == null) return null;
+
+            var investment = await _investmentRepository.GetByIdAsync(dto.InvestmentId);
+            if (investment == null)
+            {
+                throw new InvalidOperationException($"Investment with ID {dto.InvestmentId} does not exist.");
+            }
 
             entity.InvestmentId = dto.InvestmentId;
             entity.CashFlowDate = dto.CashFlowDate;

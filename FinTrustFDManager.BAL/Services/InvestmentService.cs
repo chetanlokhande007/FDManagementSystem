@@ -8,10 +8,32 @@ namespace FinTrustFDManager.BAL.Services
     public class InvestmentService : IInvestmentService
     {
         private readonly IInvestmentRepository _repository;
+        private readonly IEntityRepository _entityRepository;
+        private readonly ICountryRepository _countryRepository;
+        private readonly ICurrencyRepository _currencyRepository;
+        private readonly IBankRepository _bankRepository;
+        private readonly IBankAccountRepository _bankAccountRepository;
+        private readonly IInterestFrequencyRepository _interestFrequencyRepository;
+        private readonly IDayCountConventionRepository _dayCountConventionRepository;
 
-        public InvestmentService(IInvestmentRepository repository)
+        public InvestmentService(
+            IInvestmentRepository repository,
+            IEntityRepository entityRepository,
+            ICountryRepository countryRepository,
+            ICurrencyRepository currencyRepository,
+            IBankRepository bankRepository,
+            IBankAccountRepository bankAccountRepository,
+            IInterestFrequencyRepository interestFrequencyRepository,
+            IDayCountConventionRepository dayCountConventionRepository)
         {
             _repository = repository;
+            _entityRepository = entityRepository;
+            _countryRepository = countryRepository;
+            _currencyRepository = currencyRepository;
+            _bankRepository = bankRepository;
+            _bankAccountRepository = bankAccountRepository;
+            _interestFrequencyRepository = interestFrequencyRepository;
+            _dayCountConventionRepository = dayCountConventionRepository;
         }
 
         public async Task<List<InvestmentDto>> GetAllAsync()
@@ -29,6 +51,21 @@ namespace FinTrustFDManager.BAL.Services
 
         public async Task<InvestmentDto> CreateAsync(CreateInvestmentDto dto)
         {
+            if (await _entityRepository.GetByIdAsync(dto.EntityId) == null)
+                throw new InvalidOperationException($"Entity with ID {dto.EntityId} does not exist.");
+            if (await _countryRepository.GetByIdAsync(dto.CountryId) == null)
+                throw new InvalidOperationException($"Country with ID {dto.CountryId} does not exist.");
+            if (await _currencyRepository.GetByIdAsync(dto.CurrencyId) == null)
+                throw new InvalidOperationException($"Currency with ID {dto.CurrencyId} does not exist.");
+            if (await _bankRepository.GetByIdAsync(dto.BankId) == null)
+                throw new InvalidOperationException($"Bank with ID {dto.BankId} does not exist.");
+            if (await _bankAccountRepository.GetByIdAsync(dto.BankAccountId) == null)
+                throw new InvalidOperationException($"BankAccount with ID {dto.BankAccountId} does not exist.");
+            if (await _interestFrequencyRepository.GetByIdAsync(dto.InterestFrequencyId) == null)
+                throw new InvalidOperationException($"InterestFrequency with ID {dto.InterestFrequencyId} does not exist.");
+            if (await _dayCountConventionRepository.GetByIdAsync(dto.DayCountConventionId) == null)
+                throw new InvalidOperationException($"DayCountConvention with ID {dto.DayCountConventionId} does not exist.");
+
             var entity = new Investment
             {
                 InvestmentReferenceNo = "INV-" + Guid.NewGuid().ToString("N").Substring(0, 8).ToUpper(),
@@ -58,6 +95,21 @@ namespace FinTrustFDManager.BAL.Services
         {
             var entity = await _repository.GetByIdAsync(id);
             if (entity == null) return null;
+
+            if (await _entityRepository.GetByIdAsync(dto.EntityId) == null)
+                throw new InvalidOperationException($"Entity with ID {dto.EntityId} does not exist.");
+            if (await _countryRepository.GetByIdAsync(dto.CountryId) == null)
+                throw new InvalidOperationException($"Country with ID {dto.CountryId} does not exist.");
+            if (await _currencyRepository.GetByIdAsync(dto.CurrencyId) == null)
+                throw new InvalidOperationException($"Currency with ID {dto.CurrencyId} does not exist.");
+            if (await _bankRepository.GetByIdAsync(dto.BankId) == null)
+                throw new InvalidOperationException($"Bank with ID {dto.BankId} does not exist.");
+            if (await _bankAccountRepository.GetByIdAsync(dto.BankAccountId) == null)
+                throw new InvalidOperationException($"BankAccount with ID {dto.BankAccountId} does not exist.");
+            if (await _interestFrequencyRepository.GetByIdAsync(dto.InterestFrequencyId) == null)
+                throw new InvalidOperationException($"InterestFrequency with ID {dto.InterestFrequencyId} does not exist.");
+            if (await _dayCountConventionRepository.GetByIdAsync(dto.DayCountConventionId) == null)
+                throw new InvalidOperationException($"DayCountConvention with ID {dto.DayCountConventionId} does not exist.");
 
             entity.EntityId = dto.EntityId;
             entity.CountryId = dto.CountryId;

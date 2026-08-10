@@ -8,10 +8,12 @@ namespace FinTrustFDManager.BAL.Services
     public class InvestmentApprovalService : IInvestmentApprovalService
     {
         private readonly IInvestmentApprovalRepository _repository;
+        private readonly IInvestmentRepository _investmentRepository;
 
-        public InvestmentApprovalService(IInvestmentApprovalRepository repository)
+        public InvestmentApprovalService(IInvestmentApprovalRepository repository, IInvestmentRepository investmentRepository)
         {
             _repository = repository;
+            _investmentRepository = investmentRepository;
         }
 
         public async Task<List<InvestmentApprovalDto>> GetAllAsync()
@@ -35,6 +37,12 @@ namespace FinTrustFDManager.BAL.Services
 
         public async Task<InvestmentApprovalDto> CreateAsync(CreateInvestmentApprovalDto dto)
         {
+            var investment = await _investmentRepository.GetByIdAsync(dto.InvestmentId);
+            if (investment == null)
+            {
+                throw new InvalidOperationException($"Investment with ID {dto.InvestmentId} does not exist.");
+            }
+
             var entity = new InvestmentApproval
             {
                 InvestmentId = dto.InvestmentId,
@@ -52,6 +60,12 @@ namespace FinTrustFDManager.BAL.Services
         {
             var entity = await _repository.GetByIdAsync(id);
             if (entity == null) return null;
+
+            var investment = await _investmentRepository.GetByIdAsync(dto.InvestmentId);
+            if (investment == null)
+            {
+                throw new InvalidOperationException($"Investment with ID {dto.InvestmentId} does not exist.");
+            }
 
             entity.InvestmentId = dto.InvestmentId;
             entity.Action = dto.Action;
