@@ -1,13 +1,9 @@
 using System.ComponentModel.DataAnnotations;
-using FinTrustFDManager.Model.Common;
 
-namespace FinTrustFDManager.Model.Entities.MasterData
+namespace FinTrustFDManager.Model.DTOs.BankAccount
 {
-    public class BankAccount : BaseEntity
+    public class CreateBankAccountDto
     {
-        [Key]
-        public int Id { get; set; }
-
         [Required]
         public int BankId { get; set; }
 
@@ -23,9 +19,5 @@ namespace FinTrustFDManager.Model.Entities.MasterData
         public int CurrencyId { get; set; }
 
         public bool IsActive { get; set; } = true;
-
-        public Bank? Bank { get; set; }
-
-        public Currency? Currency { get; set; }
     }
 }

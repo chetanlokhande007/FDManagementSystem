@@ -20,10 +20,13 @@ namespace FinTrustFDManager.Model.Entities
         [MaxLength(250)]
         public string? Description { get; set; }
 
-        public ICollection<Entity>? Entities { get; set; }
+        public ICollection<Entity> Entities { get; set; }
+            = new List<Entity>();
 
-        public ICollection<Bank>? Banks { get; set; }
+        public ICollection<Bank> Banks { get; set; }
+            = new List<Bank>();
 
-        public ICollection<CounterParty>? CounterParties { get; set; }
+        public ICollection<CounterParty> CounterParties { get; set; }
+            = new List<CounterParty>();
     }
 }

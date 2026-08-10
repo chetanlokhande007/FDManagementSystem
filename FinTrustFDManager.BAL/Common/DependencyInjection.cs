@@ -13,6 +13,21 @@ namespace FinTrustFDManager.BAL.Common
         {
             services.AddScoped<IEntityService, EntityService>();
 
+            services.AddScoped<ICurrencyService,
+                CurrencyService>();
+
+            services.AddScoped<ICountryService,
+                CountryService>();
+
+            services.AddScoped<ICounterPartyService,
+                CounterPartyService>();
+
+            services.AddScoped<IBankService,
+                BankService>();
+
+            services.AddScoped<IBankAccountService,
+                BankAccountService>();
+
             return services;
         }
 
@@ -20,6 +35,21 @@ namespace FinTrustFDManager.BAL.Common
             this IServiceCollection services)
         {
             services.AddScoped<IEntityRepository, EntityRepository>();
+
+            services.AddScoped<ICurrencyRepository,
+                CurrencyRepository>();
+
+            services.AddScoped<ICountryRepository,
+                CountryRepository>();
+
+            services.AddScoped<ICounterPartyRepository,
+                CounterPartyRepository>();
+
+            services.AddScoped<IBankRepository,
+                BankRepository>();
+
+            services.AddScoped<IBankAccountRepository,
+                BankAccountRepository>();
 
             return services;
         }

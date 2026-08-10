@@ -1,14 +1,9 @@
-using FinTrustFDManager.Model.Common;
-using FinTrustFDManager.Model.Entities.MasterData;
 using System.ComponentModel.DataAnnotations;
 
-namespace FinTrustFDManager.Model.Entities
+namespace FinTrustFDManager.Model.DTOs.Currency
 {
-    public class Currency : BaseEntity
+    public class UpdateCurrencyDto
     {
-        [Key]
-        public int CurrencyId { get; set; }
-
         [Required]
         [MaxLength(10)]
         public string CurrencyCode { get; set; } = string.Empty;
@@ -22,8 +17,5 @@ namespace FinTrustFDManager.Model.Entities
 
         [MaxLength(500)]
         public string? Description { get; set; }
-
-        public ICollection<BankAccount> BankAccounts { get; set; }
-            = new List<BankAccount>();
     }
 }

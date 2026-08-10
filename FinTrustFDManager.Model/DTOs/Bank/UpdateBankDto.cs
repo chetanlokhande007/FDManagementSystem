@@ -1,14 +1,9 @@
-using FinTrustFDManager.Model.Common;
-using FinTrustFDManager.Model.Entities.MasterData;
 using System.ComponentModel.DataAnnotations;
 
-namespace FinTrustFDManager.Model.Entities
+namespace FinTrustFDManager.Model.DTOs.Bank
 {
-    public class Bank : BaseEntity
+    public class UpdateBankDto
     {
-        [Key]
-        public int BankId { get; set; }
-
         [Required]
         [MaxLength(20)]
         public string BankCode { get; set; } = string.Empty;
@@ -25,10 +20,5 @@ namespace FinTrustFDManager.Model.Entities
 
         [MaxLength(500)]
         public string? Description { get; set; }
-
-        public Country? Country { get; set; }
-
-        public ICollection<BankAccount> BankAccounts { get; set; }
-            = new List<BankAccount>();
     }
 }

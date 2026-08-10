@@ -1,13 +1,9 @@
 using System.ComponentModel.DataAnnotations;
-using FinTrustFDManager.Model.Common;
 
-namespace FinTrustFDManager.Model.Entities
+namespace FinTrustFDManager.Model.DTOs.CounterParty
 {
-    public class CounterParty : BaseEntity
+    public class UpdateCounterPartyDto
     {
-        [Key]
-        public int CounterPartyId { get; set; }
-
         [Required]
         [MaxLength(20)]
         public string CounterPartyCode { get; set; } = string.Empty;
@@ -21,7 +17,5 @@ namespace FinTrustFDManager.Model.Entities
 
         [MaxLength(500)]
         public string? Description { get; set; }
-
-        public Country? Country { get; set; }
     }
 }

@@ -64,6 +64,44 @@ namespace FinTrustFDManager.DAL.Data
         {
             base.OnModelCreating(modelBuilder);
 
+            modelBuilder.Entity<Entity>()
+                .HasOne(x => x.Country)
+                .WithMany(x => x.Entities)
+                .HasForeignKey(x => x.CountryId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            modelBuilder.Entity<Bank>()
+                .HasOne(x => x.Country)
+                .WithMany(x => x.Banks)
+                .HasForeignKey(x => x.CountryId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            modelBuilder.Entity<Bank>()
+                .HasIndex(x => x.BankCode)
+                .IsUnique();
+
+            modelBuilder.Entity<CounterParty>()
+                .HasOne(x => x.Country)
+                .WithMany(x => x.CounterParties)
+                .HasForeignKey(x => x.CountryId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            modelBuilder.Entity<BankAccount>()
+                .HasOne(x => x.Bank)
+                .WithMany(x => x.BankAccounts)
+                .HasForeignKey(x => x.BankId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            modelBuilder.Entity<BankAccount>()
+                .HasOne(x => x.Currency)
+                .WithMany(x => x.BankAccounts)
+                .HasForeignKey(x => x.CurrencyId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            modelBuilder.Entity<BankAccount>()
+                .HasIndex(x => x.AccountNumber)
+                .IsUnique();
+
 
             // =========================
             // Interest Frequency Seed
