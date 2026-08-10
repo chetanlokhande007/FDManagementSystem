@@ -8,11 +8,17 @@ namespace FinTrustFDManager.BAL.Services
     public class BankAccountService : IBankAccountService
     {
         private readonly IBankAccountRepository _repository;
+        private readonly IBankRepository _bankRepository;
+        private readonly ICurrencyRepository _currencyRepository;
 
         public BankAccountService(
-            IBankAccountRepository repository)
+            IBankAccountRepository repository,
+            IBankRepository bankRepository,
+            ICurrencyRepository currencyRepository)
         {
             _repository = repository;
+            _bankRepository = bankRepository;
+            _currencyRepository = currencyRepository;
         }
 
         public async Task<List<BankAccountDto>> GetAllAsync()
@@ -42,6 +48,20 @@ namespace FinTrustFDManager.BAL.Services
         public async Task<BankAccountDto> CreateAsync(
             CreateBankAccountDto dto)
         {
+            var bank = await _bankRepository.GetByIdAsync(dto.BankId);
+            if (bank == null)
+            {
+                throw new InvalidOperationException(
+                    $"Bank with ID {dto.BankId} does not exist.");
+            }
+
+            var currency = await _currencyRepository.GetByIdAsync(dto.CurrencyId);
+            if (currency == null)
+            {
+                throw new InvalidOperationException(
+                    $"Currency with ID {dto.CurrencyId} does not exist.");
+            }
+
             var existing =
                 await _repository.GetByAccountNumberAsync(
                     dto.AccountNumber);
@@ -80,6 +100,20 @@ namespace FinTrustFDManager.BAL.Services
             if (account == null)
             {
                 return null;
+            }
+
+            var bank = await _bankRepository.GetByIdAsync(dto.BankId);
+            if (bank == null)
+            {
+                throw new InvalidOperationException(
+                    $"Bank with ID {dto.BankId} does not exist.");
+            }
+
+            var currency = await _currencyRepository.GetByIdAsync(dto.CurrencyId);
+            if (currency == null)
+            {
+                throw new InvalidOperationException(
+                    $"Currency with ID {dto.CurrencyId} does not exist.");
             }
 
             var existing =
