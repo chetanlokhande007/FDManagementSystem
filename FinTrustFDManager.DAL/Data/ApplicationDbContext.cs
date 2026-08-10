@@ -1,5 +1,6 @@
 using FinTrustFDManager.Model.Entities;
 using FinTrustFDManager.Model.Entities.MasterData;
+using FinTrustFDManager.Model.Entities.CoreData;
 using Microsoft.EntityFrameworkCore;
 
 namespace FinTrustFDManager.DAL.Data
@@ -19,6 +20,12 @@ namespace FinTrustFDManager.DAL.Data
         public DbSet<Entity> Entities => Set<Entity>();
         public DbSet<Bank> Banks => Set<Bank>();
         public DbSet<BankAccount> BankAccounts => Set<BankAccount>();
+        public DbSet<CounterParty> CounterParties => Set<CounterParty>();
+
+        // Core Data DbSets
+        public DbSet<CashFlow> CashFlows => Set<CashFlow>();
+        public DbSet<Investment> Investments => Set<Investment>();
+        public DbSet<InvestmentApproval> InvestmentApprovals => Set<InvestmentApproval>();
         public DbSet<InterestFrequency> InterestFrequencies => Set<InterestFrequency>();
         public DbSet<DayCountConvention> DayCountConventions => Set<DayCountConvention>();
 
