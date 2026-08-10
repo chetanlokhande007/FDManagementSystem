@@ -1,6 +1,8 @@
 using FinTrustFDManager.DAL.Data;
 using Microsoft.EntityFrameworkCore;
 using FinTrustFDManager.BAL.Common;
+using FinTrustFDManager.DAL.Interfaces;
+using FinTrustFDManager.DAL.Repositories;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 using System.Text;
@@ -18,7 +20,21 @@ builder.Services.AddDbContext<ApplicationDbContext>(options =>
 builder.Services.AddControllers();
 
 builder.Services.AddBAL();
-builder.Services.AddDAL();
+
+// Master Data Repositories
+builder.Services.AddScoped<IEntityRepository, EntityRepository>();
+builder.Services.AddScoped<ICurrencyRepository, CurrencyRepository>();
+builder.Services.AddScoped<ICountryRepository, CountryRepository>();
+builder.Services.AddScoped<ICounterPartyRepository, CounterPartyRepository>();
+builder.Services.AddScoped<IBankRepository, BankRepository>();
+builder.Services.AddScoped<IBankAccountRepository, BankAccountRepository>();
+
+// Core Data Repositories
+builder.Services.AddScoped<IInterestFrequencyRepository, InterestFrequencyRepository>();
+builder.Services.AddScoped<IDayCountConventionRepository, DayCountConventionRepository>();
+builder.Services.AddScoped<IInvestmentRepository, InvestmentRepository>();
+builder.Services.AddScoped<ICashFlowRepository, CashFlowRepository>();
+builder.Services.AddScoped<IInvestmentApprovalRepository, InvestmentApprovalRepository>();
 
 builder.Services.AddEndpointsApiExplorer();
 

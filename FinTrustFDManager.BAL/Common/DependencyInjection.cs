@@ -1,7 +1,5 @@
 using FinTrustFDManager.BAL.Interfaces;
 using FinTrustFDManager.BAL.Services;
-using FinTrustFDManager.DAL.Interfaces;
-using FinTrustFDManager.DAL.Repositories;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace FinTrustFDManager.BAL.Common
@@ -29,25 +27,5 @@ namespace FinTrustFDManager.BAL.Common
             return services;
         }
 
-        public static IServiceCollection AddDAL(
-            this IServiceCollection services)
-        {
-            // Master Data Repositories
-            services.AddScoped<IEntityRepository, EntityRepository>();
-            services.AddScoped<ICurrencyRepository, CurrencyRepository>();
-            services.AddScoped<ICountryRepository, CountryRepository>();
-            services.AddScoped<ICounterPartyRepository, CounterPartyRepository>();
-            services.AddScoped<IBankRepository, BankRepository>();
-            services.AddScoped<IBankAccountRepository, BankAccountRepository>();
-
-            // Core Data Repositories
-            services.AddScoped<IInterestFrequencyRepository, InterestFrequencyRepository>();
-            services.AddScoped<IDayCountConventionRepository, DayCountConventionRepository>();
-            services.AddScoped<IInvestmentRepository, InvestmentRepository>();
-            services.AddScoped<ICashFlowRepository, CashFlowRepository>();
-            services.AddScoped<IInvestmentApprovalRepository, InvestmentApprovalRepository>();
-
-            return services;
-        }
     }
 }
