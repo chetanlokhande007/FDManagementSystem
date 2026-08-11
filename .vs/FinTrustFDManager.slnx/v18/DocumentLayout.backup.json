@@ -1,0 +1,95 @@
+{
+  "Version": 1,
+  "WorkspaceRootPath": "D:\\FDManagementSystem\\",
+  "Documents": [
+    {
+      "AbsoluteMoniker": "D:0:0:{EA00DB00-A78F-6B92-0312-16F41686E473}|FinTrustFDManager.API\\FinTrustFDManager.API.csproj|d:\\fdmanagementsystem\\fintrustfdmanager.api\\controllers\\authcontroller.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{EA00DB00-A78F-6B92-0312-16F41686E473}|FinTrustFDManager.API\\FinTrustFDManager.API.csproj|solutionrelative:fintrustfdmanager.api\\controllers\\authcontroller.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{A0487E65-8A97-1756-223A-8F9BB267AB0F}|FinTrustFDManager.DAL\\FinTrustFDManager.DAL.csproj|d:\\fdmanagementsystem\\fintrustfdmanager.dal\\data\\applicationdbcontext.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{A0487E65-8A97-1756-223A-8F9BB267AB0F}|FinTrustFDManager.DAL\\FinTrustFDManager.DAL.csproj|solutionrelative:fintrustfdmanager.dal\\data\\applicationdbcontext.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{EA00DB00-A78F-6B92-0312-16F41686E473}|FinTrustFDManager.API\\FinTrustFDManager.API.csproj|d:\\fdmanagementsystem\\fintrustfdmanager.api\\program.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{EA00DB00-A78F-6B92-0312-16F41686E473}|FinTrustFDManager.API\\FinTrustFDManager.API.csproj|solutionrelative:fintrustfdmanager.api\\program.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{12AF1777-0EC9-589C-9003-F6C186A12BF8}|FinTrustFDManager.Model\\FinTrustFDManager.Model.csproj|d:\\fdmanagementsystem\\fintrustfdmanager.model\\entities\\coredata\\cashflow.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{12AF1777-0EC9-589C-9003-F6C186A12BF8}|FinTrustFDManager.Model\\FinTrustFDManager.Model.csproj|solutionrelative:fintrustfdmanager.model\\entities\\coredata\\cashflow.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    }
+  ],
+  "DocumentGroupContainers": [
+    {
+      "Orientation": 0,
+      "VerticalTabListWidth": 256,
+      "DocumentGroups": [
+        {
+          "DockedWidth": 200,
+          "SelectedChildIndex": 2,
+          "Children": [
+            {
+              "$type": "Bookmark",
+              "Name": "ST:129:0:{1fc202d4-d401-403c-9834-5b218574bb67}"
+            },
+            {
+              "$type": "Bookmark",
+              "Name": "ST:128:0:{116d2292-e37d-41cd-a077-ebacac4c8cc4}"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 0,
+              "Title": "AuthController.cs",
+              "DocumentMoniker": "D:\\FDManagementSystem\\FinTrustFDManager.API\\Controllers\\AuthController.cs",
+              "RelativeDocumentMoniker": "FinTrustFDManager.API\\Controllers\\AuthController.cs",
+              "ToolTip": "D:\\FDManagementSystem\\FinTrustFDManager.API\\Controllers\\AuthController.cs",
+              "RelativeToolTip": "FinTrustFDManager.API\\Controllers\\AuthController.cs",
+              "ViewState": "AgIAACAAAAAAAAAAAAAowDcAAAABAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-08-11T05:10:43.205Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 2,
+              "Title": "Program.cs",
+              "DocumentMoniker": "D:\\FDManagementSystem\\FinTrustFDManager.API\\Program.cs",
+              "RelativeDocumentMoniker": "FinTrustFDManager.API\\Program.cs",
+              "ToolTip": "D:\\FDManagementSystem\\FinTrustFDManager.API\\Program.cs",
+              "RelativeToolTip": "FinTrustFDManager.API\\Program.cs",
+              "ViewState": "AgIAABQAAAAAAAAAAAAYwBYAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-08-10T13:11:06.829Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 3,
+              "Title": "CashFlow.cs",
+              "DocumentMoniker": "D:\\FDManagementSystem\\FinTrustFDManager.Model\\Entities\\CoreData\\CashFlow.cs",
+              "RelativeDocumentMoniker": "FinTrustFDManager.Model\\Entities\\CoreData\\CashFlow.cs",
+              "ToolTip": "D:\\FDManagementSystem\\FinTrustFDManager.Model\\Entities\\CoreData\\CashFlow.cs",
+              "RelativeToolTip": "FinTrustFDManager.Model\\Entities\\CoreData\\CashFlow.cs",
+              "ViewState": "AgIAAAYAAAAAAAAAAAAzwAoAAAAfAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-08-10T10:17:51.993Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 1,
+              "Title": "ApplicationDbContext.cs",
+              "DocumentMoniker": "D:\\FDManagementSystem\\FinTrustFDManager.DAL\\Data\\ApplicationDbContext.cs",
+              "RelativeDocumentMoniker": "FinTrustFDManager.DAL\\Data\\ApplicationDbContext.cs",
+              "ToolTip": "D:\\FDManagementSystem\\FinTrustFDManager.DAL\\Data\\ApplicationDbContext.cs",
+              "RelativeToolTip": "FinTrustFDManager.DAL\\Data\\ApplicationDbContext.cs",
+              "ViewState": "AgIAANUAAAAAAAAAAAAYwNoAAAABAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-08-10T09:21:09.324Z",
+              "EditorCaption": ""
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
