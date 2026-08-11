@@ -5,6 +5,8 @@
   height: 100vh;
   display: flex;
   flex-direction: column;
+  transition: transform 0.3s ease-in-out;
+  z-index: 1000;
 }
 
 .logo-section {
@@ -12,6 +14,7 @@
   align-items: center;
   padding: 24px 24px;
   gap: 12px;
+  position: relative;
 }
 
 .logo-icon {
@@ -36,6 +39,16 @@
 .logo-text span {
   font-size: 11px;
   color: #8b9db5;
+}
+
+.close-mobile-btn {
+  display: none;
+  background: transparent;
+  border: none;
+  color: var(--sidebar-text);
+  margin-left: auto;
+  cursor: pointer;
+  padding: 4px;
 }
 
 .nav-menu {
@@ -106,4 +119,23 @@
 .nav-menu::-webkit-scrollbar-thumb {
   background: rgba(255,255,255,0.1);
   border-radius: 4px;
+}
+
+/* Responsive Styles */
+@media (max-width: 1024px) {
+  .sidebar {
+    position: fixed;
+    top: 0;
+    left: -260px;
+    height: 100%;
+    box-shadow: 4px 0 15px rgba(0,0,0,0.1);
+  }
+
+  .sidebar.open {
+    transform: translateX(260px);
+  }
+
+  .close-mobile-btn {
+    display: block;
+  }
 }
