@@ -27,7 +27,7 @@ builder.Services.AddScoped<ICurrencyRepository, CurrencyRepository>();
 builder.Services.AddScoped<ICountryRepository, CountryRepository>();
 builder.Services.AddScoped<ICounterPartyRepository, CounterPartyRepository>();
 builder.Services.AddScoped<IBankRepository, BankRepository>();
-builder.Services.AddScoped<IBankAccountRepository, BankAccountRepository>();
+
 
 // Core Data Repositories
 builder.Services.AddScoped<IInterestFrequencyRepository, InterestFrequencyRepository>();

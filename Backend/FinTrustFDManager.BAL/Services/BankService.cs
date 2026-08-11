@@ -51,9 +51,7 @@ namespace FinTrustFDManager.BAL.Services
             {
                 BankCode = dto.BankCode,
                 BankName = dto.BankName,
-                CountryId = dto.CountryId,
-                SwiftCode = dto.SwiftCode,
-                Description = dto.Description
+                CountryId = dto.CountryId
             };
 
             var created = await _repository
@@ -89,8 +87,6 @@ namespace FinTrustFDManager.BAL.Services
             bank.BankCode = dto.BankCode;
             bank.BankName = dto.BankName;
             bank.CountryId = dto.CountryId;
-            bank.SwiftCode = dto.SwiftCode;
-            bank.Description = dto.Description;
 
             await _repository.UpdateAsync(bank);
 
@@ -113,9 +109,7 @@ namespace FinTrustFDManager.BAL.Services
                 BankCode = bank.BankCode,
                 BankName = bank.BankName,
                 CountryId = bank.CountryId,
-                CountryName = bank.Country?.CountryName,
-                SwiftCode = bank.SwiftCode,
-                Description = bank.Description
+                CountryName = bank.Country?.CountryName
             };
         }
     }

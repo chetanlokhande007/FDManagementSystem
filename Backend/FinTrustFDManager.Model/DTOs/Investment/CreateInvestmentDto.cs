@@ -18,9 +18,6 @@ namespace FinTrustFDManager.Model.DTOs.Investment
         public int BankId { get; set; }
 
         [Required]
-        public int BankAccountId { get; set; }
-
-        [Required]
         public int InterestFrequencyId { get; set; }
 
         [Required]

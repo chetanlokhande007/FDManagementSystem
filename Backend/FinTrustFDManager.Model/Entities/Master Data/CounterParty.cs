@@ -1,5 +1,6 @@
 using System.ComponentModel.DataAnnotations;
 using FinTrustFDManager.Model.Common;
+using FinTrustFDManager.Model.Entities.MasterData;
 
 namespace FinTrustFDManager.Model.Entities
 {

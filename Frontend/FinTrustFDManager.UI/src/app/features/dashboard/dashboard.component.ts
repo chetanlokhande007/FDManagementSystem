@@ -1,14 +1,12 @@
 import { Component } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { BaseChartDirective } from 'ng2-charts';
 import { ChartConfiguration, ChartData } from 'chart.js';
 
 @Component({
   selector: 'app-dashboard',
   standalone: true,
   imports: [
-    CommonModule,
-    BaseChartDirective
+    CommonModule
   ],
   templateUrl: './dashboard.component.html',
   styleUrl: './dashboard.component.css'

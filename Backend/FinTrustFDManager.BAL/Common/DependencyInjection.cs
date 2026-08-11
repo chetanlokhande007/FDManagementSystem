@@ -15,7 +15,7 @@ namespace FinTrustFDManager.BAL.Common
             services.AddScoped<ICountryService, CountryService>();
             services.AddScoped<ICounterPartyService, CounterPartyService>();
             services.AddScoped<IBankService, BankService>();
-            services.AddScoped<IBankAccountService, BankAccountService>();
+
 
             // Core Data Services
             services.AddScoped<IInterestFrequencyService, InterestFrequencyService>();

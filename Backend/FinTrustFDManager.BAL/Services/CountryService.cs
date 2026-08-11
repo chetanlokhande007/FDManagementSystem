@@ -1,4 +1,5 @@
 using FinTrustFDManager.BAL.Interfaces;
+using FinTrustFDManager.Model.Entities.MasterData;
 using FinTrustFDManager.DAL.Interfaces;
 using FinTrustFDManager.Model.DTOs.Country;
 using FinTrustFDManager.Model.Entities;
@@ -50,8 +51,7 @@ namespace FinTrustFDManager.BAL.Services
             var country = new Country
             {
                 CountryCode = dto.CountryCode,
-                CountryName = dto.CountryName,
-                Description = dto.Description
+                CountryName = dto.CountryName
             };
 
             var created = await _repository
@@ -84,7 +84,6 @@ namespace FinTrustFDManager.BAL.Services
 
             country.CountryCode = dto.CountryCode;
             country.CountryName = dto.CountryName;
-            country.Description = dto.Description;
 
             await _repository.UpdateAsync(country);
 
@@ -102,8 +101,7 @@ namespace FinTrustFDManager.BAL.Services
             {
                 CountryId = country.CountryId,
                 CountryCode = country.CountryCode,
-                CountryName = country.CountryName,
-                Description = country.Description
+                CountryName = country.CountryName
             };
         }
     }

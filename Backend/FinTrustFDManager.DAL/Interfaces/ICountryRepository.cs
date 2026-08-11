@@ -1,4 +1,4 @@
-using FinTrustFDManager.Model.Entities;
+using FinTrustFDManager.Model.Entities.MasterData;
 
 namespace FinTrustFDManager.DAL.Interfaces
 {

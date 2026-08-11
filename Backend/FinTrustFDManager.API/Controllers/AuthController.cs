@@ -1,8 +1,8 @@
 using FinTrustFDManager.BAL.DTOs.Auth;
 using FinTrustFDManager.BAL.Interfaces;
-using FinTrustFDManager.Model.DTOs;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+
 namespace FinTrustFDManager.API.Controllers
 {
     [ApiController]
@@ -16,9 +16,10 @@ namespace FinTrustFDManager.API.Controllers
             _service = service;
         }
 
-        //[Authorize(Roles = "Admin")]
+        [AllowAnonymous]
         [HttpPost("register")]
-        public async Task<IActionResult> Register([FromBody] RegisterRequest request)
+        public async Task<IActionResult> Register(
+            [FromBody] RegisterRequest request)
         {
             var result = await _service.RegisterAsync(request);
 
@@ -38,7 +39,8 @@ namespace FinTrustFDManager.API.Controllers
 
         [AllowAnonymous]
         [HttpPost("login")]
-        public async Task<IActionResult> Login(LoginRequest request)
+        public async Task<IActionResult> Login(
+            [FromBody] LoginRequest request)
         {
             var result = await _service.LoginAsync(request);
 

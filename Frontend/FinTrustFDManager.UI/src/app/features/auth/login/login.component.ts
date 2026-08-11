@@ -2,8 +2,7 @@ import { Component, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Router, RouterModule } from '@angular/router';
-import { Auth, LoginRequest } from '../../../core/services/auth';
-
+import { AuthService, LoginRequest } from '../../../services/auth.service';
 @Component({
   selector: 'app-login',
   standalone: true,
@@ -13,7 +12,7 @@ import { Auth, LoginRequest } from '../../../core/services/auth';
 })
 export class LoginComponent {
   private fb = inject(FormBuilder);
-  private authService = inject(Auth);
+  private authService = inject(AuthService);
   private router = inject(Router);
 
   loginForm: FormGroup;
@@ -39,7 +38,7 @@ export class LoginComponent {
     const req: LoginRequest = this.loginForm.value;
 
     this.authService.login(req).subscribe({
-      next: (res) => {
+      next: (res: any) => {
         // Save session
         this.authService.setSession(res);
 
@@ -55,7 +54,7 @@ export class LoginComponent {
           this.router.navigate(['/dashboard']);
         }
       },
-      error: (err) => {
+      error: (err: any) => {
         this.isSubmitting = false;
         this.errorMessage = err.error?.message || 'Invalid email or password.';
       }

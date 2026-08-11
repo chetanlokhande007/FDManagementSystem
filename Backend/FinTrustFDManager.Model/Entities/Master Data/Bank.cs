@@ -1,6 +1,7 @@
 using FinTrustFDManager.Model.Common;
 using FinTrustFDManager.Model.Entities.MasterData;
 using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
 
 namespace FinTrustFDManager.Model.Entities
 {
@@ -17,18 +18,14 @@ namespace FinTrustFDManager.Model.Entities
         [MaxLength(150)]
         public string BankName { get; set; } = string.Empty;
 
+        // Foreign Key
         [Required]
         public int CountryId { get; set; }
 
-        [MaxLength(20)]
-        public string? SwiftCode { get; set; }
-
-        [MaxLength(500)]
-        public string? Description { get; set; }
-
+        // Navigation Property
+        [ForeignKey(nameof(CountryId))]
         public Country? Country { get; set; }
 
-        public ICollection<BankAccount> BankAccounts { get; set; }
-            = new List<BankAccount>();
+
     }
 }

@@ -21,7 +21,7 @@ namespace FinTrustFDManager.DAL.Repositories
                 .Include(x => x.Country)
                 .Include(x => x.Currency)
                 .Include(x => x.Bank)
-                .Include(x => x.BankAccount)
+
                 .Include(x => x.InterestFrequency)
                 .Include(x => x.DayCountConvention)
                 .AsNoTracking()
@@ -35,7 +35,7 @@ namespace FinTrustFDManager.DAL.Repositories
                 .Include(x => x.Country)
                 .Include(x => x.Currency)
                 .Include(x => x.Bank)
-                .Include(x => x.BankAccount)
+
                 .Include(x => x.InterestFrequency)
                 .Include(x => x.DayCountConvention)
                 .Include(x => x.CashFlows)
@@ -50,7 +50,7 @@ namespace FinTrustFDManager.DAL.Repositories
                 .Include(x => x.Country)
                 .Include(x => x.Currency)
                 .Include(x => x.Bank)
-                .Include(x => x.BankAccount)
+
                 .Include(x => x.InterestFrequency)
                 .Include(x => x.DayCountConvention)
                 .FirstOrDefaultAsync(x => x.InvestmentReferenceNo == referenceNo);

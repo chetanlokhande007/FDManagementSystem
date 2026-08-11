@@ -12,7 +12,7 @@ namespace FinTrustFDManager.BAL.Services
         private readonly ICountryRepository _countryRepository;
         private readonly ICurrencyRepository _currencyRepository;
         private readonly IBankRepository _bankRepository;
-        private readonly IBankAccountRepository _bankAccountRepository;
+
         private readonly IInterestFrequencyRepository _interestFrequencyRepository;
         private readonly IDayCountConventionRepository _dayCountConventionRepository;
 
@@ -22,7 +22,7 @@ namespace FinTrustFDManager.BAL.Services
             ICountryRepository countryRepository,
             ICurrencyRepository currencyRepository,
             IBankRepository bankRepository,
-            IBankAccountRepository bankAccountRepository,
+
             IInterestFrequencyRepository interestFrequencyRepository,
             IDayCountConventionRepository dayCountConventionRepository)
         {
@@ -31,7 +31,7 @@ namespace FinTrustFDManager.BAL.Services
             _countryRepository = countryRepository;
             _currencyRepository = currencyRepository;
             _bankRepository = bankRepository;
-            _bankAccountRepository = bankAccountRepository;
+
             _interestFrequencyRepository = interestFrequencyRepository;
             _dayCountConventionRepository = dayCountConventionRepository;
         }
@@ -59,8 +59,7 @@ namespace FinTrustFDManager.BAL.Services
                 throw new InvalidOperationException($"Currency with ID {dto.CurrencyId} does not exist.");
             if (await _bankRepository.GetByIdAsync(dto.BankId) == null)
                 throw new InvalidOperationException($"Bank with ID {dto.BankId} does not exist.");
-            if (await _bankAccountRepository.GetByIdAsync(dto.BankAccountId) == null)
-                throw new InvalidOperationException($"BankAccount with ID {dto.BankAccountId} does not exist.");
+
             if (await _interestFrequencyRepository.GetByIdAsync(dto.InterestFrequencyId) == null)
                 throw new InvalidOperationException($"InterestFrequency with ID {dto.InterestFrequencyId} does not exist.");
             if (await _dayCountConventionRepository.GetByIdAsync(dto.DayCountConventionId) == null)
@@ -73,7 +72,7 @@ namespace FinTrustFDManager.BAL.Services
                 CountryId = dto.CountryId,
                 CurrencyId = dto.CurrencyId,
                 BankId = dto.BankId,
-                BankAccountId = dto.BankAccountId,
+
                 InterestFrequencyId = dto.InterestFrequencyId,
                 DayCountConventionId = dto.DayCountConventionId,
                 PrincipalAmount = dto.PrincipalAmount,
@@ -104,8 +103,7 @@ namespace FinTrustFDManager.BAL.Services
                 throw new InvalidOperationException($"Currency with ID {dto.CurrencyId} does not exist.");
             if (await _bankRepository.GetByIdAsync(dto.BankId) == null)
                 throw new InvalidOperationException($"Bank with ID {dto.BankId} does not exist.");
-            if (await _bankAccountRepository.GetByIdAsync(dto.BankAccountId) == null)
-                throw new InvalidOperationException($"BankAccount with ID {dto.BankAccountId} does not exist.");
+
             if (await _interestFrequencyRepository.GetByIdAsync(dto.InterestFrequencyId) == null)
                 throw new InvalidOperationException($"InterestFrequency with ID {dto.InterestFrequencyId} does not exist.");
             if (await _dayCountConventionRepository.GetByIdAsync(dto.DayCountConventionId) == null)
@@ -115,7 +113,7 @@ namespace FinTrustFDManager.BAL.Services
             entity.CountryId = dto.CountryId;
             entity.CurrencyId = dto.CurrencyId;
             entity.BankId = dto.BankId;
-            entity.BankAccountId = dto.BankAccountId;
+
             entity.InterestFrequencyId = dto.InterestFrequencyId;
             entity.DayCountConventionId = dto.DayCountConventionId;
             entity.PrincipalAmount = dto.PrincipalAmount;
@@ -151,8 +149,7 @@ namespace FinTrustFDManager.BAL.Services
                 CurrencyName = entity.Currency?.CurrencyName,
                 BankId = entity.BankId,
                 BankName = entity.Bank?.BankName,
-                BankAccountId = entity.BankAccountId,
-                AccountNumber = entity.BankAccount?.AccountNumber,
+
                 InterestFrequencyId = entity.InterestFrequencyId,
                 InterestFrequencyName = entity.InterestFrequency?.FrequencyName,
                 DayCountConventionId = entity.DayCountConventionId,

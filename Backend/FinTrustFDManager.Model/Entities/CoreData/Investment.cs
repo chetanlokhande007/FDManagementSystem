@@ -1,4 +1,4 @@
-﻿using FinTrustFDManager.Model.Entities.MasterData;
+using FinTrustFDManager.Model.Entities.MasterData;
 using System;
 using System.Collections.Generic;
 using System.Text;
@@ -17,7 +17,7 @@ namespace FinTrustFDManager.Model.Entities.CoreData
         public int CountryId { get; set; }
         public int CurrencyId { get; set; }
         public int BankId { get; set; }
-        public int BankAccountId { get; set; }
+
 
         public int InterestFrequencyId { get; set; }
         public int DayCountConventionId { get; set; }
@@ -54,7 +54,7 @@ namespace FinTrustFDManager.Model.Entities.CoreData
 
         public Bank Bank { get; set; } = null!;
 
-        public BankAccount BankAccount { get; set; } = null!;
+
 
         public InterestFrequency InterestFrequency { get; set; } = null!;
 

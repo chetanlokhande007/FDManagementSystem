@@ -19,8 +19,6 @@ namespace FinTrustFDManager.DAL.Data
 
         public DbSet<Bank> Banks => Set<Bank>();
 
-        public DbSet<BankAccount> BankAccounts => Set<BankAccount>();
-
         public DbSet<CounterParty> CounterParties => Set<CounterParty>();
 
         public DbSet<Investment> Investments => Set<Investment>();
@@ -77,23 +75,7 @@ namespace FinTrustFDManager.DAL.Data
                 .HasForeignKey(x => x.CountryId)
                 .OnDelete(DeleteBehavior.Restrict);
 
-            modelBuilder.Entity<BankAccount>()
-                .HasOne(x => x.Bank)
-                .WithMany(x => x.BankAccounts)
-                .HasForeignKey(x => x.BankId)
-                .OnDelete(DeleteBehavior.Restrict);
 
-            modelBuilder.Entity<BankAccount>()
-                .HasOne(x => x.Currency)
-                .WithMany(x => x.BankAccounts)
-                .HasForeignKey(x => x.CurrencyId)
-                .OnDelete(DeleteBehavior.Restrict);
-
-            modelBuilder.Entity<BankAccount>()
-                .HasIndex(x => x.AccountNumber)
-                .IsUnique();
-
-            
             modelBuilder.Entity<Investment>()
                 .HasOne(x => x.Entity)
                 .WithMany()
@@ -116,12 +98,6 @@ namespace FinTrustFDManager.DAL.Data
                 .HasOne(x => x.Bank)
                 .WithMany()
                 .HasForeignKey(x => x.BankId)
-                .OnDelete(DeleteBehavior.Restrict);
-
-            modelBuilder.Entity<Investment>()
-                .HasOne(x => x.BankAccount)
-                .WithMany()
-                .HasForeignKey(x => x.BankAccountId)
                 .OnDelete(DeleteBehavior.Restrict);
 
             modelBuilder.Entity<Investment>()

@@ -23,7 +23,6 @@ namespace FinTrustFDManager.Model.Entities
         [MaxLength(500)]
         public string? Description { get; set; }
 
-        public ICollection<BankAccount> BankAccounts { get; set; }
-            = new List<BankAccount>();
+
     }
 }

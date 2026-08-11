@@ -31,11 +31,11 @@ export class Auth {
   private http = inject(HttpClient);
   
   register(data: RegisterDto): Observable<any> {
-    return this.http.post(`${environment.apiUrl}/api/auth/register`, data);
+    return this.http.post(`${environment.apiUrl}/auth/register`, data);
   }
 
   login(data: LoginRequest): Observable<LoginResponse> {
-    return this.http.post<LoginResponse>(`${environment.apiUrl}/api/auth/login`, data);
+    return this.http.post<LoginResponse>(`${environment.apiUrl}/auth/login`, data);
   }
 
   setSession(response: LoginResponse) {
