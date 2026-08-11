@@ -1,0 +1,16 @@
+.layout-container {
+  display: flex;
+  min-height: 100vh;
+  width: 100vw;
+  background: #f7f9fc;
+}
+.main-content-wrapper {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow-x: hidden;
+}
+.router-wrapper {
+  flex: 1;
+  overflow-y: auto;
+}

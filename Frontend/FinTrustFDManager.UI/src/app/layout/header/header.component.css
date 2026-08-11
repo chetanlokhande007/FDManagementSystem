@@ -1,0 +1,66 @@
+.top-header {
+  height: 72px;
+  background: white;
+  border-bottom: 1px solid #e6eaf0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 30px;
+}
+.menu-button {
+  border: none;
+  background: transparent;
+  font-size: 25px;
+  cursor: pointer;
+  color: #102a56;
+}
+.header-right {
+  display: flex;
+  align-items: center;
+  gap: 28px;
+}
+.notification {
+  position: relative;
+  font-size: 22px;
+}
+.notification span {
+  position: absolute;
+  top: -8px;
+  right: -10px;
+  width: 18px;
+  height: 18px;
+  background: #e53935;
+  color: white;
+  border-radius: 50%;
+  font-size: 11px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.profile {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.avatar {
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  background: #145bb8;
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 19px;
+}
+.profile-info {
+  display: flex;
+  flex-direction: column;
+}
+.profile-info strong { font-size: 14px; }
+.profile-info small { color: #78859a; }
+
+@media (max-width: 650px) {
+  .top-header { padding: 0 15px; }
+  .profile-info { display: none; }
+}
