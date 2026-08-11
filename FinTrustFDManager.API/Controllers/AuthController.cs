@@ -16,7 +16,7 @@ namespace FinTrustFDManager.API.Controllers
             _service = service;
         }
 
-        [Authorize(Roles = "Admin")]
+        //[Authorize(Roles = "Admin")]
         [HttpPost("register")]
         public async Task<IActionResult> Register([FromBody] RegisterRequest request)
         {
