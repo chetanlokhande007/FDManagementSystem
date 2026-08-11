@@ -1,78 +1,109 @@
 .sidebar {
   width: 260px;
-  background: #0f1c3f;
-  color: #94a3b8;
+  background-color: var(--sidebar-bg);
+  color: var(--sidebar-text);
+  height: 100vh;
   display: flex;
   flex-direction: column;
-  height: 100vh;
-  overflow-y: auto;
 }
 
 .logo-section {
-  padding: 24px;
   display: flex;
   align-items: center;
+  padding: 24px 24px;
   gap: 12px;
-  color: white;
 }
 
 .logo-icon {
-  font-size: 24px;
+  background: white;
+  color: var(--primary-blue);
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 6px;
 }
 
 .logo-text h2 {
+  color: white;
   margin: 0;
-  font-size: 20px;
+  font-size: 18px;
   font-weight: 600;
+  line-height: 1.2;
 }
 
 .logo-text span {
   font-size: 11px;
-  color: #94a3b8;
+  color: #8b9db5;
 }
 
 .nav-menu {
   flex: 1;
+  overflow-y: auto;
   padding: 0 16px;
-}
-
-.nav-section {
-  margin-top: 24px;
-}
-
-.nav-section small {
-  display: block;
-  padding: 0 12px 8px;
-  font-size: 11px;
-  font-weight: 600;
-  letter-spacing: 0.5px;
-  color: #64748b;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
 }
 
 .nav-item {
   display: flex;
   align-items: center;
-  padding: 10px 12px;
-  margin-bottom: 4px;
+  gap: 12px;
+  padding: 10px 14px;
   border-radius: 8px;
-  color: #cbd5e1;
-  text-decoration: none;
-  font-size: 14px;
   cursor: pointer;
   transition: all 0.2s;
+  font-size: 14px;
+  color: var(--sidebar-text);
+  text-decoration: none;
 }
 
 .nav-item:hover {
-  background: #1e293b;
+  background-color: var(--sidebar-hover);
   color: white;
 }
 
 .nav-item.active {
-  background: #2563eb;
+  background-color: var(--primary-blue);
   color: white;
+  font-weight: 500;
+}
+
+.nav-item.active svg {
+  stroke: white;
+}
+
+.nav-section {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.nav-section small {
+  font-size: 11px;
+  font-weight: 600;
+  color: #5c7490;
+  padding: 8px 14px 4px;
+  letter-spacing: 0.5px;
 }
 
 .logout-section {
   padding: 16px;
-  border-top: 1px solid #1e293b;
+  border-top: 1px solid rgba(255,255,255,0.05);
+}
+
+/* Custom Scrollbar for sidebar */
+.nav-menu::-webkit-scrollbar {
+  width: 5px;
+}
+
+.nav-menu::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.nav-menu::-webkit-scrollbar-thumb {
+  background: rgba(255,255,255,0.1);
+  border-radius: 4px;
 }

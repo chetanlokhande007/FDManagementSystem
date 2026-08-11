@@ -1,66 +1,106 @@
 .top-header {
   height: 72px;
   background: white;
-  border-bottom: 1px solid #e6eaf0;
+  border-bottom: 1px solid var(--border-color);
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 0 30px;
+  padding: 0 32px;
 }
 .menu-button {
   border: none;
   background: transparent;
-  font-size: 25px;
   cursor: pointer;
-  color: #102a56;
+  color: var(--text-primary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 8px;
+  border-radius: 6px;
+  transition: background-color 0.2s;
+}
+.menu-button:hover {
+  background-color: var(--bg-color);
 }
 .header-right {
   display: flex;
   align-items: center;
-  gap: 28px;
+  gap: 32px;
 }
 .notification {
   position: relative;
-  font-size: 22px;
+  color: var(--text-secondary);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  padding: 8px;
+  border-radius: 50%;
+  transition: background-color 0.2s;
+}
+.notification:hover {
+  background-color: var(--bg-color);
 }
 .notification span {
   position: absolute;
-  top: -8px;
-  right: -10px;
-  width: 18px;
-  height: 18px;
-  background: #e53935;
+  top: 4px;
+  right: 4px;
+  width: 16px;
+  height: 16px;
+  background: var(--danger);
   color: white;
   border-radius: 50%;
-  font-size: 11px;
+  font-size: 10px;
+  font-weight: 600;
   display: flex;
   align-items: center;
   justify-content: center;
+  border: 2px solid white;
 }
 .profile {
   display: flex;
   align-items: center;
   gap: 12px;
+  cursor: pointer;
+  padding: 6px 12px;
+  border-radius: 8px;
+  transition: background-color 0.2s;
+}
+.profile:hover {
+  background-color: var(--bg-color);
 }
 .avatar {
-  width: 42px;
-  height: 42px;
+  width: 40px;
+  height: 40px;
   border-radius: 50%;
-  background: #145bb8;
+  background: var(--sidebar-bg);
   color: white;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 19px;
+  font-size: 16px;
+  font-weight: 600;
 }
 .profile-info {
   display: flex;
   flex-direction: column;
 }
-.profile-info strong { font-size: 14px; }
-.profile-info small { color: #78859a; }
+.profile-info strong { 
+  font-size: 14px; 
+  font-weight: 600;
+  color: var(--text-primary);
+}
+.profile-info small { 
+  color: var(--text-secondary);
+  font-size: 12px;
+  margin-top: 2px;
+}
+.dropdown-icon {
+  color: var(--text-secondary);
+  margin-left: 4px;
+}
 
 @media (max-width: 650px) {
-  .top-header { padding: 0 15px; }
-  .profile-info { display: none; }
+  .top-header { padding: 0 16px; }
+  .profile-info, .dropdown-icon { display: none; }
+  .header-right { gap: 16px; }
 }
