@@ -1,7 +1,8 @@
+using FinTrustFDManager.BAL.DTOs.Auth;
 using FinTrustFDManager.BAL.Interfaces;
 using FinTrustFDManager.Model.DTOs;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-
 namespace FinTrustFDManager.API.Controllers
 {
     [ApiController]
@@ -15,18 +16,41 @@ namespace FinTrustFDManager.API.Controllers
             _service = service;
         }
 
-        [HttpPost("Register")]
-        public async Task<IActionResult> Register(RegisterDto dto)
+        [Authorize(Roles = "Admin")]
+        [HttpPost("register")]
+        public async Task<IActionResult> Register([FromBody] RegisterRequest request)
         {
-            if (!ModelState.IsValid)
-                return BadRequest(ModelState);
-
-            bool result = await _service.Register(dto);
+            var result = await _service.RegisterAsync(request);
 
             if (!result)
-                return BadRequest("Email already exists.");
+            {
+                return BadRequest(new
+                {
+                    message = "User already exists or invalid role."
+                });
+            }
 
-            return Ok("Registration Successful");
+            return Ok(new
+            {
+                message = "User registered successfully."
+            });
+        }
+
+        [AllowAnonymous]
+        [HttpPost("login")]
+        public async Task<IActionResult> Login(LoginRequest request)
+        {
+            var result = await _service.LoginAsync(request);
+
+            if (result == null)
+            {
+                return Unauthorized(new
+                {
+                    message = "Invalid email or password."
+                });
+            }
+
+            return Ok(result);
         }
     }
 }

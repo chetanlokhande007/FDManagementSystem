@@ -24,6 +24,9 @@ namespace FinTrustFDManager.BAL.Common
             services.AddScoped<ICashFlowService, CashFlowService>();
             services.AddScoped<IInvestmentApprovalService, InvestmentApprovalService>();
 
+            // Auth Service
+            services.AddScoped<IAuthService, AuthService>();
+
             return services;
         }
 

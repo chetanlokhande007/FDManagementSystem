@@ -9,6 +9,8 @@ namespace FinTrustFDManager.DAL.Data
     {
         public DbSet<User> Users => Set<User>();
 
+        public DbSet<Role> Roles => Set<Role>();
+
         public DbSet<Country> Countries => Set<Country>();
 
         public DbSet<Currency> Currencies => Set<Currency>();
@@ -40,6 +42,18 @@ namespace FinTrustFDManager.DAL.Data
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             base.OnModelCreating(modelBuilder);
+
+            modelBuilder.Entity<User>()
+                .HasOne(u => u.Role)
+                .WithMany(r => r.Users)
+                .HasForeignKey(u => u.RoleId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            modelBuilder.Entity<Role>().HasData(
+                new Role { Id = 1, RoleName = "Admin", IsActive = true, CreatedDate = DateTime.UtcNow },
+                new Role { Id = 2, RoleName = "CA", IsActive = true, CreatedDate = DateTime.UtcNow },
+                new Role { Id = 3, RoleName = "Approver", IsActive = true, CreatedDate = DateTime.UtcNow }
+            );
 
             modelBuilder.Entity<Entity>()
                 .HasOne(x => x.Country)

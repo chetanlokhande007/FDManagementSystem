@@ -14,19 +14,30 @@ namespace FinTrustFDManager.DAL.Repositories
             _context = context;
         }
 
-        public async Task<bool> Register(User user)
+        public async Task<Role?> GetRoleByIdAsync(int roleId)
         {
-            var emailExists = await _context.Users
-                .AnyAsync(x => x.Email == user.Email);
+            return await _context.Roles
+                .FirstOrDefaultAsync(r =>
+                    r.Id == roleId &&
+                    r.IsActive);
+        }
 
-            if (emailExists)
-                return false;
+        public async Task AddUserAsync(User user)
+        {
+            await _context.Users.AddAsync(user);
+        }
 
-            _context.Users.Add(user);
+        public async Task<bool> SaveChangesAsync()
+        {
+            return await _context.SaveChangesAsync() > 0;
+        }
 
-            await _context.SaveChangesAsync();
-
-            return true;
+        public async Task<User?> GetUserByEmailAsync(string email)
+        {
+            return await _context.Users
+                .Include(u => u.Role)
+                .FirstOrDefaultAsync(u =>
+                    u.Email.ToLower() == email.ToLower());
         }
     }
 }

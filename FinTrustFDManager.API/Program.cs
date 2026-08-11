@@ -35,6 +35,7 @@ builder.Services.AddScoped<IDayCountConventionRepository, DayCountConventionRepo
 builder.Services.AddScoped<IInvestmentRepository, InvestmentRepository>();
 builder.Services.AddScoped<ICashFlowRepository, CashFlowRepository>();
 builder.Services.AddScoped<IInvestmentApprovalRepository, InvestmentApprovalRepository>();
+builder.Services.AddScoped<IAuthRepository, AuthRepository>();
 
 builder.Services.AddEndpointsApiExplorer();
 

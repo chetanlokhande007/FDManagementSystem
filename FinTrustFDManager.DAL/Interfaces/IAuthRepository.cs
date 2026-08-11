@@ -4,6 +4,9 @@ namespace FinTrustFDManager.DAL.Interfaces
 {
     public interface IAuthRepository
     {
-        Task<bool> Register(User user);
+        Task<User?> GetUserByEmailAsync(string email);
+        Task<Role?> GetRoleByIdAsync(int roleId);
+        Task AddUserAsync(User user);
+        Task<bool> SaveChangesAsync();
     }
 }

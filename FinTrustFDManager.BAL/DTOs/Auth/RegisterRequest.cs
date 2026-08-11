@@ -1,30 +1,24 @@
 using System.ComponentModel.DataAnnotations;
-using FinTrustFDManager.Model.Common;
 
-namespace FinTrustFDManager.Model.Entities
+namespace FinTrustFDManager.BAL.DTOs.Auth
 {
-    public class User : BaseEntity
+    public class RegisterRequest
     {
-        [Key]
-        public int Id { get; set; }
-
         [Required]
-        [MaxLength(100)]
         public string FullName { get; set; } = string.Empty;
 
         [Required]
         [EmailAddress]
-        [MaxLength(100)]
         public string Email { get; set; } = string.Empty;
 
         [Required]
-        [MaxLength(15)]
         public string MobileNo { get; set; } = string.Empty;
 
         [Required]
+        [MinLength(6)]
         public string Password { get; set; } = string.Empty;
 
+        [Required]
         public int RoleId { get; set; }
-        public Role Role { get; set; } = null!;
     }
 }
