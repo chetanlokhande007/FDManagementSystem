@@ -93,6 +93,8 @@ if (app.Environment.IsDevelopment())
 
 app.UseHttpsRedirection();
 
+app.UseCors("AngularPolicy");
+
 // IMPORTANT: Authentication must come BEFORE Authorization
 app.UseAuthentication();
 app.UseAuthorization();

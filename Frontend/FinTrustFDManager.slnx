@@ -1,6 +1,0 @@
-<Solution>
-  <Project Path="FinTrustFDManager.API/FinTrustFDManager.API.csproj" />
-  <Project Path="FinTrustFDManager.BAL/FinTrustFDManager.BAL.csproj" />
-  <Project Path="FinTrustFDManager.DAL/FinTrustFDManager.DAL.csproj" />
-  <Project Path="FinTrustFDManager.Model/FinTrustFDManager.Model.csproj" />
-</Solution>
