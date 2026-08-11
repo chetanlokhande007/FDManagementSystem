@@ -7,21 +7,15 @@ namespace FinTrustFDManager.API.Controllers
 {
     [ApiController]
     [Route("api/[controller]")]
-    public class AuthController : ControllerBase
+    public class AuthController(IAuthService service) : ControllerBase
     {
-        private readonly IAuthService _service;
-
-        public AuthController(IAuthService service)
-        {
-            _service = service;
-        }
 
         [AllowAnonymous]
         [HttpPost("register")]
         public async Task<IActionResult> Register(
             [FromBody] RegisterRequest request)
         {
-            var result = await _service.RegisterAsync(request);
+            var result = await service.RegisterAsync(request);
 
             if (!result)
             {
@@ -42,7 +36,7 @@ namespace FinTrustFDManager.API.Controllers
         public async Task<IActionResult> Login(
             [FromBody] LoginRequest request)
         {
-            var result = await _service.LoginAsync(request);
+            var result = await service.LoginAsync(request);
 
             if (result == null)
             {

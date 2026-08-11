@@ -25,14 +25,13 @@ namespace FinTrustFDManager.Model.Entities
         [MaxLength(500)]
         public string? Description { get; set; }
 
+    
 
-
-
+        public int? CreatedById { get; set; }
 
         // Navigation property
         [ForeignKey(nameof(CountryId))]
         public Country? Country { get; set; }
-
 
     }
 }
