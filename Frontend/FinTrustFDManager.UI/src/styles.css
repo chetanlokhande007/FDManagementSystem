@@ -1,11 +1,11 @@
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
 
 :root {
-  --primary-blue: #1677ff;
-  --sidebar-bg: #0e243f;
+  --primary-blue: #2c7aee;
+  --sidebar-bg: #051b42;
   --sidebar-hover: rgba(255, 255, 255, 0.08);
-  --sidebar-text: #8b9db5;
-  --sidebar-active-bg: rgba(22, 119, 255, 0.15);
+  --sidebar-text: #a1b0c7;
+  --sidebar-active-bg: rgba(44, 122, 238, 0.15);
   --sidebar-active-text: #ffffff;
   --bg-color: #f5f7fa;
   --text-primary: #1e293b;

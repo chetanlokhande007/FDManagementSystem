@@ -1,0 +1,96 @@
+<div class="auth-container">
+  <div class="auth-card">
+    <div class="auth-header">
+      <div class="logo">
+        <svg width="40" height="44" viewBox="0 0 40 44" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M20 40C20 40 5 32 5 14V6L20 2V40Z" fill="#2563EB"/>
+          <path d="M20 40C20 40 35 32 35 14V6L20 2V40Z" fill="#172e68"/>
+          <path d="M20 2L5 6V14C5 32 20 40 20 40C20 40 35 32 35 14V6L20 2Z" stroke="#60A5FA" stroke-width="2"/>
+          <path d="M14 12h11v3.5h-7.5v4h4.5v3.5h-4.5v7h-3.5z" fill="white"/>
+          <path d="M22 19.5h3.5l-1.5 3.5h-3.5z" fill="#F59E0B"/>
+        </svg>
+      </div>
+      <h2>Create an Account</h2>
+      <p>Join FinTrust FD Manager today.</p>
+    </div>
+
+    <form [formGroup]="registerForm" (ngSubmit)="onSubmit()" class="auth-form">
+      
+      <div class="alert success" *ngIf="successMessage">{{ successMessage }}</div>
+      <div class="alert error" *ngIf="errorMessage">{{ errorMessage }}</div>
+
+      <div class="form-group">
+        <label for="fullName">Full Name</label>
+        <input 
+          type="text" 
+          id="fullName" 
+          formControlName="fullName" 
+          placeholder="e.g. Jane Doe"
+          [class.is-invalid]="registerForm.get('fullName')?.invalid && registerForm.get('fullName')?.touched">
+        <div class="error-msg" *ngIf="registerForm.get('fullName')?.errors?.['required'] && registerForm.get('fullName')?.touched">Full name is required.</div>
+        <div class="error-msg" *ngIf="registerForm.get('fullName')?.errors?.['minlength'] && registerForm.get('fullName')?.touched">Must be at least 3 characters.</div>
+      </div>
+
+      <div class="form-group">
+        <label for="email">Email Address</label>
+        <input 
+          type="email" 
+          id="email" 
+          formControlName="email" 
+          placeholder="name@example.com"
+          [class.is-invalid]="registerForm.get('email')?.invalid && registerForm.get('email')?.touched">
+        <div class="error-msg" *ngIf="registerForm.get('email')?.errors?.['required'] && registerForm.get('email')?.touched">Email is required.</div>
+        <div class="error-msg" *ngIf="registerForm.get('email')?.errors?.['email'] && registerForm.get('email')?.touched">Enter a valid email address.</div>
+      </div>
+
+      <div class="form-group">
+        <label for="mobileNo">Mobile Number</label>
+        <input 
+          type="text" 
+          id="mobileNo" 
+          formControlName="mobileNo" 
+          placeholder="10-digit number"
+          [class.is-invalid]="registerForm.get('mobileNo')?.invalid && registerForm.get('mobileNo')?.touched">
+        <div class="error-msg" *ngIf="registerForm.get('mobileNo')?.errors?.['required'] && registerForm.get('mobileNo')?.touched">Mobile number is required.</div>
+        <div class="error-msg" *ngIf="registerForm.get('mobileNo')?.errors?.['pattern'] && registerForm.get('mobileNo')?.touched">Enter a valid 10-digit mobile number.</div>
+      </div>
+
+      <div class="form-group">
+        <label for="password">Password</label>
+        <input 
+          type="password" 
+          id="password" 
+          formControlName="password" 
+          placeholder="Create a strong password"
+          [class.is-invalid]="registerForm.get('password')?.invalid && registerForm.get('password')?.touched">
+        <div class="error-msg" *ngIf="registerForm.get('password')?.errors?.['required'] && registerForm.get('password')?.touched">Password is required.</div>
+        <div class="error-msg" *ngIf="registerForm.get('password')?.errors?.['minlength'] && registerForm.get('password')?.touched">Password must be at least 6 characters.</div>
+      </div>
+
+      <div class="form-group">
+        <label for="roleId">Role</label>
+        <select 
+          id="roleId" 
+          formControlName="roleId" 
+          [class.is-invalid]="registerForm.get('roleId')?.invalid && registerForm.get('roleId')?.touched"
+          style="width: 100%; padding: 12px 16px; border-radius: 8px; border: 1px solid var(--border-color, #e2e8f0); font-size: 14px; color: var(--text-primary, #1e293b); background: #f8fafc; cursor: pointer;">
+          <option [ngValue]="null" disabled>Select a role...</option>
+          <option [ngValue]="1">Admin</option>
+          <option [ngValue]="2">CA (Creator)</option>
+          <option [ngValue]="3">Approver</option>
+        </select>
+        <div class="error-msg" *ngIf="registerForm.get('roleId')?.errors?.['required'] && registerForm.get('roleId')?.touched">Role is required.</div>
+      </div>
+
+      <button type="submit" class="btn-primary" [disabled]="isSubmitting">
+        <span *ngIf="!isSubmitting">Register</span>
+        <span *ngIf="isSubmitting" class="spinner"></span>
+      </button>
+
+    </form>
+
+    <div class="auth-footer">
+      <p>Already have an account? <a routerLink="/login">Sign in here</a></p>
+    </div>
+  </div>
+</div>

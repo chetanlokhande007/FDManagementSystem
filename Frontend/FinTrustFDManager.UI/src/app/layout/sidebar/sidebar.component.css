@@ -18,27 +18,40 @@
 }
 
 .logo-icon {
-  background: white;
-  color: var(--primary-blue);
-  width: 32px;
-  height: 32px;
+  width: 40px;
+  height: 44px;
   display: flex;
   align-items: center;
   justify-content: center;
-  border-radius: 6px;
+}
+
+.logo-text {
+  display: flex;
+  flex-direction: column;
 }
 
 .logo-text h2 {
-  color: white;
   margin: 0;
-  font-size: 18px;
-  font-weight: 600;
-  line-height: 1.2;
+  font-size: 26px;
+  font-weight: 700;
+  line-height: 1.1;
+  letter-spacing: -0.5px;
 }
 
-.logo-text span {
+.logo-text .text-blue {
+  color: #3B82F6;
+}
+
+.logo-text .text-white {
+  color: #FFFFFF;
+}
+
+.logo-text .sub-text {
   font-size: 11px;
-  color: #8b9db5;
+  color: #E2E8F0;
+  font-weight: 600;
+  letter-spacing: 1.5px;
+  margin-top: 2px;
 }
 
 .close-mobile-btn {
