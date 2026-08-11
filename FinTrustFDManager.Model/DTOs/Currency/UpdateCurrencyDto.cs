@@ -1,0 +1,21 @@
+using System.ComponentModel.DataAnnotations;
+
+namespace FinTrustFDManager.Model.DTOs.Currency
+{
+    public class UpdateCurrencyDto
+    {
+        [Required]
+        [MaxLength(10)]
+        public string CurrencyCode { get; set; } = string.Empty;
+
+        [Required]
+        [MaxLength(50)]
+        public string CurrencyName { get; set; } = string.Empty;
+
+        [MaxLength(10)]
+        public string? Symbol { get; set; }
+
+        [MaxLength(500)]
+        public string? Description { get; set; }
+    }
+}
