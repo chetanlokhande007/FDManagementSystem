@@ -1,130 +1,107 @@
-<div class="entity-page">
+<div class="page-container">
 
-  <div class="page-header">
-    <div>
-      <h1>Entities Management</h1>
-      <p>Configure and manage financial entities for cash flows</p>
+    <div class="page-header">
+        <div>
+            <h2>Entities</h2>
+            <p>Manage entities</p>
+        </div>
+        <button class="add-btn" (click)="addEntity()">
+            + Add Entity
+        </button>
     </div>
 
-    <button class="add-btn" (click)="addEntity()">
-      + Add Entity
-    </button>
-  </div>
+    <div class="table-card">
+        <table>
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Entity Code</th>
+                    <th>Entity Name</th>
+                    <th>Country</th>
+                    <th>Status</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                <!-- Loading -->
+                <tr *ngIf="loading">
+                    <td colspan="6" class="no-data">
+                        Loading entities...
+                    </td>
+                </tr>
 
+                <!-- Backend data -->
+                <tr *ngFor="let item of entities; let i = index">
+                    <td>{{ i + 1 }}</td>
+                    <td>{{ item.entityCode }}</td>
+                    <td>{{ item.entityName }}</td>
+                    <td>{{ item.countryName }}</td>
+                    <td>
+                        <span class="status" [class.active]="item.status === 1" [class.inactive]="item.status !== 1">
+                            {{ item.status === 1 ? 'Active' : 'Inactive' }}
+                        </span>
+                    </td>
+                    <td class="actions">
+                        <button class="edit-btn" (click)="editEntity(item)">Edit</button>
+                        <button class="delete-btn" (click)="deleteEntity(item.entityId)">Delete</button>
+                    </td>
+                </tr>
 
-  <div class="entity-card">
-
-    <!-- Search -->
-    <div class="search-box">
-      <input
-        type="text"
-        [(ngModel)]="searchText"
-        (input)="searchEntities()"
-        placeholder="Search by name, code or country..."
-      />
-
-      <span>🔍</span>
+                <!-- No data -->
+                <tr *ngIf="!loading && entities.length === 0">
+                    <td colspan="6" class="no-data">
+                        No entities found
+                    </td>
+                </tr>
+            </tbody>
+        </table>
     </div>
 
+</div>
 
-    <!-- LOADING -->
-    <div
-      class="loading-container"
-      *ngIf="loading"
-    >
-      <div class="spinner"></div>
-      <p>Loading entities...</p>
+<!-- Add/Edit form -->
+<div class="form-overlay" *ngIf="showForm">
+    <div class="form-card">
+        <div class="form-header">
+            <h3>{{ isEdit ? 'Edit Entity' : 'Add Entity' }}</h3>
+            <button class="close-btn" (click)="closeForm()">×</button>
+        </div>
+
+        <div class="form-body">
+            <div class="form-group">
+                <label>Entity Code *</label>
+                <input type="text" name="entityCode" [(ngModel)]="entity.entityCode" placeholder="Enter entity code">
+            </div>
+
+            <div class="form-group">
+                <label>Entity Name *</label>
+                <input type="text" name="entityName" [(ngModel)]="entity.entityName" placeholder="Enter entity name">
+            </div>
+
+            <div class="form-group">
+                <label>Country *</label>
+                <select name="countryId" [(ngModel)]="entity.countryId">
+                    <option [ngValue]="0" disabled>Select Country</option>
+                    <option *ngFor="let c of countries" [ngValue]="c.countryId">
+                        {{ c.countryName }}
+                    </option>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label>Status</label>
+                <select name="status" [(ngModel)]="entity.status">
+                    <option [ngValue]="1">Active</option>
+                    <option [ngValue]="0">Inactive</option>
+                </select>
+            </div>
+        </div>
+
+        <div class="form-footer">
+            <button class="cancel-btn" (click)="closeForm()">Cancel</button>
+            <button class="save-btn" (click)="saveEntity()">
+                {{ isEdit ? 'Update' : 'Save' }}
+            </button>
+        </div>
     </div>
-
-
-    <!-- ERROR -->
-    <div
-      class="error-message"
-      *ngIf="!loading && errorMessage"
-    >
-      {{ errorMessage }}
-
-      <button (click)="loadEntities()">
-        Retry
-      </button>
-    </div>
-
-
-    <!-- DATA -->
-    <div
-      class="table-container"
-      *ngIf="!loading && !errorMessage"
-    >
-
-      <table *ngIf="filteredEntities.length > 0">
-
-        <thead>
-          <tr>
-            <th>Code</th>
-            <th>Entity Name</th>
-            <th>Country</th>
-            <th>Description</th>
-            <th>Action</th>
-          </tr>
-        </thead>
-
-        <tbody>
-
-          <tr
-            *ngFor="let entity of filteredEntities"
-          >
-
-            <td>
-              {{ entity.entityCode }}
-            </td>
-
-            <td>
-              {{ entity.entityName }}
-            </td>
-
-            <td>
-              {{ entity.countryName }}
-            </td>
-
-            <td>
-              {{ entity.description || '-' }}
-            </td>
-
-            <td>
-
-              <button
-                type="button"
-                (click)="editEntity(entity.entityId)"
-              >
-                Edit
-              </button>
-
-              <button
-                type="button"
-                (click)="deleteEntity(entity.entityId)"
-              >
-                Delete
-              </button>
-
-            </td>
-
-          </tr>
-
-        </tbody>
-
-      </table>
-
-
-      <!-- NO DATA -->
-      <div
-        class="no-data"
-        *ngIf="filteredEntities.length === 0"
-      >
-        No entities found.
-      </div>
-
-    </div>
-
-  </div>
-
 </div>

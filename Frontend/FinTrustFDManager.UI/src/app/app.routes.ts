@@ -7,7 +7,6 @@ import { LoginComponent } from './features/auth/login/login.component';
 import { authGuard } from './core/guards/auth.guard';
 
 import { EntityListComponent } from './features/entity/entity-list/entity-list';
-import { EntityFormComponent } from './features/entity/entity-form/entity-form';
 import { CashFlowComponent } from './features/cash-flow/cash-flow';
 
 import { CounterpartiesComponent } from './features/counterparties/counterparties.component';
@@ -82,18 +81,6 @@ export const routes: Routes = [
   {
     path: 'entities',
     component: EntityListComponent,
-    canActivate: [authGuard]
-  },
-
-  {
-    path: 'entities/add',
-    component: EntityFormComponent,
-    canActivate: [authGuard]
-  },
-
-  {
-    path: 'entities/edit/:id',
-    component: EntityFormComponent,
     canActivate: [authGuard]
   },
 

@@ -26,7 +26,7 @@ export class CounterpartiesComponent implements OnInit {
     private counterPartyService: CounterPartyService,
     private countryService: CountryService,
     private cdr: ChangeDetectorRef
-  ) {}
+  ) { }
 
   ngOnInit(): void {
     this.loadCounterParties();
@@ -36,7 +36,8 @@ export class CounterpartiesComponent implements OnInit {
   loadCountries(): void {
     this.countryService.getCountries().subscribe({
       next: (data) => {
-        this.countries = data ?? [];
+        const countries = data ?? [];
+        this.countries = countries.filter(c => c.isActive === true || String(c.isActive).toLowerCase() === 'true');
         this.cdr.detectChanges();
       },
       error: (error) => {

@@ -1,6 +1,7 @@
-import { Component, Input, Output, EventEmitter } from '@angular/core';
+import { Component, Input, Output, EventEmitter, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { RouterModule } from '@angular/router';
+import { RouterModule, Router, NavigationEnd } from '@angular/router';
+import { filter } from 'rxjs/operators';
 
 @Component({
   selector: 'app-sidebar',
@@ -9,12 +10,34 @@ import { RouterModule } from '@angular/router';
   templateUrl: './sidebar.component.html',
   styleUrl: './sidebar.component.css'
 })
-export class SidebarComponent {
+export class SidebarComponent implements OnInit {
   @Input() isOpen = false;
   @Output() closeSidebar = new EventEmitter<void>();
 
   isMasterDataOpen = false;
   isCoreDataOpen = false;
+
+  constructor(private router: Router) {}
+
+  ngOnInit() {
+    this.checkActiveRoute(this.router.url);
+
+    this.router.events.pipe(
+      filter(event => event instanceof NavigationEnd)
+    ).subscribe((event: any) => {
+      this.checkActiveRoute(event.urlAfterRedirects);
+    });
+  }
+
+  checkActiveRoute(url: string) {
+    if (url.includes('/entities') || url.includes('/countries') || url.includes('/currencies') || url.includes('/counterparties')) {
+      this.isMasterDataOpen = true;
+    }
+    
+    if (url.includes('/investments') || url.includes('/approvals') || url.includes('/cash-flows') || url.includes('/interest-frequency') || url.includes('/day-count-convention')) {
+      this.isCoreDataOpen = true;
+    }
+  }
 
   toggleMasterData(): void {
     this.isMasterDataOpen = !this.isMasterDataOpen;
