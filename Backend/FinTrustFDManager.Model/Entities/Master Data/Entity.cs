@@ -23,11 +23,6 @@ namespace FinTrustFDManager.Model.Entities
         [Required]
         public int CountryId { get; set; }
 
-        [MaxLength(500)]
-        public string? Description { get; set; }
-
-    
-
         public int? CreatedById { get; set; }
 
         public EntityStatus Status { get; set; } = EntityStatus.NonApproved;

@@ -30,13 +30,7 @@
 
       <tbody>
 
-        <!-- Loading -->
-        <tr *ngIf="loading">
-          <td colspan="6" class="no-data">
-            Loading countries...
-          </td>
-        </tr>
-
+      
 
         <!-- Backend data -->
         <tr *ngFor="let country of countries; let i = index">
@@ -72,18 +66,6 @@
             <button class="delete-btn" (click)="deleteCountry(country.countryId)">
               Delete
             </button>
-
-          </td>
-
-        </tr>
-
-
-        <!-- No data -->
-        <tr *ngIf="!loading && countries.length === 0">
-
-          <td colspan="6" class="no-data">
-
-            No countries found
 
           </td>
 

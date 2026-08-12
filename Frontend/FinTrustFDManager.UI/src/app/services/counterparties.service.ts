@@ -7,6 +7,7 @@ export interface CounterParty {
   counterPartyCode: string;
   counterPartyName: string;
   countryId: number;
+  countryName?: string;
   isActive: boolean;
 }
 

@@ -51,7 +51,7 @@ namespace FinTrustFDManager.BAL.Services
                 EntityCode = dto.EntityCode,
                 EntityName = dto.EntityName,
                 CountryId = dto.CountryId,
-                Description = dto.Description
+                Status = dto.Status
             };
 
             var created = await _repository.CreateAsync(entity);
@@ -88,7 +88,7 @@ namespace FinTrustFDManager.BAL.Services
             entity.EntityCode = dto.EntityCode;
             entity.EntityName = dto.EntityName;
             entity.CountryId = dto.CountryId;
-            entity.Description = dto.Description;
+            entity.Status = dto.Status;
 
             await _repository.UpdateAsync(entity);
 
@@ -133,7 +133,6 @@ namespace FinTrustFDManager.BAL.Services
                 EntityName = entity.EntityName,
                 CountryId = entity.CountryId,
                 CountryName = entity.Country?.CountryName,
-                Description = entity.Description,
                 Status = entity.Status
             };
         }

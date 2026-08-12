@@ -12,4 +12,15 @@ import { RouterModule } from '@angular/router';
 export class SidebarComponent {
   @Input() isOpen = false;
   @Output() closeSidebar = new EventEmitter<void>();
+
+  isMasterDataOpen = false;
+  isCoreDataOpen = false;
+
+  toggleMasterData(): void {
+    this.isMasterDataOpen = !this.isMasterDataOpen;
+  }
+
+  toggleCoreData(): void {
+    this.isCoreDataOpen = !this.isCoreDataOpen;
+  }
 }

@@ -9,7 +9,6 @@ export interface EntityDto {
   entityName: string;
   countryId: number;
   countryName?: string;
-  description?: string;
   status: number;
 }
 
@@ -17,14 +16,12 @@ export interface CreateEntityDto {
   entityCode: string;
   entityName: string;
   countryId: number;
-  description?: string;
 }
 
 export interface UpdateEntityDto {
   entityCode: string;
   entityName: string;
   countryId: number;
-  description?: string;
 }
 
 @Injectable({

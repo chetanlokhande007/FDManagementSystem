@@ -14,8 +14,6 @@ namespace FinTrustFDManager.Model.DTOs.Entity
 
         public string? CountryName { get; set; }
 
-        public string? Description { get; set; }
-
         public EntityStatus Status { get; set; }
     }
 }

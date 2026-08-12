@@ -1,5 +1,7 @@
 using System.ComponentModel.DataAnnotations;
 
+using FinTrustFDManager.Model.Enums;
+
 namespace FinTrustFDManager.Model.DTOs.Entity
 {
     public class UpdateEntityDto
@@ -15,7 +17,6 @@ namespace FinTrustFDManager.Model.DTOs.Entity
         [Required]
         public int CountryId { get; set; }
 
-        [MaxLength(500)]
-        public string? Description { get; set; }
+        public EntityStatus Status { get; set; }
     }
 }

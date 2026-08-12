@@ -1,0 +1,155 @@
+<div class="page-container">
+
+    <div class="page-header">
+
+        <div>
+            <h2>Counterparties</h2>
+            <p>Manage counterparties</p>
+        </div>
+
+        <button class="add-btn" (click)="addCounterParty()">
+            + Add Counterparty
+        </button>
+
+    </div>
+
+
+    <div class="table-card">
+
+        <table>
+
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Counterparty Code</th>
+                    <th>Counterparty Name</th>
+                    <th>Country</th>
+                    <th>Status</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+
+            <tbody>
+
+                <!-- Loading -->
+                <tr *ngIf="loading">
+                    <td colspan="6" class="no-data">
+                        Loading counterparties...
+                    </td>
+                </tr>
+
+
+                <!-- Backend data -->
+                <tr *ngFor="let item of counterParties; let i = index">
+
+                    <td>
+                        {{ i + 1 }}
+                    </td>
+
+                    <td>
+                        {{ item.counterPartyCode }}
+                    </td>
+
+                    <td>
+                        {{ item.counterPartyName }}
+                    </td>
+
+                    <td>
+                        {{ item.countryName }}
+                    </td>
+
+                    <td>
+                        <span class="status" [class.active]="item.isActive" [class.inactive]="!item.isActive">
+                            {{ item.isActive ? 'Active' : 'Inactive' }}
+                        </span>
+                    </td>
+
+                    <td class="actions">
+                        <button class="edit-btn" (click)="editCounterParty(item)">
+                            Edit
+                        </button>
+                        <button class="delete-btn" (click)="deleteCounterParty(item.counterPartyId)">
+                            Delete
+                        </button>
+                    </td>
+
+                </tr>
+
+
+                <!-- No data -->
+                <tr *ngIf="!loading && counterParties.length === 0">
+                    <td colspan="6" class="no-data">
+                        No counterparties found
+                    </td>
+                </tr>
+
+            </tbody>
+
+        </table>
+
+    </div>
+
+</div>
+
+<!-- Add/Edit form -->
+<div class="form-overlay" *ngIf="showForm">
+
+    <div class="form-card">
+
+        <div class="form-header">
+            <h3>
+                {{ isEdit ? 'Edit Counterparty' : 'Add Counterparty' }}
+            </h3>
+            <button class="close-btn" (click)="closeForm()">
+                ×
+            </button>
+        </div>
+
+
+        <div class="form-body">
+
+            <div class="form-group">
+                <label>Counterparty Code *</label>
+                <input type="text" name="counterPartyCode" [(ngModel)]="counterParty.counterPartyCode"
+                    placeholder="Enter counterparty code">
+            </div>
+
+            <div class="form-group">
+                <label>Counterparty Name *</label>
+                <input type="text" name="counterPartyName" [(ngModel)]="counterParty.counterPartyName"
+                    placeholder="Enter counterparty name">
+            </div>
+
+            <div class="form-group">
+                <label>Country *</label>
+                <select name="countryId" [(ngModel)]="counterParty.countryId">
+                    <option [ngValue]="0" disabled>Select Country</option>
+                    <option *ngFor="let country of countries" [ngValue]="country.countryId">
+                        {{ country.countryName }}
+                    </option>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label>Status</label>
+                <select name="isActive" [(ngModel)]="counterParty.isActive">
+                    <option [ngValue]="true">Active</option>
+                    <option [ngValue]="false">Inactive</option>
+                </select>
+            </div>
+
+        </div>
+
+
+        <div class="form-footer">
+            <button class="cancel-btn" (click)="closeForm()">
+                Cancel
+            </button>
+            <button class="save-btn" (click)="saveCounterParty()">
+                {{ isEdit ? 'Update' : 'Save' }}
+            </button>
+        </div>
+
+    </div>
+
+</div>

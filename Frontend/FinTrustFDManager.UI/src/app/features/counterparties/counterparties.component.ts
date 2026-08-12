@@ -2,6 +2,7 @@ import { Component, OnInit, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { CounterParty, CounterPartyService } from '../../services/counterparties.service';
+import { Country, CountryService } from '../../services/country.service';
 
 @Component({
   selector: 'app-counterparties',
@@ -13,6 +14,7 @@ import { CounterParty, CounterPartyService } from '../../services/counterparties
 export class CounterpartiesComponent implements OnInit {
 
   counterParties: CounterParty[] = [];
+  countries: Country[] = [];
 
   showForm = false;
   isEdit = false;
@@ -22,11 +24,25 @@ export class CounterpartiesComponent implements OnInit {
 
   constructor(
     private counterPartyService: CounterPartyService,
+    private countryService: CountryService,
     private cdr: ChangeDetectorRef
   ) {}
 
   ngOnInit(): void {
     this.loadCounterParties();
+    this.loadCountries();
+  }
+
+  loadCountries(): void {
+    this.countryService.getCountries().subscribe({
+      next: (data) => {
+        this.countries = data ?? [];
+        this.cdr.detectChanges();
+      },
+      error: (error) => {
+        console.error('Failed to load countries', error);
+      }
+    });
   }
 
   loadCounterParties(): void {

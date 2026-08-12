@@ -23,7 +23,7 @@
           <th>ID</th>
           <th>Counterparty Code</th>
           <th>Counterparty Name</th>
-          <th>Country ID</th>
+          <th>Country</th>
           <th>Status</th>
           <th>Actions</th>
         </tr>
@@ -43,7 +43,7 @@
         <tr *ngFor="let item of counterParties; let i = index">
 
           <td>
-            {{ item.counterPartyId }}
+            {{ i + 1 }}
           </td>
 
           <td>
@@ -55,7 +55,7 @@
           </td>
 
           <td>
-            {{ item.countryId }}
+            {{ item.countryName }}
           </td>
 
           <td>
@@ -119,8 +119,13 @@
       </div>
 
       <div class="form-group">
-        <label>Country ID *</label>
-        <input type="number" name="countryId" [(ngModel)]="counterParty.countryId" placeholder="Enter country ID">
+        <label>Country *</label>
+        <select name="countryId" [(ngModel)]="counterParty.countryId">
+          <option [ngValue]="0" disabled>Select Country</option>
+          <option *ngFor="let country of countries" [ngValue]="country.countryId">
+            {{ country.countryName }}
+          </option>
+        </select>
       </div>
 
       <div class="form-group">
