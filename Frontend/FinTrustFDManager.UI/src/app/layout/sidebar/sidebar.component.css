@@ -84,6 +84,11 @@
   font-size: 14px;
   color: var(--sidebar-text);
   text-decoration: none;
+  outline: none;
+}
+
+.nav-item:focus {
+  outline: none;
 }
 
 .nav-item:hover {
