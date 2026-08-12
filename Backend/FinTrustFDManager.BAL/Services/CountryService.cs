@@ -1,108 +1,128 @@
 using FinTrustFDManager.BAL.Interfaces;
-using FinTrustFDManager.Model.Entities.MasterData;
-using FinTrustFDManager.DAL.Interfaces;
 using FinTrustFDManager.Model.DTOs.Country;
-using FinTrustFDManager.Model.Entities;
+using FinTrustFDManager.Model.Entities.MasterData;
+using FinTrustFDManager.DAL.Data;
+using Microsoft.EntityFrameworkCore;
 
 namespace FinTrustFDManager.BAL.Services
 {
     public class CountryService : ICountryService
     {
-        private readonly ICountryRepository _repository;
+        private readonly ApplicationDbContext _context;
 
-        public CountryService(ICountryRepository repository)
+        public CountryService(ApplicationDbContext context)
         {
-            _repository = repository;
+            _context = context;
         }
 
         public async Task<List<CountryDto>> GetAllAsync()
         {
-            var countries = await _repository.GetAllAsync();
-
-            return countries
-                .Select(MapToDto)
-                .ToList();
+            return await _context.Countries
+                .Select(c => new CountryDto
+                {
+                    CountryId = c.CountryId,
+                    CountryCode = c.CountryCode,
+                    CountryName = c.CountryName,
+                    Description = c.Description,
+                    IsActive = c.IsActive,
+                    CreatedDate = c.CreatedDate,
+                    ModifiedDate = c.ModifiedDate
+                })
+                .ToListAsync();
         }
 
         public async Task<CountryDto?> GetByIdAsync(int id)
         {
-            var country = await _repository.GetByIdAsync(id);
-
-            if (country == null)
-            {
-                return null;
-            }
-
-            return MapToDto(country);
+            return await _context.Countries
+                .Where(c => c.CountryId == id)
+                .Select(c => new CountryDto
+                {
+                    CountryId = c.CountryId,
+                    CountryCode = c.CountryCode,
+                    CountryName = c.CountryName,
+                    Description = c.Description,
+                    IsActive = c.IsActive,
+                    CreatedDate = c.CreatedDate,
+                    ModifiedDate = c.ModifiedDate
+                })
+                .FirstOrDefaultAsync();
         }
 
         public async Task<CountryDto> CreateAsync(
             CreateCountryDto dto)
         {
-            var existing = await _repository
-                .GetByCodeAsync(dto.CountryCode);
+            var codeExists = await _context.Countries
+                .AnyAsync(c => c.CountryCode == dto.CountryCode);
 
-            if (existing != null)
+            if (codeExists)
             {
                 throw new InvalidOperationException(
-                    "Country Code already exists.");
+                    "Country code already exists.");
             }
 
             var country = new Country
             {
-                CountryCode = dto.CountryCode,
-                CountryName = dto.CountryName
+                CountryCode = dto.CountryCode.Trim(),
+                CountryName = dto.CountryName.Trim(),
+                Description = dto.Description,
+                IsActive = true,
+                CreatedDate = DateTime.UtcNow
             };
 
-            var created = await _repository
-                .CreateAsync(country);
+            _context.Countries.Add(country);
 
-            return MapToDto(created);
+            await _context.SaveChangesAsync();
+
+            return new CountryDto
+            {
+                CountryId = country.CountryId,
+                CountryCode = country.CountryCode,
+                CountryName = country.CountryName,
+                Description = country.Description,
+                IsActive = country.IsActive,
+                CreatedDate = country.CreatedDate,
+                ModifiedDate = country.ModifiedDate
+            };
         }
 
         public async Task<CountryDto?> UpdateAsync(
             int id,
             UpdateCountryDto dto)
         {
-            var country = await _repository
-                .GetByIdAsync(id);
+            var country = await _context.Countries
+                .FirstOrDefaultAsync(c => c.CountryId == id);
 
             if (country == null)
             {
                 return null;
             }
 
-            var existing = await _repository
-                .GetByCodeAsync(dto.CountryCode);
+            country.CountryCode = dto.CountryCode.Trim();
+            country.CountryName = dto.CountryName.Trim();
+            country.Description = dto.Description;
+            country.IsActive = dto.IsActive;
+            country.ModifiedDate = DateTime.UtcNow;
 
-            if (existing != null &&
-                existing.CountryId != id)
-            {
-                throw new InvalidOperationException(
-                    "Country Code already exists.");
-            }
+            await _context.SaveChangesAsync();
 
-            country.CountryCode = dto.CountryCode;
-            country.CountryName = dto.CountryName;
-
-            await _repository.UpdateAsync(country);
-
-            return MapToDto(country);
+            return await GetByIdAsync(id);
         }
 
         public async Task<bool> DeleteAsync(int id)
         {
-            return await _repository.DeleteAsync(id);
-        }
+            var country = await _context.Countries
+                .FirstOrDefaultAsync(c => c.CountryId == id);
 
-        private static CountryDto MapToDto(Country country)
-        {
-            return new CountryDto
+            if (country == null)
             {
-                CountryId = country.CountryId,
-                CountryCode = country.CountryCode,
-                CountryName = country.CountryName
-            };
+                return false;
+            }
+
+            _context.Countries.Remove(country);
+
+            await _context.SaveChangesAsync();
+
+            return true;
         }
     }
 }

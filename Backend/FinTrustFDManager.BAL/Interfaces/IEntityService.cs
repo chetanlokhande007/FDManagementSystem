@@ -15,5 +15,9 @@ namespace FinTrustFDManager.BAL.Interfaces
             UpdateEntityDto dto);
 
         Task<bool> DeleteAsync(int id);
+
+        Task<EntityDto?> ApproveAsync(int id);
+
+        Task<EntityDto?> RejectAsync(int id);
     }
 }

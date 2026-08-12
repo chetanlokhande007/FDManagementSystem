@@ -102,6 +102,28 @@ namespace FinTrustFDManager.BAL.Services
             return await _repository.DeleteAsync(id);
         }
 
+        public async Task<EntityDto?> ApproveAsync(int id)
+        {
+            var entity = await _repository.GetByIdAsync(id);
+            if (entity == null) return null;
+
+            entity.Status = FinTrustFDManager.Model.Enums.EntityStatus.Approved;
+            await _repository.UpdateAsync(entity);
+
+            return MapToDto(entity);
+        }
+
+        public async Task<EntityDto?> RejectAsync(int id)
+        {
+            var entity = await _repository.GetByIdAsync(id);
+            if (entity == null) return null;
+
+            entity.Status = FinTrustFDManager.Model.Enums.EntityStatus.NonApproved;
+            await _repository.UpdateAsync(entity);
+
+            return MapToDto(entity);
+        }
+
         private static EntityDto MapToDto(Entity entity)
         {
             return new EntityDto
@@ -111,7 +133,8 @@ namespace FinTrustFDManager.BAL.Services
                 EntityName = entity.EntityName,
                 CountryId = entity.CountryId,
                 CountryName = entity.Country?.CountryName,
-                Description = entity.Description
+                Description = entity.Description,
+                Status = entity.Status
             };
         }
     }

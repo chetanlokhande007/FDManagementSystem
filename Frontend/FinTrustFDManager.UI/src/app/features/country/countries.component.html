@@ -1,0 +1,201 @@
+<div class="page-container">
+
+  <div class="page-header">
+
+    <div>
+      <h2>Countries</h2>
+      <p>Manage countries</p>
+    </div>
+
+    <button class="add-btn" (click)="addCountry()">
+      + Add Country
+    </button>
+
+  </div>
+
+
+  <div class="table-card">
+
+    <table>
+
+      <thead>
+        <tr>
+          <th>#</th>
+          <th>Country Name</th>
+          <th>Country Code</th>
+          <th>Description</th>
+          <th>Status</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+
+      <tbody>
+
+        <!-- Loading -->
+        <tr *ngIf="loading">
+          <td colspan="6" class="no-data">
+            Loading countries...
+          </td>
+        </tr>
+
+
+        <!-- Backend data -->
+        <tr *ngFor="let country of countries; let i = index">
+
+          <td>
+            {{ i + 1 }}
+          </td>
+
+          <td>
+            {{ country.countryName }}
+          </td>
+
+          <td>
+            {{ country.countryCode }}
+          </td>
+
+          <td>
+            {{ country.description || '-' }}
+          </td>
+
+          <td>
+
+            <span class="status" [class.active]="country.isActive" [class.inactive]="!country.isActive">
+
+              {{ country.isActive ? 'Active' : 'Inactive' }}
+
+            </span>
+
+          </td>
+
+          <td class="actions">
+
+            <button class="edit-btn" (click)="editCountry(country)">
+              Edit
+            </button>
+
+            <button class="delete-btn" (click)="deleteCountry(country.countryId)">
+              Delete
+            </button>
+
+          </td>
+
+        </tr>
+
+
+        <!-- No data -->
+        <tr *ngIf="!loading && countries.length === 0">
+
+          <td colspan="6" class="no-data">
+
+            No countries found
+
+          </td>
+
+        </tr>
+
+      </tbody>
+
+    </table>
+
+  </div>
+
+</div>
+
+<!-- Add/Edit form -->
+<div class="form-overlay" *ngIf="showForm">
+
+  <div class="form-card">
+
+    <div class="form-header">
+
+      <h3>
+        {{ isEdit ? 'Edit Country' : 'Add Country' }}
+      </h3>
+
+      <button class="close-btn" (click)="closeForm()">
+        ×
+      </button>
+
+    </div>
+
+
+    <div class="form-body">
+
+      <div class="form-group">
+
+        <label>
+          Country Name *
+        </label>
+
+        <input type="text" name="countryName" [(ngModel)]="country.countryName" placeholder="Enter country name">
+
+      </div>
+
+
+      <div class="form-group">
+
+        <label>
+          Country Code *
+        </label>
+
+        <input type="text" name="countryCode" [(ngModel)]="country.countryCode" maxlength="10"
+          placeholder="Enter country code">
+
+      </div>
+
+
+      <div class="form-group">
+
+        <label>
+          Description
+        </label>
+
+        <input type="text" name="description" [(ngModel)]="country.description" placeholder="Enter description">
+
+      </div>
+
+
+      <div class="form-group">
+
+        <label>
+          Status
+        </label>
+
+        <select name="isActive" [ngModel]="country.isActive ? 'Active' : 'Inactive'"
+          (ngModelChange)="country.isActive = ($event === 'Active')">
+
+          <option value="Active">
+            Active
+          </option>
+
+          <option value="Inactive">
+            Inactive
+          </option>
+
+        </select>
+
+      </div>
+
+    </div>
+
+
+    <div class="form-footer">
+
+      <button class="cancel-btn" (click)="closeForm()">
+
+        Cancel
+
+      </button>
+
+      <button class="save-btn" (click)="saveCountry()">
+
+        {{ isEdit ? 'Update' : 'Save' }}
+
+      </button>
+
+    </div>
+
+  </div>
+
+</div>

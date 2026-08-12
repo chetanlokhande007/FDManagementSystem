@@ -12,7 +12,9 @@ namespace FinTrustFDManager.Model.DTOs.Country
         [MaxLength(100)]
         public string CountryName { get; set; } = string.Empty;
 
-        [MaxLength(250)]
+        [MaxLength(500)]
         public string? Description { get; set; }
+
+        public bool IsActive { get; set; }
     }
 }

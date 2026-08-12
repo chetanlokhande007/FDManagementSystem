@@ -1,56 +1,53 @@
 using FinTrustFDManager.BAL.Interfaces;
 using FinTrustFDManager.Model.DTOs.Country;
-using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace FinTrustFDManager.API.Controllers
 {
-    [ApiController]
     [Route("api/[controller]")]
-    //[Authorize]
+    [ApiController]
     public class CountryController : ControllerBase
     {
-        private readonly ICountryService _service;
+        private readonly ICountryService _countryService;
 
-        public CountryController(ICountryService service)
+        public CountryController(
+            ICountryService countryService)
         {
-            _service = service;
+            _countryService = countryService;
         }
 
-        // GET: api/Country
         [HttpGet]
-        public async Task<IActionResult> GetAll()
+        public async Task<ActionResult<List<CountryDto>>> GetAll()
         {
-            var countries = await _service.GetAllAsync();
+            var countries =
+                await _countryService.GetAllAsync();
 
             return Ok(countries);
         }
 
-        // GET: api/Country/1
-        [HttpGet("{id:int}")]
-        public async Task<IActionResult> GetById(int id)
+        [HttpGet("{id}")]
+        public async Task<ActionResult<CountryDto>> GetById(
+            int id)
         {
-            var country = await _service.GetByIdAsync(id);
+            var country =
+                await _countryService.GetByIdAsync(id);
 
             if (country == null)
             {
-                return NotFound(new
-                {
-                    message = "Country not found."
-                });
+                return NotFound();
             }
 
             return Ok(country);
         }
 
-        // POST: api/Country
         [HttpPost]
-        public async Task<IActionResult> Create(
+        public async Task<ActionResult<CountryDto>> Create(
             [FromBody] CreateCountryDto dto)
         {
             try
             {
-                var country = await _service.CreateAsync(dto);
+                var country =
+                    await _countryService.CreateAsync(dto);
 
                 return CreatedAtAction(
                     nameof(GetById),
@@ -59,61 +56,45 @@ namespace FinTrustFDManager.API.Controllers
             }
             catch (InvalidOperationException ex)
             {
-                return Conflict(new
-                {
-                    message = ex.Message
-                });
+                return BadRequest(ex.Message);
             }
         }
 
-        // PUT: api/Country/1
-        [HttpPut("{id:int}")]
-        public async Task<IActionResult> Update(
+        [HttpPut("{id}")]
+        public async Task<ActionResult<CountryDto>> Update(
             int id,
             [FromBody] UpdateCountryDto dto)
         {
             try
             {
-                var country = await _service
-                    .UpdateAsync(id, dto);
+                var country =
+                    await _countryService.UpdateAsync(id, dto);
 
                 if (country == null)
                 {
-                    return NotFound(new
-                    {
-                        message = "Country not found."
-                    });
+                    return NotFound();
                 }
 
                 return Ok(country);
             }
             catch (InvalidOperationException ex)
             {
-                return Conflict(new
-                {
-                    message = ex.Message
-                });
+                return BadRequest(ex.Message);
             }
         }
 
-        // DELETE: api/Country/1
-        [HttpDelete("{id:int}")]
-        public async Task<IActionResult> Delete(int id)
+        [HttpDelete("{id}")]
+        public async Task<ActionResult> Delete(int id)
         {
-            var deleted = await _service.DeleteAsync(id);
+            var success =
+                await _countryService.DeleteAsync(id);
 
-            if (!deleted)
+            if (!success)
             {
-                return NotFound(new
-                {
-                    message = "Country not found."
-                });
+                return NotFound();
             }
 
-            return Ok(new
-            {
-                message = "Country deleted successfully."
-            });
+            return NoContent();
         }
     }
 }

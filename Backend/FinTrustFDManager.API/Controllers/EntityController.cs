@@ -75,5 +75,23 @@ namespace FinTrustFDManager.API.Controllers
             }
             return NoContent();
         }
+
+        [HttpPut("approve/{id}")]
+        public async Task<ActionResult<EntityDto>> Approve(int id)
+        {
+            var entity = await _entityService.ApproveAsync(id);
+            if (entity == null) return NotFound();
+            
+            return Ok(entity);
+        }
+
+        [HttpPut("reject/{id}")]
+        public async Task<ActionResult<EntityDto>> Reject(int id)
+        {
+            var entity = await _entityService.RejectAsync(id);
+            if (entity == null) return NotFound();
+            
+            return Ok(entity);
+        }
     }
 }

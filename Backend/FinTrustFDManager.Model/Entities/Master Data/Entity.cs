@@ -1,5 +1,6 @@
 using FinTrustFDManager.Model.Common;
 using FinTrustFDManager.Model.Entities.MasterData;
+using FinTrustFDManager.Model.Enums;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 
@@ -28,6 +29,8 @@ namespace FinTrustFDManager.Model.Entities
     
 
         public int? CreatedById { get; set; }
+
+        public EntityStatus Status { get; set; } = EntityStatus.NonApproved;
 
         // Navigation property
         [ForeignKey(nameof(CountryId))]
