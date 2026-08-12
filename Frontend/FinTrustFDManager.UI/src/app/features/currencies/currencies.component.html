@@ -3,12 +3,12 @@
   <div class="page-header">
 
     <div>
-      <h2>Countries</h2>
-      <p>Manage countries</p>
+      <h2>Currencies</h2>
+      <p>Manage currencies</p>
     </div>
 
-    <button class="add-btn" (click)="addCountry()">
-      + Add Country
+    <button class="add-btn" (click)="addCurrency()">
+      + Add Currency
     </button>
 
   </div>
@@ -21,8 +21,8 @@
       <thead>
         <tr>
           <th>ID</th>
-          <th>Country Name</th>
-          <th>Country Code</th>
+          <th>Currency Name</th>
+          <th>Currency Code</th>
           <th>Status</th>
           <th>Actions</th>
         </tr>
@@ -32,32 +32,32 @@
 
         <!-- Loading -->
         <tr *ngIf="loading">
-          <td colspan="6" class="no-data">
-            Loading countries...
+          <td colspan="5" class="no-data">
+            Loading currencies...
           </td>
         </tr>
 
 
         <!-- Backend data -->
-        <tr *ngFor="let country of countries; let i = index">
+        <tr *ngFor="let item of currencies; let i = index">
 
           <td>
             {{ i + 1 }}
           </td>
 
           <td>
-            {{ country.countryName }}
+            {{ item.currencyName }}
           </td>
 
           <td>
-            {{ country.countryCode }}
+            {{ item.currencyCode }}
           </td>
 
           <td>
 
-            <span class="status" [class.active]="country.isActive" [class.inactive]="!country.isActive">
+            <span class="status" [class.active]="item.isActive" [class.inactive]="!item.isActive">
 
-              {{ country.isActive ? 'Active' : 'Inactive' }}
+              {{ item.isActive ? 'Active' : 'Inactive' }}
 
             </span>
 
@@ -65,11 +65,11 @@
 
           <td class="actions">
 
-            <button class="edit-btn" (click)="editCountry(country)">
+            <button class="edit-btn" (click)="editCurrency(item)">
               Edit
             </button>
 
-            <button class="delete-btn" (click)="deleteCountry(country.countryId)">
+            <button class="delete-btn" (click)="deleteCurrency(item.currencyId)">
               Delete
             </button>
 
@@ -79,11 +79,11 @@
 
 
         <!-- No data -->
-        <tr *ngIf="!loading && countries.length === 0">
+        <tr *ngIf="!loading && currencies.length === 0">
 
-          <td colspan="6" class="no-data">
+          <td colspan="5" class="no-data">
 
-            No countries found
+            No currencies found
 
           </td>
 
@@ -105,7 +105,7 @@
     <div class="form-header">
 
       <h3>
-        {{ isEdit ? 'Edit Country' : 'Add Country' }}
+        {{ isEdit ? 'Edit Currency' : 'Add Currency' }}
       </h3>
 
       <button class="close-btn" (click)="closeForm()">
@@ -120,10 +120,10 @@
       <div class="form-group">
 
         <label>
-          Country Name *
+          Currency Name *
         </label>
 
-        <input type="text" name="countryName" [(ngModel)]="country.countryName" placeholder="Enter country name">
+        <input type="text" name="currencyName" [(ngModel)]="currency.currencyName" placeholder="Enter currency name">
 
       </div>
 
@@ -131,17 +131,13 @@
       <div class="form-group">
 
         <label>
-          Country Code *
+          Currency Code *
         </label>
 
-        <input type="text" name="countryCode" [(ngModel)]="country.countryCode" maxlength="10"
-          placeholder="Enter country code">
+        <input type="text" name="currencyCode" [(ngModel)]="currency.currencyCode" maxlength="10"
+          placeholder="Enter currency code">
 
       </div>
-
-
-
-
 
       <div class="form-group">
 
@@ -149,8 +145,8 @@
           Status
         </label>
 
-        <select name="isActive" [ngModel]="country.isActive ? 'Active' : 'Inactive'"
-          (ngModelChange)="country.isActive = ($event === 'Active')">
+        <select name="isActive" [ngModel]="currency.isActive ? 'Active' : 'Inactive'"
+          (ngModelChange)="currency.isActive = ($event === 'Active')">
 
           <option value="Active">
             Active
@@ -175,7 +171,7 @@
 
       </button>
 
-      <button class="save-btn" (click)="saveCountry()">
+      <button class="save-btn" (click)="saveCurrency()">
 
         {{ isEdit ? 'Update' : 'Save' }}
 

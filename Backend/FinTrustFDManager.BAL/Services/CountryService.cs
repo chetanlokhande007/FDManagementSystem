@@ -3,32 +3,47 @@ using FinTrustFDManager.Model.DTOs.Country;
 using FinTrustFDManager.Model.Entities.MasterData;
 using FinTrustFDManager.DAL.Data;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Caching.Memory;
 
 namespace FinTrustFDManager.BAL.Services
 {
     public class CountryService : ICountryService
     {
         private readonly ApplicationDbContext _context;
+        private readonly IMemoryCache _cache;
+        private const string CacheKey = "CountriesList";
 
-        public CountryService(ApplicationDbContext context)
+        public CountryService(ApplicationDbContext context, IMemoryCache cache)
         {
             _context = context;
+            _cache = cache;
         }
 
         public async Task<List<CountryDto>> GetAllAsync()
         {
-            return await _context.Countries
-                .Select(c => new CountryDto
-                {
-                    CountryId = c.CountryId,
-                    CountryCode = c.CountryCode,
-                    CountryName = c.CountryName,
-                    Description = c.Description,
-                    IsActive = c.IsActive,
-                    CreatedDate = c.CreatedDate,
-                    ModifiedDate = c.ModifiedDate
-                })
-                .ToListAsync();
+            if (!_cache.TryGetValue(CacheKey, out List<CountryDto>? countries))
+            {
+                countries = await _context.Countries
+                    .Select(c => new CountryDto
+                    {
+                        CountryId = c.CountryId,
+                        CountryCode = c.CountryCode,
+                        CountryName = c.CountryName,
+                        Description = c.Description,
+                        IsActive = c.IsActive,
+                        CreatedDate = c.CreatedDate,
+                        ModifiedDate = c.ModifiedDate
+                    })
+                    .ToListAsync();
+
+                var cacheEntryOptions = new MemoryCacheEntryOptions()
+                    .SetSlidingExpiration(TimeSpan.FromHours(1))
+                    .SetAbsoluteExpiration(TimeSpan.FromHours(24));
+
+                _cache.Set(CacheKey, countries, cacheEntryOptions);
+            }
+
+            return countries ?? new List<CountryDto>();
         }
 
         public async Task<CountryDto?> GetByIdAsync(int id)
@@ -72,6 +87,7 @@ namespace FinTrustFDManager.BAL.Services
             _context.Countries.Add(country);
 
             await _context.SaveChangesAsync();
+            _cache.Remove(CacheKey);
 
             return new CountryDto
             {
@@ -104,6 +120,7 @@ namespace FinTrustFDManager.BAL.Services
             country.ModifiedDate = DateTime.UtcNow;
 
             await _context.SaveChangesAsync();
+            _cache.Remove(CacheKey);
 
             return await GetByIdAsync(id);
         }
@@ -118,9 +135,12 @@ namespace FinTrustFDManager.BAL.Services
                 return false;
             }
 
-            _context.Countries.Remove(country);
+            // Soft delete
+            country.IsActive = false;
+            country.ModifiedDate = DateTime.UtcNow;
 
             await _context.SaveChangesAsync();
+            _cache.Remove(CacheKey);
 
             return true;
         }

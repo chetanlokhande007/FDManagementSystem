@@ -2,6 +2,7 @@ using FinTrustFDManager.BAL.Interfaces;
 using FinTrustFDManager.DAL.Interfaces;
 using FinTrustFDManager.Model.DTOs.Bank;
 using FinTrustFDManager.Model.Entities;
+using FinTrustFDManager.Model.Entities.MasterData;
 
 namespace FinTrustFDManager.BAL.Services
 {

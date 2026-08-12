@@ -56,7 +56,7 @@ namespace FinTrustFDManager.BAL.Services
                 CounterPartyCode = dto.CounterPartyCode,
                 CounterPartyName = dto.CounterPartyName,
                 CountryId = dto.CountryId,
-                Description = dto.Description
+                IsActive = dto.IsActive
             };
 
             var created = await _repository
@@ -99,8 +99,7 @@ namespace FinTrustFDManager.BAL.Services
             counterParty.CountryId =
                 dto.CountryId;
 
-            counterParty.Description =
-                dto.Description;
+            counterParty.IsActive = dto.IsActive;
 
             await _repository.UpdateAsync(counterParty);
 
@@ -135,8 +134,8 @@ namespace FinTrustFDManager.BAL.Services
                 CountryName =
                     counterParty.Country?.CountryName,
 
-                Description =
-                    counterParty.Description
+                IsActive =
+                    counterParty.IsActive
             };
         }
     }

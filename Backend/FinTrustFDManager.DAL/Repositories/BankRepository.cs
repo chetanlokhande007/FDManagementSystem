@@ -1,6 +1,7 @@
 using FinTrustFDManager.DAL.Data;
 using FinTrustFDManager.DAL.Interfaces;
 using FinTrustFDManager.Model.Entities;
+using FinTrustFDManager.Model.Entities.MasterData;
 using Microsoft.EntityFrameworkCore;
 
 namespace FinTrustFDManager.DAL.Repositories

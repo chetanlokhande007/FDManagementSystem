@@ -36,7 +36,9 @@ export class EntityService {
   constructor(private http: HttpClient) { }
 
   getAll(): Observable<EntityDto[]> {
-    return this.http.get<EntityDto[]>(this.apiUrl);
+    return this.http.get<EntityDto[]>(
+      'http://127.0.0.1:5075/api/Entity'
+    );
   }
 
   getById(id: number): Observable<EntityDto> {

@@ -29,15 +29,6 @@ export class App implements OnInit {
   }
 
   ngOnInit() {
-    this.http.get(`${environment.apiUrl}/weatherforecast`, { responseType: 'text' }).subscribe({
-      next: (res) => this.apiStatus.set('Connected to API successfully!'),
-      error: (err) => {
-        if (err.status === 404) {
-           this.apiStatus.set('Connected to API (CORS successful, but route not found).');
-        } else {
-           this.apiStatus.set(`Failed to connect to API: ${err.message}`);
-        }
-      }
-    });
+    // API connection check removed
   }
 }

@@ -15,7 +15,8 @@ namespace FinTrustFDManager.Model.DTOs.Currency
         [MaxLength(10)]
         public string? Symbol { get; set; }
 
-        [MaxLength(500)]
         public string? Description { get; set; }
+
+        public bool IsActive { get; set; } = true;
     }
 }

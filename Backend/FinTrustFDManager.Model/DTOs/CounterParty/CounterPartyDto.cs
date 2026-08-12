@@ -13,5 +13,7 @@ namespace FinTrustFDManager.Model.DTOs.CounterParty
         public string? CountryName { get; set; }
 
         public string? Description { get; set; }
+
+        public bool IsActive { get; set; }
     }
 }

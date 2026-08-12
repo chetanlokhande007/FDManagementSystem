@@ -52,7 +52,8 @@ namespace FinTrustFDManager.BAL.Services
                 CurrencyCode = dto.CurrencyCode,
                 CurrencyName = dto.CurrencyName,
                 Symbol = dto.Symbol,
-                Description = dto.Description
+                Description = dto.Description,
+                IsActive = dto.IsActive
             };
 
             var created = await _repository
@@ -86,6 +87,7 @@ namespace FinTrustFDManager.BAL.Services
             currency.CurrencyName = dto.CurrencyName;
             currency.Symbol = dto.Symbol;
             currency.Description = dto.Description;
+            currency.IsActive = dto.IsActive;
 
             await _repository.UpdateAsync(currency);
 
@@ -106,7 +108,8 @@ namespace FinTrustFDManager.BAL.Services
                 CurrencyCode = currency.CurrencyCode,
                 CurrencyName = currency.CurrencyName,
                 Symbol = currency.Symbol,
-                Description = currency.Description
+                Description = currency.Description,
+                IsActive = currency.IsActive
             };
         }
     }

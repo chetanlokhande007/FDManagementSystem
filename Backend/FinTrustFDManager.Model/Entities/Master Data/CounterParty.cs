@@ -19,10 +19,6 @@ namespace FinTrustFDManager.Model.Entities
 
         [Required]
         public int CountryId { get; set; }
-
-        [MaxLength(500)]
-        public string? Description { get; set; }
-
         public Country? Country { get; set; }
     }
 }

@@ -3,6 +3,7 @@ using System;
 using FinTrustFDManager.DAL.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
@@ -11,9 +12,11 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace FinTrustFDManager.DAL.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260812103347_UpdateCurrencyIsActive")]
+    partial class UpdateCurrencyIsActive
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -21,6 +24,54 @@ namespace FinTrustFDManager.DAL.Migrations
                 .HasAnnotation("Relational:MaxIdentifierLength", 63);
 
             NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
+
+            modelBuilder.Entity("FinTrustFDManager.Model.Entities.Bank", b =>
+                {
+                    b.Property<int>("BankId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("BankId"));
+
+                    b.Property<string>("BankCode")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)");
+
+                    b.Property<string>("BankName")
+                        .IsRequired()
+                        .HasMaxLength(150)
+                        .HasColumnType("character varying(150)");
+
+                    b.Property<int>("CountryId")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("CreatedBy")
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
+                    b.Property<DateTime>("CreatedDate")
+                        .HasColumnType("timestamp without time zone");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("boolean");
+
+                    b.Property<string>("ModifiedBy")
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
+                    b.Property<DateTime?>("ModifiedDate")
+                        .HasColumnType("timestamp without time zone");
+
+                    b.HasKey("BankId");
+
+                    b.HasIndex("BankCode")
+                        .IsUnique();
+
+                    b.HasIndex("CountryId");
+
+                    b.ToTable("Banks");
+                });
 
             modelBuilder.Entity("FinTrustFDManager.Model.Entities.CoreData.CashFlow", b =>
                 {
@@ -307,6 +358,10 @@ namespace FinTrustFDManager.DAL.Migrations
                     b.Property<DateTime>("CreatedDate")
                         .HasColumnType("timestamp without time zone");
 
+                    b.Property<string>("Description")
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)");
+
                     b.Property<bool>("IsActive")
                         .HasColumnType("boolean");
 
@@ -427,54 +482,6 @@ namespace FinTrustFDManager.DAL.Migrations
                     b.ToTable("Entities");
                 });
 
-            modelBuilder.Entity("FinTrustFDManager.Model.Entities.MasterData.Bank", b =>
-                {
-                    b.Property<int>("BankId")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("integer");
-
-                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("BankId"));
-
-                    b.Property<string>("BankCode")
-                        .IsRequired()
-                        .HasMaxLength(20)
-                        .HasColumnType("character varying(20)");
-
-                    b.Property<string>("BankName")
-                        .IsRequired()
-                        .HasMaxLength(150)
-                        .HasColumnType("character varying(150)");
-
-                    b.Property<int>("CountryId")
-                        .HasColumnType("integer");
-
-                    b.Property<string>("CreatedBy")
-                        .HasMaxLength(100)
-                        .HasColumnType("character varying(100)");
-
-                    b.Property<DateTime>("CreatedDate")
-                        .HasColumnType("timestamp without time zone");
-
-                    b.Property<bool>("IsActive")
-                        .HasColumnType("boolean");
-
-                    b.Property<string>("ModifiedBy")
-                        .HasMaxLength(100)
-                        .HasColumnType("character varying(100)");
-
-                    b.Property<DateTime?>("ModifiedDate")
-                        .HasColumnType("timestamp without time zone");
-
-                    b.HasKey("BankId");
-
-                    b.HasIndex("BankCode")
-                        .IsUnique();
-
-                    b.HasIndex("CountryId");
-
-                    b.ToTable("Banks");
-                });
-
             modelBuilder.Entity("FinTrustFDManager.Model.Entities.MasterData.Country", b =>
                 {
                     b.Property<int>("CountryId")
@@ -557,21 +564,21 @@ namespace FinTrustFDManager.DAL.Migrations
                         new
                         {
                             Id = 1,
-                            CreatedDate = new DateTime(2026, 8, 12, 12, 41, 46, 523, DateTimeKind.Utc).AddTicks(8676),
+                            CreatedDate = new DateTime(2026, 8, 12, 10, 33, 44, 810, DateTimeKind.Utc).AddTicks(2529),
                             IsActive = true,
                             RoleName = "Admin"
                         },
                         new
                         {
                             Id = 2,
-                            CreatedDate = new DateTime(2026, 8, 12, 12, 41, 46, 523, DateTimeKind.Utc).AddTicks(8677),
+                            CreatedDate = new DateTime(2026, 8, 12, 10, 33, 44, 810, DateTimeKind.Utc).AddTicks(2531),
                             IsActive = true,
                             RoleName = "CA"
                         },
                         new
                         {
                             Id = 3,
-                            CreatedDate = new DateTime(2026, 8, 12, 12, 41, 46, 523, DateTimeKind.Utc).AddTicks(8679),
+                            CreatedDate = new DateTime(2026, 8, 12, 10, 33, 44, 810, DateTimeKind.Utc).AddTicks(2532),
                             IsActive = true,
                             RoleName = "Approver"
                         });
@@ -631,6 +638,17 @@ namespace FinTrustFDManager.DAL.Migrations
                     b.ToTable("Users");
                 });
 
+            modelBuilder.Entity("FinTrustFDManager.Model.Entities.Bank", b =>
+                {
+                    b.HasOne("FinTrustFDManager.Model.Entities.MasterData.Country", "Country")
+                        .WithMany("Banks")
+                        .HasForeignKey("CountryId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("Country");
+                });
+
             modelBuilder.Entity("FinTrustFDManager.Model.Entities.CoreData.CashFlow", b =>
                 {
                     b.HasOne("FinTrustFDManager.Model.Entities.CoreData.Investment", "Investment")
@@ -644,7 +662,7 @@ namespace FinTrustFDManager.DAL.Migrations
 
             modelBuilder.Entity("FinTrustFDManager.Model.Entities.CoreData.Investment", b =>
                 {
-                    b.HasOne("FinTrustFDManager.Model.Entities.MasterData.Bank", "Bank")
+                    b.HasOne("FinTrustFDManager.Model.Entities.Bank", "Bank")
                         .WithMany()
                         .HasForeignKey("BankId")
                         .OnDelete(DeleteBehavior.Restrict)
@@ -719,17 +737,6 @@ namespace FinTrustFDManager.DAL.Migrations
                 {
                     b.HasOne("FinTrustFDManager.Model.Entities.MasterData.Country", "Country")
                         .WithMany("Entities")
-                        .HasForeignKey("CountryId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-
-                    b.Navigation("Country");
-                });
-
-            modelBuilder.Entity("FinTrustFDManager.Model.Entities.MasterData.Bank", b =>
-                {
-                    b.HasOne("FinTrustFDManager.Model.Entities.MasterData.Country", "Country")
-                        .WithMany("Banks")
                         .HasForeignKey("CountryId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();

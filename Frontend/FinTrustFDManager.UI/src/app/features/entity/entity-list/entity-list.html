@@ -1,80 +1,130 @@
-<div class="page-container">
+<div class="entity-page">
+
   <div class="page-header">
-    <div class="page-title">
-      <h2>Entities Management</h2>
+    <div>
+      <h1>Entities Management</h1>
       <p>Configure and manage financial entities for cash flows</p>
     </div>
-    <button class="btn-primary" (click)="addEntity()">
-      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-        stroke-linecap="round" stroke-linejoin="round">
-        <line x1="12" y1="5" x2="12" y2="19"></line>
-        <line x1="5" y1="12" x2="19" y2="12"></line>
-      </svg>
-      Add Entity
+
+    <button class="add-btn" (click)="addEntity()">
+      + Add Entity
     </button>
   </div>
 
-  <div class="card">
-    <div class="card-toolbar">
-      <div class="search-bar">
-        <input type="text" class="search-input" placeholder="Search by name, code or country..."
-          [(ngModel)]="searchTerm">
-        <button class="btn-search" type="button">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <circle cx="11" cy="11" r="8"></circle>
-            <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
-          </svg>
-        </button>
-      </div>
+
+  <div class="entity-card">
+
+    <!-- Search -->
+    <div class="search-box">
+      <input
+        type="text"
+        [(ngModel)]="searchText"
+        (input)="searchEntities()"
+        placeholder="Search by name, code or country..."
+      />
+
+      <span>🔍</span>
     </div>
 
-    <div class="table-responsive">
-      <table class="entity-table">
+
+    <!-- LOADING -->
+    <div
+      class="loading-container"
+      *ngIf="loading"
+    >
+      <div class="spinner"></div>
+      <p>Loading entities...</p>
+    </div>
+
+
+    <!-- ERROR -->
+    <div
+      class="error-message"
+      *ngIf="!loading && errorMessage"
+    >
+      {{ errorMessage }}
+
+      <button (click)="loadEntities()">
+        Retry
+      </button>
+    </div>
+
+
+    <!-- DATA -->
+    <div
+      class="table-container"
+      *ngIf="!loading && !errorMessage"
+    >
+
+      <table *ngIf="filteredEntities.length > 0">
+
         <thead>
           <tr>
-            <th>ID</th>
-            <th>Entity Code</th>
+            <th>Code</th>
             <th>Entity Name</th>
             <th>Country</th>
             <th>Description</th>
-            <th>Status</th>
-            <th>Actions</th>
+            <th>Action</th>
           </tr>
         </thead>
+
         <tbody>
-          <tr *ngFor="let entity of filteredEntities">
-            <td><span class="entity-id">#{{ entity.entityId }}</span></td>
-            <td><strong>{{ entity.entityCode }}</strong></td>
-            <td>{{ entity.entityName }}</td>
-            <td>{{ entity.countryName || entity.countryId }}</td>
-            <td>{{ entity.description || '-' }}</td>
+
+          <tr
+            *ngFor="let entity of filteredEntities"
+          >
+
             <td>
-              <span class="status-badge"
-                [ngClass]="{'status-approved': entity.status === 1, 'status-pending': entity.status === 0}">
-                {{ entity.status === 1 ? 'Approved' : 'Non-Approved' }}
-              </span>
+              {{ entity.entityCode }}
             </td>
+
             <td>
-              <div class="action-buttons">
-                <button class="btn-action btn-edit" (click)="editEntity(entity.entityId)">Edit</button>
-                <button class="btn-action btn-delete" (click)="deleteEntity(entity.entityId)">Delete</button>
-                <button class="btn-action btn-approve" (click)="approveEntity(entity.entityId)"
-                  *ngIf="entity.status === 0">Approve</button>
-                <button class="btn-action btn-reject" (click)="rejectEntity(entity.entityId)"
-                  *ngIf="entity.status === 1">Reject</button>
-                <button class="btn-action btn-cashflow" (click)="openCashFlow(entity.entityId)">Cash Flow</button>
-              </div>
+              {{ entity.entityName }}
             </td>
-          </tr>
-          <tr *ngIf="filteredEntities.length === 0">
-            <td colspan="7" class="empty-state">
-              <div class="empty-state-icon">🏢</div>
-              <h3>No entities found</h3>
-              <p>Get started by adding a new financial entity to the system.</p>
+
+            <td>
+              {{ entity.countryName }}
             </td>
+
+            <td>
+              {{ entity.description || '-' }}
+            </td>
+
+            <td>
+
+              <button
+                type="button"
+                (click)="editEntity(entity.entityId)"
+              >
+                Edit
+              </button>
+
+              <button
+                type="button"
+                (click)="deleteEntity(entity.entityId)"
+              >
+                Delete
+              </button>
+
+            </td>
+
           </tr>
+
         </tbody>
+
       </table>
+
+
+      <!-- NO DATA -->
+      <div
+        class="no-data"
+        *ngIf="filteredEntities.length === 0"
+      >
+        No entities found.
+      </div>
+
     </div>
+
   </div>
+
 </div>
