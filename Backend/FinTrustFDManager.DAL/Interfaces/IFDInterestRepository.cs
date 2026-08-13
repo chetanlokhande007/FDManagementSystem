@@ -1,0 +1,21 @@
+﻿using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+using FinTrustFDManager.Model.Entities.Investment;
+namespace FinTrustFDManager.DAL.Interfaces
+{
+    public interface IFDInterestRepository
+    {
+        Task<IEnumerable<FDInterest>> GetAllAsync();
+
+        Task<FDInterest?> GetByIdAsync(long id);
+
+        Task<FDInterest> AddAsync(FDInterest model);
+
+        Task<FDInterest?> UpdateAsync(FDInterest model);
+
+        Task<bool> DeleteAsync(long id);
+    }
+}

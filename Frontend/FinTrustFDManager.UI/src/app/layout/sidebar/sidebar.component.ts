@@ -17,6 +17,9 @@ export class SidebarComponent implements OnInit {
   isMasterDataOpen = false;
   isCoreDataOpen = false;
 
+  // ADD THIS
+  isInvestmentsOpen = false;
+
   constructor(private router: Router) {}
 
   ngOnInit() {
@@ -30,12 +33,32 @@ export class SidebarComponent implements OnInit {
   }
 
   checkActiveRoute(url: string) {
-    if (url.includes('/entities') || url.includes('/countries') || url.includes('/currencies') || url.includes('/counterparties')) {
+
+    // Master Data
+    if (
+      url.includes('/entities') ||
+      url.includes('/countries') ||
+      url.includes('/currencies') ||
+      url.includes('/counterparties')
+    ) {
       this.isMasterDataOpen = true;
     }
-    
-    if (url.includes('/investments') || url.includes('/approvals') || url.includes('/cash-flows') || url.includes('/interest-frequency') || url.includes('/day-count-convention')) {
+
+    // Core Data
+    if (
+      url.includes('/investments') ||
+      url.includes('/approvals') ||
+      url.includes('/cash-flows') ||
+      url.includes('/interest-frequency') ||
+      url.includes('/day-count-convention')
+    ) {
       this.isCoreDataOpen = true;
+    }
+
+    // ADD THIS
+    // Automatically open Investments when FD page is active
+    if (url.includes('/investments/fixed-deposit')) {
+      this.isInvestmentsOpen = true;
     }
   }
 
@@ -45,5 +68,10 @@ export class SidebarComponent implements OnInit {
 
   toggleCoreData(): void {
     this.isCoreDataOpen = !this.isCoreDataOpen;
+  }
+
+  // ADD THIS
+  toggleInvestments(): void {
+    this.isInvestmentsOpen = !this.isInvestmentsOpen;
   }
 }

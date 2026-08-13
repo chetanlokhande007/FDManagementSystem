@@ -67,16 +67,8 @@
       <div class="nav-section-header" (click)="toggleCoreData()">
         <small>CORE DATA</small>
 
-        <svg
-          class="arrow"
-          [class.rotate]="isCoreDataOpen"
-          width="14"
-          height="14"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          stroke-width="2"
-        >
+        <svg class="arrow" [class.rotate]="isCoreDataOpen" width="14" height="14" viewBox="0 0 24 24" fill="none"
+          stroke="currentColor" stroke-width="2">
           <polyline points="6 9 12 15 18 9"></polyline>
         </svg>
       </div>
@@ -84,39 +76,70 @@
       <!-- Core Data Menu -->
       <div class="master-data-items" *ngIf="isCoreDataOpen">
 
-        <!-- Investments -->
-        <a routerLink="/investments" routerLinkActive="active" class="nav-item">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path>
-            <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path>
-          </svg>
-          Investments
-        </a>
+       <!-- Investments -->
+<div class="nav-section">
 
+  <!-- Investments Header -->
+  <div class="nav-item" (click)="toggleInvestments()">
+    <svg width="16" height="16" viewBox="0 0 24 24"
+      fill="none" stroke="currentColor" stroke-width="2">
+      <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path>
+      <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path>
+    </svg>
+
+    <span>Investments</span>
+
+    <svg
+      class="arrow"
+      [class.rotate]="isInvestmentsOpen"
+      width="14"
+      height="14"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      stroke-width="2"
+    >
+      <polyline points="6 9 12 15 18 9"></polyline>
+    </svg>
+  </div>
+
+  <!-- Investment Sub Menu -->
+  <div class="master-data-items" *ngIf="isInvestmentsOpen">
+<!-- Fixed Deposit -->
+<a
+  routerLink="/investments/fixed-deposit"
+  routerLinkActive="active"
+  class="nav-item sub-item"
+>
+  Fixed Deposit
+</a>
+  </div>
+
+</div>
         <!-- Investment Approvals -->
         <a routerLink="/approvals" routerLinkActive="active" class="nav-item">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
             <polyline points="22 4 12 14.01 9 11.01"></polyline>
-        </svg>
+          </svg>
           Investment Approvals
-      </a>
+        </a>
 
         <!-- Cash Flows -->
         <a routerLink="/cash-flows" routerLinkActive="active" class="nav-item">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <line x1="12" y1="1" x2="12" y2="23"></line>
             <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path>
-        </svg>
+          </svg>
           Cash Flows
-      </a>
+        </a>
 
         <!-- Interest Frequency -->
         <a routerLink="/interest-frequency" routerLinkActive="active" class="nav-item">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <polyline points="23 6 13.5 15.5 8.5 10.5 1 18"></polyline>
             <polyline points="17 6 23 6 23 12"></polyline>
-        </svg>
+          </svg>
           Interest Frequency
         </a>
 
@@ -140,18 +163,10 @@
 
       <!-- Master Data Header -->
       <div class="nav-section-header" (click)="toggleMasterData()">
-      <small>MASTER DATA</small>
+        <small>MASTER DATA</small>
 
-        <svg
-          class="arrow"
-          [class.rotate]="isMasterDataOpen"
-          width="14"
-          height="14"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          stroke-width="2"
-        >
+        <svg class="arrow" [class.rotate]="isMasterDataOpen" width="14" height="14" viewBox="0 0 24 24" fill="none"
+          stroke="currentColor" stroke-width="2">
           <polyline points="6 9 12 15 18 9"></polyline>
         </svg>
       </div>
@@ -163,38 +178,38 @@
         <a routerLink="/entities" routerLinkActive="active" class="nav-item">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <rect x="4" y="2" width="16" height="20" rx="2" ry="2"></rect>
-          <path d="M9 22v-4h6v4"></path>
-          <path d="M8 6h.01"></path>
-          <path d="M16 6h.01"></path>
-          <path d="M12 6h.01"></path>
-          <path d="M12 10h.01"></path>
-          <path d="M12 14h.01"></path>
-          <path d="M16 10h.01"></path>
-          <path d="M16 14h.01"></path>
-          <path d="M8 10h.01"></path>
-          <path d="M8 14h.01"></path>
-        </svg>
-        Entities
-      </a>
+            <path d="M9 22v-4h6v4"></path>
+            <path d="M8 6h.01"></path>
+            <path d="M16 6h.01"></path>
+            <path d="M12 6h.01"></path>
+            <path d="M12 10h.01"></path>
+            <path d="M12 14h.01"></path>
+            <path d="M16 10h.01"></path>
+            <path d="M16 14h.01"></path>
+            <path d="M8 10h.01"></path>
+            <path d="M8 14h.01"></path>
+          </svg>
+          Entities
+        </a>
 
-      <!-- Countries -->
+        <!-- Countries -->
         <a routerLink="/countries" routerLinkActive="active" class="nav-item">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <circle cx="12" cy="12" r="10"></circle>
+            <circle cx="12" cy="12" r="10"></circle>
             <line x1="2" y1="12" x2="22" y2="12"></line>
             <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path>
-        </svg>
-        Countries
-      </a>
+          </svg>
+          Countries
+        </a>
 
-      <!-- Currencies -->
+        <!-- Currencies -->
         <a routerLink="/currencies" routerLinkActive="active" class="nav-item">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <line x1="12" y1="1" x2="12" y2="23"></line>
             <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path>
-        </svg>
-        Currencies
-      </a>
+          </svg>
+          Currencies
+        </a>
 
         <!-- Counterparties -->
         <a routerLink="/counterparties" routerLinkActive="active" class="nav-item">
@@ -203,7 +218,7 @@
             <circle cx="9" cy="7" r="4"></circle>
             <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
             <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
-        </svg>
+          </svg>
           Counterparties
         </a>
 

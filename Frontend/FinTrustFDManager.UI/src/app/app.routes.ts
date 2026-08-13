@@ -8,6 +8,7 @@ import { authGuard } from './core/guards/auth.guard';
 
 import { EntityListComponent } from './features/entity/entity-list/entity-list';
 import { CashFlowComponent } from './features/cash-flow/cash-flow';
+import { FixedDepositComponent } from './features/fixed-deposit/fixed-deposit';
 
 import { CounterpartiesComponent } from './features/counterparties/counterparties.component';
 
@@ -123,6 +124,16 @@ export const routes: Routes = [
   {
     path: 'counterparties',
     component: CounterpartiesComponent,
+    canActivate: [authGuard]
+  },
+
+  // =========================================
+  // INVESTMENTS
+  // =========================================
+
+  {
+    path: 'investments/fixed-deposit',
+    component: FixedDepositComponent,
     canActivate: [authGuard]
   }
 

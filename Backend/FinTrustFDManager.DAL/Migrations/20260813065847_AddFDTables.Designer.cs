@@ -3,6 +3,7 @@ using System;
 using FinTrustFDManager.DAL.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
@@ -11,9 +12,11 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace FinTrustFDManager.DAL.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260813065847_AddFDTables")]
+    partial class AddFDTables
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -739,21 +742,21 @@ namespace FinTrustFDManager.DAL.Migrations
                         new
                         {
                             Id = 1,
-                            CreatedDate = new DateTime(2026, 8, 13, 9, 26, 7, 685, DateTimeKind.Utc).AddTicks(8435),
+                            CreatedDate = new DateTime(2026, 8, 13, 6, 58, 45, 670, DateTimeKind.Utc).AddTicks(1393),
                             IsActive = true,
                             RoleName = "Admin"
                         },
                         new
                         {
                             Id = 2,
-                            CreatedDate = new DateTime(2026, 8, 13, 9, 26, 7, 685, DateTimeKind.Utc).AddTicks(8437),
+                            CreatedDate = new DateTime(2026, 8, 13, 6, 58, 45, 670, DateTimeKind.Utc).AddTicks(1395),
                             IsActive = true,
                             RoleName = "CA"
                         },
                         new
                         {
                             Id = 3,
-                            CreatedDate = new DateTime(2026, 8, 13, 9, 26, 7, 685, DateTimeKind.Utc).AddTicks(8439),
+                            CreatedDate = new DateTime(2026, 8, 13, 6, 58, 45, 670, DateTimeKind.Utc).AddTicks(1396),
                             IsActive = true,
                             RoleName = "Approver"
                         });

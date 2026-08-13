@@ -1,0 +1,190 @@
+<div class="page-container">
+
+  <!-- Page Header -->
+  <div class="page-header">
+    <div class="header-title">
+      <h1>Fixed Deposit</h1>
+    </div>
+
+    <button class="btn-go-back" routerLink="/investments">
+      Go Back
+    </button>
+  </div>
+
+
+  <!-- Main Card -->
+  <div class="form-card">
+
+    <!-- Tabs Header -->
+    <div class="tabs-header">
+      <div class="tabs">
+        <button class="tab" [class.active]="activeTab === 'general'" (click)="selectTab('general')">General</button>
+        <button class="tab" [class.active]="activeTab === 'interest'" (click)="selectTab('interest')">Interest</button>
+        <button class="tab" [class.active]="activeTab === 'cashflow'" (click)="selectTab('cashflow')">CashFlow</button>
+      </div>
+      <div class="ref-badge">FD_00015</div>
+    </div>
+
+
+    <!-- ================= GENERAL ================= -->
+    <div *ngIf="activeTab === 'general'" class="tab-content">
+      <div class="form-grid">
+        
+        <!-- Row 1 -->
+        <div class="form-group">
+          <label>Reference <span>*</span></label>
+          <input type="text" [(ngModel)]="fixedDeposit.reference" placeholder="FD_00015">
+        </div>
+        <div class="form-group">
+          <label>Entity <span>*</span></label>
+          <select [(ngModel)]="fixedDeposit.entity">
+            <option value="">Select Entity</option>
+            <option value="ENTITY_DFP">ENTITY_DFP (ENTITY_DFP)</option>
+            <option value="ENTITY_ABC">ENTITY_ABC (ENTITY_ABC)</option>
+          </select>
+        </div>
+
+        <!-- Row 2 -->
+        <div class="form-group">
+          <label>Counterparty <span>*</span></label>
+          <select [(ngModel)]="fixedDeposit.counterparty">
+            <option value="">Select Counterparty</option>
+            <option value="CITI BANK">CITI BANK, AHMEDABAD (17)</option>
+            <option value="HDFC BANK">HDFC BANK</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Counterparty Type</label>
+          <select [(ngModel)]="fixedDeposit.counterpartyType">
+            <option value="">Select Type</option>
+            <option value="Bank">Bank</option>
+            <option value="Corporate">Corporate</option>
+          </select>
+        </div>
+
+        <!-- Row 3 -->
+        <div class="form-group">
+          <label>Transaction Currency <span>*</span></label>
+          <select [(ngModel)]="fixedDeposit.transactionCurrency">
+            <option value="">Select Currency</option>
+            <option value="INR">INR</option>
+            <option value="USD">USD</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Transaction Amount <span>*</span></label>
+          <input type="text" [(ngModel)]="fixedDeposit.transactionAmount" placeholder="3,62,00,000.00">
+        </div>
+
+        <!-- Row 4 -->
+        <div class="form-group">
+          <label>Start Date<span>*</span></label>
+          <input type="date" [(ngModel)]="fixedDeposit.startDate">
+        </div>
+        <div class="form-group">
+          <label>End Date<span>*</span></label>
+          <input type="date" [(ngModel)]="fixedDeposit.endDate">
+        </div>
+
+        <!-- Row 5 -->
+        <div class="form-group">
+          <label>Settlement Date<span>*</span></label>
+          <input type="date" [(ngModel)]="fixedDeposit.settlementDate">
+        </div>
+        <div class="form-group">
+          <label>Bank Account <span>*</span></label>
+          <select [(ngModel)]="fixedDeposit.bankAccount">
+            <option value="">Select Bank Account</option>
+            <option value="HDFC_6059">HDFC_6059</option>
+          </select>
+        </div>
+
+        <!-- Row 6 -->
+        <div class="form-group">
+          <label>Remarks</label>
+          <input type="text" class="remarks-input" [(ngModel)]="fixedDeposit.remarks" placeholder="Enter Remarks">
+        </div>
+        <div class="form-group empty">
+          <!-- Empty for grid alignment -->
+        </div>
+
+      </div>
+      
+      <!-- Footer Buttons -->
+      <div class="form-actions">
+        <button type="button" class="btn-save" (click)="save()">Save</button>
+        <button type="button" class="btn-cancel" (click)="cancel()">Cancel</button>
+      </div>
+
+    </div>
+
+
+    <!-- ================= INTEREST ================= -->
+    <div *ngIf="activeTab === 'interest'" class="tab-content">
+      <div class="form-grid">
+        <div class="form-group">
+          <label>Interest Rate <span>*</span></label>
+          <input type="number" placeholder="Enter Interest Rate">
+        </div>
+        <div class="form-group">
+          <label>Interest Frequency</label>
+          <select>
+            <option value="">Select Frequency</option>
+            <option>Monthly</option>
+            <option>Yearly</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Day Count Convention</label>
+          <select>
+            <option value="">Select Convention</option>
+            <option>Actual/365</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Interest Amount</label>
+          <input type="number" placeholder="Interest Amount">
+        </div>
+      </div>
+      <div class="form-actions">
+        <button type="button" class="btn-save" (click)="save()">Save</button>
+        <button type="button" class="btn-cancel" (click)="cancel()">Cancel</button>
+      </div>
+    </div>
+
+
+    <!-- ================= CASH FLOW ================= -->
+    <div *ngIf="activeTab === 'cashflow'" class="tab-content">
+      <div class="form-grid">
+        <div class="form-group">
+          <label>Cash Flow Type</label>
+          <select>
+            <option value="">Select Cash Flow Type</option>
+            <option>Principal</option>
+            <option>Interest</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Cash Flow Date</label>
+          <input type="date">
+        </div>
+        <div class="form-group">
+          <label>Cash Flow Amount</label>
+          <input type="number" placeholder="Enter Amount">
+        </div>
+        <div class="form-group">
+          <label>Currency</label>
+          <select>
+            <option value="">Select Currency</option>
+            <option>INR</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-actions">
+        <button type="button" class="btn-save" (click)="save()">Save</button>
+        <button type="button" class="btn-cancel" (click)="cancel()">Cancel</button>
+      </div>
+    </div>
+
+  </div>
+</div>

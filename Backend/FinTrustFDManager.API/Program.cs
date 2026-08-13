@@ -6,6 +6,8 @@ using FinTrustFDManager.DAL.Repositories;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 using System.Text;
+using FinTrustFDManager.BAL.Interfaces;
+using FinTrustFDManager.BAL.Services;
 
 // Enable legacy timestamp behavior for PostgreSQL (fixes DateTime UTC issues)
 AppContext.SetSwitch("Npgsql.EnableLegacyTimestampBehavior", true);
@@ -19,7 +21,11 @@ builder.Services.AddDbContext<ApplicationDbContext>(options =>
 
 builder.Services.AddControllers();
 builder.Services.AddMemoryCache();
+builder.Services.AddScoped<IFDIdentificationRepository,
+    FDIdentificationRepository>();
 
+builder.Services.AddScoped<IFDIdentificationService,
+    FDIdentificationService>();
 builder.Services.AddBAL();
 
 // Master Data Repositories
@@ -28,7 +34,8 @@ builder.Services.AddScoped<ICurrencyRepository, CurrencyRepository>();
 builder.Services.AddScoped<ICountryRepository, CountryRepository>();
 builder.Services.AddScoped<ICounterPartyRepository, CounterPartyRepository>();
 builder.Services.AddScoped<IBankRepository, BankRepository>();
-
+builder.Services.AddScoped<IFDInterestRepository, FDInterestRepository>();
+builder.Services.AddScoped<IFDInterestService, FDInterestService>();
 
 // Core Data Repositories
 builder.Services.AddScoped<IInterestFrequencyRepository, InterestFrequencyRepository>();
@@ -39,7 +46,11 @@ builder.Services.AddScoped<IInvestmentApprovalRepository, InvestmentApprovalRepo
 builder.Services.AddScoped<IAuthRepository, AuthRepository>();
 
 builder.Services.AddEndpointsApiExplorer();
+builder.Services.AddScoped<IFDInterestRepository, FDInterestRepository>();
+builder.Services.AddScoped<IFDInterestService, FDInterestService>();
 
+builder.Services.AddScoped<IFDCashFlowRepository, FDCashFlowRepository>();
+builder.Services.AddScoped<IFDCashFlowService, FDCashFlowService>();
 
 
 // =====================================================
