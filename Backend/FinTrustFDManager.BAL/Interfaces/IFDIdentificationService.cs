@@ -1,4 +1,7 @@
-﻿using FinTrustFDManager.Model.Entities.Investment;
+using FinTrustFDManager.Model.DTOs.Investment;
+using FinTrustFDManager.Model.Entities.Investment;
+using System.Collections.Generic;
+using System.Threading.Tasks;
 
 namespace FinTrustFDManager.BAL.Interfaces
 {
@@ -13,5 +16,8 @@ namespace FinTrustFDManager.BAL.Interfaces
         Task<FDIdentification?> UpdateAsync(long id, FDIdentification model);
 
         Task<bool> DeleteAsync(long id);
+
+        // Landing Page
+        Task<IEnumerable<FDLandingDto>> GetLandingDataAsync();
     }
 }

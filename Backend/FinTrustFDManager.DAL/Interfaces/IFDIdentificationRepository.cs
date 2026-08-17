@@ -16,7 +16,7 @@ namespace FinTrustFDManager.DAL.Interfaces
         Task<FDIdentification> AddAsync(FDIdentification model);
 
         Task<FDIdentification?> UpdateAsync(FDIdentification model);
-
+        Task<FDIdentification?> GetLastAsync();
         Task<bool> DeleteAsync(long id);
     }
 }

@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -11,6 +11,8 @@ namespace FinTrustFDManager.DAL.Interfaces
         Task<IEnumerable<FDInterest>> GetAllAsync();
 
         Task<FDInterest?> GetByIdAsync(long id);
+
+        Task<FDInterest?> GetByFdIdAsync(long fdId);
 
         Task<FDInterest> AddAsync(FDInterest model);
 

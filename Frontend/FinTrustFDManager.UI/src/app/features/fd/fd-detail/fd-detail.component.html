@@ -1,0 +1,334 @@
+<div class="fd-detail-page">
+
+
+  <!-- HEADER -->
+
+  <div class="detail-header">
+
+    <div>
+
+      <h2>
+        Fixed Deposit
+      </h2>
+
+    </div>
+
+
+    <button
+      class="back-btn"
+      (click)="goBack()">
+
+      Go Back
+
+    </button>
+
+  </div>
+
+
+  <!-- CARD -->
+
+  <div class="fd-card">
+
+
+    <!-- TABS -->
+
+    <div class="tabs">
+
+      <div class="tab active">
+        General
+      </div>
+
+      <div class="tab">
+        Interest
+      </div>
+
+      <div class="tab">
+        CashFlow
+      </div>
+
+      <div class="reference-label"
+           *ngIf="isEdit">
+
+        FD_{{ fdId }}
+
+      </div>
+
+    </div>
+
+
+    <!-- FORM -->
+
+    <form
+      [formGroup]="fdForm"
+      (ngSubmit)="save()">
+
+
+      <div class="form-grid">
+
+
+        <!-- REFERENCE -->
+
+        <div class="form-group">
+
+          <label>
+            Reference
+            <span>*</span>
+          </label>
+
+          <input
+            type="text"
+            formControlName="fdReferenceNo"
+            placeholder="Auto Generated"
+            readonly>
+
+        </div>
+
+
+        <!-- ENTITY -->
+
+        <div class="form-group">
+
+          <label>
+            Entity
+            <span>*</span>
+          </label>
+
+          <select
+            formControlName="entityId">
+
+            <option value="">
+              Select Entity
+            </option>
+
+            <option value="101">
+              101
+            </option>
+
+            <option value="102">
+              102
+            </option>
+
+          </select>
+
+        </div>
+
+
+        <!-- COUNTERPARTY -->
+
+        <div class="form-group">
+
+          <label>
+            Counterparty
+            <span>*</span>
+          </label>
+
+          <select
+            formControlName="counterpartyId">
+
+            <option value="">
+              Select Counterparty
+            </option>
+
+            <option value="1">
+              Counterparty 1
+            </option>
+
+            <option value="2">
+              Counterparty 2
+            </option>
+
+          </select>
+
+        </div>
+
+
+        <!-- COUNTERPARTY TYPE -->
+
+        <div class="form-group">
+
+          <label>
+            Counterparty Type
+          </label>
+
+          <select>
+
+            <option>
+              Select Type
+            </option>
+
+            <option>
+              Bank
+            </option>
+
+            <option>
+              Financial Institution
+            </option>
+
+          </select>
+
+        </div>
+
+
+       <!-- CURRENCY -->
+
+<div class="form-group">
+
+  <label>
+    Transaction Currency
+    <span>*</span>
+  </label>
+
+  <select formControlName="currencyCode">
+
+    <option value="" disabled>
+      Select Currency
+    </option>
+
+    <option
+      *ngFor="let currency of currencies"
+      [value]="currency.currencyCode">
+
+      {{ currency.currencyCode }}
+
+    </option>
+
+  </select>
+
+</div>
+
+
+        <!-- AMOUNT -->
+
+        <div class="form-group">
+
+          <label>
+            Transaction Amount
+            <span>*</span>
+          </label>
+
+          <input
+            type="number"
+            formControlName="principalAmount"
+            placeholder="Enter Amount">
+
+        </div>
+
+
+        <!-- START DATE -->
+
+        <div class="form-group">
+
+          <label>
+            Start Date
+            <span>*</span>
+          </label>
+
+          <input
+            type="date"
+            formControlName="startDate">
+
+        </div>
+
+
+        <!-- END DATE -->
+
+        <div class="form-group">
+
+          <label>
+            End Date
+            <span>*</span>
+          </label>
+
+          <input
+            type="date"
+            formControlName="endDate">
+
+        </div>
+
+
+        <!-- SETTLEMENT DATE -->
+
+        <div class="form-group">
+
+          <label>
+            Settlement Date
+            <span>*</span>
+          </label>
+
+          <input
+            type="date"
+            formControlName="settlementDate">
+
+        </div>
+
+
+        <!-- BANK ACCOUNT -->
+
+        <div class="form-group">
+
+          <label>
+            Bank Account
+            <span>*</span>
+          </label>
+
+          <select>
+
+            <option>
+              Select Bank Account
+            </option>
+
+            <option>
+              HDFC - 001
+            </option>
+
+            <option>
+              ICICI - 002
+            </option>
+
+          </select>
+
+        </div>
+
+
+        <!-- REMARKS -->
+
+        <div class="form-group full-width">
+
+    
+
+        </div>
+
+
+      </div>
+
+
+      <!-- BUTTONS -->
+
+      <div class="form-actions">
+
+        <button
+          type="submit"
+          class="save-btn">
+
+          {{ isEdit ? 'Update' : 'Save' }}
+
+        </button>
+
+
+        <button
+          type="button"
+          class="cancel-btn"
+          (click)="cancel()">
+
+          Cancel
+
+        </button>
+
+      </div>
+
+
+    </form>
+
+  </div>
+
+</div>

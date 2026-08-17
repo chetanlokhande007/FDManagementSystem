@@ -8,7 +8,8 @@ import { authGuard } from './core/guards/auth.guard';
 
 import { EntityListComponent } from './features/entity/entity-list/entity-list';
 import { CashFlowComponent } from './features/cash-flow/cash-flow';
-import { FixedDepositComponent } from './features/fixed-deposit/fixed-deposit';
+import { FDListComponent } from './features/fd/fd-list/fd-list.component';
+import { FDDetailComponent } from './features/fd/fd-detail/fd-detail.component';
 
 import { CounterpartiesComponent } from './features/counterparties/counterparties.component';
 
@@ -127,13 +128,30 @@ export const routes: Routes = [
     canActivate: [authGuard]
   },
 
-  // =========================================
-  // INVESTMENTS
-  // =========================================
-
+  // ==============================
+  // FD LANDING PAGE
+  // ==============================
   {
-    path: 'investments/fixed-deposit',
-    component: FixedDepositComponent,
+    path: 'fd',
+    component: FDListComponent,
+    canActivate: [authGuard]
+  },
+
+  // ==============================
+  // ADD FD
+  // ==============================
+  {
+    path: 'fd/add',
+    component: FDDetailComponent,
+    canActivate: [authGuard]
+  },
+
+  // ==============================
+  // EDIT FD
+  // ==============================
+  {
+    path: 'fd/edit/:id',
+    component: FDDetailComponent,
     canActivate: [authGuard]
   }
 

@@ -1,4 +1,4 @@
-﻿using FinTrustFDManager.DAL.Data;
+using FinTrustFDManager.DAL.Data;
 using FinTrustFDManager.DAL.Interfaces;
 using FinTrustFDManager.Model.Entities.Investment;
 using Microsoft.EntityFrameworkCore;
@@ -26,6 +26,13 @@ namespace FinTrustFDManager.DAL.Repositories
             return await _context.FDInterests
                 .AsNoTracking()
                 .FirstOrDefaultAsync(x => x.FdInterestId == id);
+        }
+
+        public async Task<FDInterest?> GetByFdIdAsync(long fdId)
+        {
+            return await _context.FDInterests
+                .AsNoTracking()
+                .FirstOrDefaultAsync(x => x.FdId == fdId);
         }
 
         public async Task<FDInterest> AddAsync(FDInterest model)

@@ -1,4 +1,4 @@
-﻿using FinTrustFDManager.DAL.Data;
+using FinTrustFDManager.DAL.Data;
 using FinTrustFDManager.DAL.Interfaces;
 using FinTrustFDManager.Model.Entities.Investment;
 using Microsoft.EntityFrameworkCore;
@@ -36,7 +36,13 @@ namespace FinTrustFDManager.DAL.Repositories
 
             return model;
         }
-
+        public async Task<FDIdentification?> GetLastAsync()
+        {
+            return await _context.FDIdentifications
+                .AsNoTracking()
+                .OrderByDescending(x => x.FdId)
+                .FirstOrDefaultAsync();
+        }
         public async Task<FDIdentification?> UpdateAsync(
             FDIdentification model)
         {

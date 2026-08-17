@@ -1,4 +1,4 @@
-﻿using FinTrustFDManager.BAL.Interfaces;
+using FinTrustFDManager.BAL.Interfaces;
 using FinTrustFDManager.Model.Entities.Investment;
 using Microsoft.AspNetCore.Mvc;
 
@@ -20,6 +20,14 @@ namespace FinTrustFDManager.API.Controllers
         public async Task<IActionResult> GetAll()
         {
             var result = await _service.GetAllAsync();
+
+            return Ok(result);
+        }
+
+        [HttpGet("landing")]
+        public async Task<IActionResult> GetLandingData()
+        {
+            var result = await _service.GetLandingDataAsync();
 
             return Ok(result);
         }

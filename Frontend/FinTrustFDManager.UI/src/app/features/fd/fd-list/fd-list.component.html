@@ -1,0 +1,284 @@
+<div class="fd-page">
+
+  <!-- HEADER -->
+
+  <div class="page-header">
+
+    <div>
+
+      <h2>
+        Fixed Deposits
+      </h2>
+
+      <p>
+        Manage and monitor all fixed deposits
+      </p>
+
+    </div>
+
+
+    <button
+      class="add-btn"
+      (click)="addFD()">
+
+      + Add FD
+
+    </button>
+
+  </div>
+
+
+  <!-- TABLE -->
+
+  <div class="table-card">
+
+    <table>
+
+      <thead>
+
+        <tr>
+
+          <th>
+            Action
+          </th>
+
+          <th>
+            FD Reference
+          </th>
+
+          <th>
+            Entity
+          </th>
+
+          <th>
+            Currency
+          </th>
+
+          <th>
+            Principal
+          </th>
+
+          <th>
+            Interest Rate
+          </th>
+
+          <th>
+            Start Date
+          </th>
+
+          <th>
+            End Date
+          </th>
+
+          <th>
+            Status
+          </th>
+
+          <th>
+            Total Amount
+          </th>
+
+        </tr>
+
+      </thead>
+
+
+      <tbody>
+
+        <!-- LOADING -->
+
+        <tr *ngIf="loading">
+
+          <td
+            colspan="10"
+            class="loading">
+
+            Loading FD data...
+
+          </td>
+
+        </tr>
+
+
+        <!-- FD DATA -->
+
+        <tr
+          *ngFor="let fd of fdList">
+
+
+          <!-- ACTION -->
+
+          <td class="actions">
+
+            <button
+              class="action-btn"
+              title="Edit"
+              (click)="editFD(fd)">
+
+              ✏️
+
+            </button>
+
+
+            <button
+              class="action-btn"
+              title="Cash Flow"
+              (click)="cashFlow(fd)">
+
+              💰
+
+            </button>
+
+
+            <button
+              class="action-btn"
+              title="Delete"
+              (click)="deleteFD(fd)">
+
+              🗑️
+
+            </button>
+
+          </td>
+
+
+          <!-- REFERENCE -->
+
+          <td>
+
+            <button
+              class="fd-reference"
+              (click)="openFD(fd)">
+
+              {{ fd.fdReferenceNo }}
+
+            </button>
+
+          </td>
+
+
+          <!-- ENTITY -->
+
+          <td>
+
+            {{ fd.entityId }}
+
+          </td>
+
+
+          <!-- CURRENCY -->
+
+          <td>
+
+            {{ fd.currencyCode }}
+
+          </td>
+
+
+          <!-- PRINCIPAL -->
+
+          <td class="amount">
+
+            {{ fd.principalAmount
+              | currency:'INR':'symbol':'1.0-0'
+            }}
+
+          </td>
+
+
+          <!-- INTEREST -->
+
+          <td>
+
+            {{ fd.interestRate }}%
+
+          </td>
+
+
+          <!-- START DATE -->
+
+          <td>
+
+            {{ fd.startDate
+              | date:'dd-MMM-yyyy'
+            }}
+
+          </td>
+
+
+          <!-- END DATE -->
+
+          <td>
+
+            {{ fd.endDate
+              | date:'dd-MMM-yyyy'
+            }}
+
+          </td>
+
+
+          <!-- STATUS -->
+
+          <td>
+
+            <span
+              class="status"
+
+              [class.approved]="
+                fd.status === 'APPROVED'
+              "
+
+              [class.draft]="
+                fd.status === 'DRAFT'
+              "
+
+              [class.rejected]="
+                fd.status === 'REJECTED'
+              ">
+
+              {{ fd.status }}
+
+            </span>
+
+          </td>
+
+
+          <!-- TOTAL -->
+
+          <td class="amount">
+
+            {{ fd.totalAmount
+              | currency:'INR':'symbol':'1.0-0'
+            }}
+
+          </td>
+
+
+        </tr>
+
+
+        <!-- NO DATA -->
+
+        <tr
+          *ngIf="
+            !loading &&
+            fdList.length === 0
+          ">
+
+          <td
+            colspan="10"
+            class="no-data">
+
+            No Fixed Deposits found.
+
+          </td>
+
+        </tr>
+
+      </tbody>
+
+    </table>
+
+  </div>
+
+</div>

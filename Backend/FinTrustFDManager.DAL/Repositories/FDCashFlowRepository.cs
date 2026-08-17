@@ -29,6 +29,13 @@ namespace FinTrustFDManager.DAL.Repositories
                 .FirstOrDefaultAsync(x => x.CashFlowId == id);
         }
 
+        public async Task<IEnumerable<FDCashFlow>> GetByFdIdAsync(long fdId)
+        {
+            return await _context.FDCashFlows
+                .Where(x => x.FdId == fdId)
+                .ToListAsync();
+        }
+
         // CREATE
         public async Task<FDCashFlow> CreateAsync(FDCashFlow cashFlow)
         {

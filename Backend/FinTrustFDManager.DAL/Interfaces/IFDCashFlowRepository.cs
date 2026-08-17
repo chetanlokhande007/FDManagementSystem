@@ -8,6 +8,8 @@ namespace FinTrustFDManager.DAL.Interfaces
 
         Task<FDCashFlow?> GetByIdAsync(long id);
 
+        Task<IEnumerable<FDCashFlow>> GetByFdIdAsync(long fdId);
+
         Task<FDCashFlow> CreateAsync(FDCashFlow cashFlow);
 
         Task<FDCashFlow?> UpdateAsync(FDCashFlow cashFlow);
