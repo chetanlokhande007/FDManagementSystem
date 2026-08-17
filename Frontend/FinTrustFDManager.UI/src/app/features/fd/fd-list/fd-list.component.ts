@@ -96,7 +96,7 @@ export class FDListComponent implements OnInit {
   addFD(): void {
 
     this.router.navigate([
-      '/fd/add'
+      '/fd-detail'
     ]);
 
   }
@@ -109,7 +109,7 @@ export class FDListComponent implements OnInit {
   openFD(fd: FDLanding): void {
 
     this.router.navigate([
-      '/fd/edit',
+      '/fd-detail',
       fd.fdId
     ]);
 
@@ -120,11 +120,12 @@ export class FDListComponent implements OnInit {
   // EDIT
   // ==============================
 
-  editFD(fd: FDLanding): void {
+  editFD(fdId: number): void {
 
+    console.log('Edit FD:', fdId);
     this.router.navigate([
-      '/fd/edit',
-      fd.fdId
+      '/fd-detail',
+      fdId
     ]);
 
   }

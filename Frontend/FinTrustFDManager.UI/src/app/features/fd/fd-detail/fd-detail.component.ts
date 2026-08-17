@@ -1,51 +1,73 @@
-import {
-  Component,
-  OnInit
-} from '@angular/core';
+import { Component, OnInit } from '@angular/core';
+import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
+import { ActivatedRoute, Router } from '@angular/router';
+import { FdCashflowComponent } from '../fd-cashflow/fd-cashflow.component';
+import { FdInterestComponent } from '../fd-interest/fd-interest.component';
 
 import {
-  CommonModule
-} from '@angular/common';
+  EntityService,
+  Entity
+} from '../../../core/services/entity.service';
 
 import {
-  FormBuilder,
-  FormGroup,
-  ReactiveFormsModule,
-  Validators
-} from '@angular/forms';
+  CounterPartyService,
+  CounterParty
+} from '../../../core/services/counter-party.service';
 
 import {
-  ActivatedRoute,
-  Router
-} from '@angular/router';
+  CurrencyService,
+  Currency
+} from '../../../core/services/currency.service';
+
+import {
+  CountryService,
+  Country
+} from '../../../core/services/country.service';
+
+import {
+  InterestFrequencyService,
+  InterestFrequency
+} from '../../../core/services/interest-frequency.service';
+
+import {
+  DayCountConventionService,
+  DayCountConvention
+} from '../../../core/services/day-count-convention.service';
 
 import {
   FDIdentificationService
 } from '../../../core/services/fd-identification.service';
 
 import {
-  Currency,
-  CurrencyService
-} from '../../../services/currency.service';
+  FDCashFlowService,
+  FDCashFlow
+} from '../../../core/services/fd-cash-flow.service';
 
+import {
+  FDInterestService
+} from '../../../core/services/fd-interest.service';
+
+import { forkJoin, of } from 'rxjs';
+import { catchError, map } from 'rxjs/operators';
 
 @Component({
   selector: 'app-fd-detail',
-
   standalone: true,
 
   imports: [
     CommonModule,
-    ReactiveFormsModule
+    FormsModule,
+    FdCashflowComponent,
+    FdInterestComponent
   ],
 
   templateUrl: './fd-detail.component.html',
-
-  styleUrl: './fd-detail.component.css'
+  styleUrls: ['./fd-detail.component.css']
 })
 export class FDDetailComponent implements OnInit {
 
-  fdForm!: FormGroup;
+  activeTab = 'general';
 
   fdId: number | null = null;
 
@@ -53,22 +75,82 @@ export class FDDetailComponent implements OnInit {
 
   loading = false;
 
-  // Currency list from database
+  interestData: any = null;
+
+  cashFlows: FDCashFlow[] = [];
+
+  isGeneralReadOnly = false;
+
+  /* =========================
+     CORE DATA
+  ========================= */
+
+  entities: Entity[] = [];
+
+  counterparties: CounterParty[] = [];
+
   currencies: Currency[] = [];
+
+  countries: Country[] = [];
+
+  interestFrequencies: InterestFrequency[] = [];
+
+  dayCountConventions: DayCountConvention[] = [];
+
+
+  /* =========================
+     FD FORM MODEL
+  ========================= */
+
+  fixedDeposit: any = {
+
+    fdReferenceNo: '',
+
+    entityId: null,
+
+    counterpartyId: null,
+
+    currencyCode: '',
+
+    principalAmount: null,
+
+    startDate: '',
+
+    endDate: '',
+
+    settlementDate: '',
+
+    remarks: ''
+
+  };
 
 
   constructor(
 
-    private fb: FormBuilder,
+    private entityService: EntityService,
+
+    private counterPartyService: CounterPartyService,
+
+    private currencyService: CurrencyService,
+
+    private countryService: CountryService,
+
+    private interestFrequencyService:
+      InterestFrequencyService,
+
+    private dayCountConventionService:
+      DayCountConventionService,
 
     private fdService:
       FDIdentificationService,
 
-    private currencyService:
-      CurrencyService,
+    private fdInterestService:
+      FDInterestService,
 
-    private route:
-      ActivatedRoute,
+    private cashFlowService:
+      FDCashFlowService,
+
+    private route: ActivatedRoute,
 
     private router: Router
 
@@ -77,277 +159,386 @@ export class FDDetailComponent implements OnInit {
 
   ngOnInit(): void {
 
-    this.createForm();
-
-    // Load currencies from database
-    this.loadCurrencies();
-
-
     const id =
-      this.route.snapshot.paramMap
-        .get('id');
-
+      this.route.snapshot.paramMap.get('id');
 
     if (id) {
-
-      this.fdId =
-        Number(id);
-
+      this.fdId = Number(id);
       this.isEdit = true;
-
-      this.loadFD(
-        this.fdId
-      );
-
+      this.isGeneralReadOnly = true;
     }
 
-  }
-
-
-  // ==============================
-  // LOAD CURRENCIES
-  // ==============================
-
-  loadCurrencies(): void {
-
-    this.currencyService
-      .getCurrencies()
-      .subscribe({
-
-        next: (data: Currency[]) => {
-
-          // Only active currencies
-          this.currencies =
-            data.filter(
-              (currency: Currency) =>
-                currency.isActive
-            );
-
-        },
-
-        error: (error: any) => {
-
-          console.error(
-            'Failed to load currencies',
-            error
-          );
-
-        }
-
-      });
+    this.loadCoreData();
 
   }
 
 
-  // ==============================
-  // FORM
-  // ==============================
+  /* =========================
+     LOAD ALL CORE DATA
+  ========================= */
 
-  createForm(): void {
-
-    this.fdForm =
-      this.fb.group({
-
-        fdId: [
-          null
-        ],
-
-        fdReferenceNo: [
-          ''
-        ],
-
-        entityId: [
-          '',
-          Validators.required
-        ],
-
-        counterpartyId: [
-          '',
-          Validators.required
-        ],
-
-        // Do not hardcode INR
-        currencyCode: [
-          '',
-          Validators.required
-        ],
-
-        principalAmount: [
-          '',
-          [
-            Validators.required,
-            Validators.min(1)
-          ]
-        ],
-
-        startDate: [
-          '',
-          Validators.required
-        ],
-
-        endDate: [
-          '',
-          Validators.required
-        ],
-
-        settlementDate: [
-          '',
-          Validators.required
-        ],
-
-        status: [
-          'DRAFT'
-        ],
-
-        remarks: [
-          ''
-        ]
-
-      });
-
-  }
-
-
-  // ==============================
-  // GET FD
-  // ==============================
-
-  loadFD(id: number): void {
+  loadCoreData(): void {
 
     this.loading = true;
 
 
-    this.fdService
-      .getById(id)
+    this.entityService
+      .getAll()
       .subscribe({
 
-        next: (data) => {
+        next: data => {
 
-          this.fdForm.patchValue(data);
-
-          this.loading = false;
+          this.entities =
+            data.filter(x => x.status === 1);
 
         },
 
-        error: (error) => {
+        error: error => {
 
           console.error(
-            'Error loading FD',
+            'Entity API Error:',
             error
           );
-
-          this.loading = false;
 
         }
 
       });
 
-  }
+
+    this.counterPartyService
+      .getAll()
+      .subscribe({
+
+        next: data => {
+
+          this.counterparties =
+            data.filter(x => x.isActive);
+
+        },
+
+        error: error => {
+
+          console.error(
+            'Counterparty API Error:',
+            error
+          );
+
+        }
+
+      });
 
 
-  // ==============================
-  // SAVE
-  // ==============================
+    this.currencyService
+      .getAll()
+      .subscribe({
 
-  save(): void {
+        next: data => {
 
-    if (
-      this.fdForm.invalid
-    ) {
+          this.currencies =
+            data.filter(x => x.isActive);
 
-      this.fdForm.markAllAsTouched();
+        },
 
-      return;
+        error: error => {
+
+          console.error(
+            'Currency API Error:',
+            error
+          );
+
+        }
+
+      });
+
+
+    this.countryService
+      .getAll()
+      .subscribe({
+
+        next: data => {
+
+          this.countries =
+            data.filter(x => x.isActive);
+
+        },
+
+        error: error => {
+
+          console.error(
+            'Country API Error:',
+            error
+          );
+
+        }
+
+      });
+
+
+    this.interestFrequencyService
+      .getAll()
+      .subscribe({
+
+        next: data => {
+
+          this.interestFrequencies = data;
+
+        },
+
+        error: error => {
+
+          console.error(
+            'Interest Frequency API Error:',
+            error
+          );
+
+        }
+
+      });
+
+
+    this.dayCountConventionService
+      .getAll()
+      .subscribe({
+
+        next: data => {
+
+          this.dayCountConventions = data;
+
+        },
+
+        error: error => {
+
+          console.error(
+            'Day Count API Error:',
+            error
+          );
+
+        }
+
+      });
+
+
+    /*
+      Load FD only after core data is loaded.
+    */
+
+    if (this.isEdit && this.fdId) {
+
+      this.loadFDDetails();
 
     }
 
+    this.loading = false;
 
-    const data =
-      this.fdForm.value;
+  }
 
 
-    // ==========================
-    // EDIT
-    // ==========================
+  /* =========================
+     LOAD FD DETAILS
+  ========================= */
 
-    if (
-      this.isEdit &&
-      this.fdId
-    ) {
+  loadFDDetails(): void {
+    if (!this.fdId) return;
+    this.loading = true;
+
+    forkJoin({
+      general: this.fdService.getById(this.fdId),
+      interest: this.fdInterestService.getByFdId(this.fdId).pipe(
+         catchError(() => of(null))
+      ),
+      cashFlows: this.cashFlowService.getAll().pipe(
+         map(cfs => {
+           const arr = Array.isArray(cfs) ? cfs : [cfs];
+           return arr.filter(x => Number(x.fdId) === Number(this.fdId));
+         }),
+         catchError(() => of([]))
+      )
+    }).subscribe({
+      next: (result) => {
+        const fd = result.general;
+        this.fixedDeposit = {
+          fdReferenceNo: fd.fdReferenceNo ?? '',
+          entityId: fd.entityId ?? null,
+          counterpartyId: fd.counterpartyId ?? null,
+          currencyCode: fd.currencyCode ?? '',
+          principalAmount: fd.principalAmount ?? null,
+          startDate: this.formatDate(fd.startDate),
+          endDate: this.formatDate(fd.endDate),
+          settlementDate: this.formatDate(fd.settlementDate),
+          remarks: fd.remarks ?? '',
+          status: fd.status ?? ''
+        };
+
+        this.interestData = result.interest;
+        this.cashFlows = result.cashFlows;
+        this.loading = false;
+      },
+      error: (error) => {
+        console.error('Error loading FD details:', error);
+        alert('Unable to load FD details.');
+        this.loading = false;
+      }
+    });
+  }
+
+
+  /* =========================
+     DATE FORMAT
+  ========================= */
+
+  formatDate(value: string | null | undefined): string {
+    return value ? value.substring(0, 10) : '';
+  }
+
+
+  /* =========================
+     TAB
+  ========================= */
+
+  selectTab(tab: string): void {
+    this.activeTab = tab;
+  }
+
+  editGeneral(): void {
+    this.isGeneralReadOnly = false;
+  }
+
+  getEntityName(id: number | null): string {
+    if (!id) return '';
+    const e = this.entities.find(x => x.entityId === id);
+    return e ? e.entityName : '';
+  }
+
+  getCounterpartyName(id: number | null): string {
+    if (!id) return '';
+    const cp = this.counterparties.find(x => x.counterPartyId === id);
+    return cp ? cp.counterPartyName : '';
+  }
+
+  /* =========================
+     SAVE / UPDATE
+  ========================= */
+
+  save(): void {
+
+    const payload = {
+
+      fdReferenceNo:
+        this.fixedDeposit.fdReferenceNo,
+
+      entityId: Number(this.fixedDeposit.entityId),
+      counterpartyId: Number(this.fixedDeposit.counterpartyId),
+      currencyCode: this.fixedDeposit.currencyCode,
+
+      principalAmount:
+        Number(this.fixedDeposit.principalAmount),
+
+      startDate:
+        this.fixedDeposit.startDate,
+
+      endDate:
+        this.fixedDeposit.endDate,
+
+      settlementDate:
+        this.fixedDeposit.settlementDate,
+
+      remarks:
+        this.fixedDeposit.remarks
+
+    };
+
+
+    console.log(
+      'FD payload:',
+      payload
+    );
+
+
+    if (this.isEdit && this.fdId) {
 
       this.fdService
-        .update(
-          this.fdId,
-          data
-        )
+        .update(this.fdId, payload)
         .subscribe({
 
-          next: () => {
-
-            alert(
-              'FD updated successfully'
-            );
-
-            this.router.navigate([
-              '/fd'
-            ]);
-
+          next: response => {
+            console.log('FD updated:', response);
+            alert('Fixed Deposit updated successfully.');
+            this.isGeneralReadOnly = true;
+            this.loadFDDetails();
           },
 
-          error: (error) => {
+          error: error => {
 
             console.error(
-              'Update failed',
+              'FD update error:',
               error
+            );
+
+            alert(
+              'Unable to update Fixed Deposit.'
             );
 
           }
 
         });
 
-
-      return;
-
     }
 
+    else {
 
-    // ==========================
-    // CREATE
-    // ==========================
+      this.fdService
+        .create(payload)
+        .subscribe({
 
-    this.fdService
-      .create(data)
-      .subscribe({
+          next: response => {
 
-        next: () => {
+            console.log(
+              'FD created:',
+              response
+            );
 
-          alert(
-            'FD created successfully'
-          );
+            this.fdId =
+              response.fdId;
 
-          this.router.navigate([
-            '/fd'
-          ]);
+            this.isEdit = true;
 
-        },
+            alert(
+              'Fixed Deposit created successfully.'
+            );
 
-        error: (error) => {
+            /*
+              After General Save,
+              open Interest tab.
+            */
 
-          console.error(
-            'Create FD failed',
-            error
-          );
+            this.activeTab =
+              'interest';
 
-        }
+          },
 
-      });
+          error: error => {
+
+            console.error(
+              'FD create error:',
+              error
+            );
+
+            alert(
+              'Unable to create Fixed Deposit.'
+            );
+
+          }
+
+        });
+
+    }
 
   }
 
 
-  // ==============================
-  // CANCEL
-  // ==============================
+  /* =========================
+     CANCEL
+  ========================= */
 
   cancel(): void {
 
@@ -358,16 +549,26 @@ export class FDDetailComponent implements OnInit {
   }
 
 
-  // ==============================
-  // GO BACK
-  // ==============================
+  /* =========================
+     CASH FLOW GENERATION (NOW HANDLED BY BACKEND)
+  ========================= */
+
+  onInterestSaved(interestData: any): void {
+    if (!this.fdId) return;
+    
+    alert('Interest configuration and associated Cash Flows generated successfully.');
+    this.activeTab = 'cashflow';
+    this.loadFDDetails();
+  }
+
+  /* =========================
+     BACK
+  ========================= */
 
   goBack(): void {
-
     this.router.navigate([
       '/fd'
     ]);
-
   }
 
 }

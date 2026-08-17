@@ -46,6 +46,12 @@ namespace FinTrustFDManager.DAL.Repositories
             return cashFlow;
         }
 
+        public async Task AddRangeAsync(IEnumerable<FDCashFlow> models)
+        {
+            await _context.FDCashFlows.AddRangeAsync(models);
+            await _context.SaveChangesAsync();
+        }
+
         // UPDATE
         public async Task<FDCashFlow?> UpdateAsync(FDCashFlow cashFlow)
         {
@@ -73,6 +79,12 @@ namespace FinTrustFDManager.DAL.Repositories
             await _context.SaveChangesAsync();
 
             return existingCashFlow;
+        }
+
+        public async Task UpdateRangeAsync(IEnumerable<FDCashFlow> cashFlows)
+        {
+            _context.FDCashFlows.UpdateRange(cashFlows);
+            await _context.SaveChangesAsync();
         }
 
         // DELETE

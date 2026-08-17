@@ -3,6 +3,7 @@ using System;
 using FinTrustFDManager.DAL.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
@@ -11,9 +12,11 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace FinTrustFDManager.DAL.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260817073551_UpdateCashFlowAndInterestModels")]
+    partial class UpdateCashFlowAndInterestModels
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -438,18 +441,12 @@ namespace FinTrustFDManager.DAL.Migrations
                         .IsRequired()
                         .HasColumnType("text");
 
-                    b.Property<decimal>("ClosingBalance")
-                        .HasColumnType("numeric");
-
                     b.Property<DateTime>("CreatedDate")
                         .HasColumnType("timestamp without time zone");
 
                     b.Property<string>("CurrencyCode")
                         .IsRequired()
                         .HasColumnType("text");
-
-                    b.Property<int>("Days")
-                        .HasColumnType("integer");
 
                     b.Property<string>("Direction")
                         .IsRequired()
@@ -462,9 +459,6 @@ namespace FinTrustFDManager.DAL.Migrations
                         .HasColumnType("numeric");
 
                     b.Property<decimal>("NetInterest")
-                        .HasColumnType("numeric");
-
-                    b.Property<decimal>("OpeningBalance")
                         .HasColumnType("numeric");
 
                     b.Property<decimal>("PrincipalAmount")
@@ -588,9 +582,6 @@ namespace FinTrustFDManager.DAL.Migrations
                     b.Property<string>("InterestRateType")
                         .IsRequired()
                         .HasColumnType("text");
-
-                    b.Property<bool>("IsCompounding")
-                        .HasColumnType("boolean");
 
                     b.Property<decimal?>("Margin")
                         .HasColumnType("numeric");
@@ -736,21 +727,21 @@ namespace FinTrustFDManager.DAL.Migrations
                         new
                         {
                             Id = 1,
-                            CreatedDate = new DateTime(2026, 8, 17, 11, 2, 36, 540, DateTimeKind.Utc).AddTicks(3153),
+                            CreatedDate = new DateTime(2026, 8, 17, 7, 35, 51, 266, DateTimeKind.Utc).AddTicks(8445),
                             IsActive = true,
                             RoleName = "Admin"
                         },
                         new
                         {
                             Id = 2,
-                            CreatedDate = new DateTime(2026, 8, 17, 11, 2, 36, 540, DateTimeKind.Utc).AddTicks(3154),
+                            CreatedDate = new DateTime(2026, 8, 17, 7, 35, 51, 266, DateTimeKind.Utc).AddTicks(8451),
                             IsActive = true,
                             RoleName = "CA"
                         },
                         new
                         {
                             Id = 3,
-                            CreatedDate = new DateTime(2026, 8, 17, 11, 2, 36, 540, DateTimeKind.Utc).AddTicks(3156),
+                            CreatedDate = new DateTime(2026, 8, 17, 7, 35, 51, 266, DateTimeKind.Utc).AddTicks(8453),
                             IsActive = true,
                             RoleName = "Approver"
                         });

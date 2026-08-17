@@ -141,7 +141,7 @@ export const routes: Routes = [
   // ADD FD
   // ==============================
   {
-    path: 'fd/add',
+    path: 'fd-detail',
     component: FDDetailComponent,
     canActivate: [authGuard]
   },
@@ -150,7 +150,7 @@ export const routes: Routes = [
   // EDIT FD
   // ==============================
   {
-    path: 'fd/edit/:id',
+    path: 'fd-detail/:id',
     component: FDDetailComponent,
     canActivate: [authGuard]
   }

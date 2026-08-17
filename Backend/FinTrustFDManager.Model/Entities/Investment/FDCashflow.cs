@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 
 namespace FinTrustFDManager.Model.Entities.Investment
 {
@@ -13,6 +13,12 @@ namespace FinTrustFDManager.Model.Entities.Investment
         public string CashFlowType { get; set; } = string.Empty;
 
         public string Direction { get; set; } = string.Empty;
+
+        public int Days { get; set; }
+
+        public decimal OpeningBalance { get; set; }
+
+        public decimal ClosingBalance { get; set; }
 
         public decimal PrincipalAmount { get; set; }
 

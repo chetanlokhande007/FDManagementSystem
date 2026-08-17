@@ -1,4 +1,4 @@
-﻿using FinTrustFDManager.BAL.Interfaces;
+using FinTrustFDManager.BAL.Interfaces;
 using FinTrustFDManager.Model.Entities.Investment;
 using Microsoft.AspNetCore.Mvc;
 
@@ -34,15 +34,43 @@ namespace FinTrustFDManager.API.Controllers
             return Ok(data);
         }
 
-        [HttpPost]
-        public async Task<IActionResult> Create(FDInterest model)
+        [HttpGet("fd/{fdId:long}")]
+        public async Task<IActionResult> GetByFdId(long fdId)
         {
-            var result = await _service.CreateAsync(model);
+            var data = await _service.GetByFdIdAsync(fdId);
 
-            return CreatedAtAction(
-                nameof(GetById),
-                new { id = result.FdInterestId },
-                result);
+            if (data == null)
+                return NotFound();
+
+            return Ok(data);
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> Create([FromBody] FDInterest model)
+        {
+            try
+            {
+                var result = await _service.CreateAsync(model);
+
+                return CreatedAtAction(
+                    nameof(GetById),
+                    new { id = result.FdInterestId },
+                    result);
+            }
+            catch (KeyNotFoundException ex)
+            {
+                return NotFound(new
+                {
+                    message = ex.Message
+                });
+            }
+            catch (InvalidOperationException ex)
+            {
+                return Conflict(new
+                {
+                    message = ex.Message
+                });
+            }
         }
 
         [HttpPut("{id:long}")]

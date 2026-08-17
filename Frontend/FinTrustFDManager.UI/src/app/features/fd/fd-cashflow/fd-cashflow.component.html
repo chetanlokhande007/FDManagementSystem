@@ -1,0 +1,112 @@
+<div class="cashflow-page">
+
+  <div *ngIf="!showForm">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+      <h3>Cash Flows for FD ID: {{ fdId }}</h3>
+    </div>
+
+    <div *ngIf="cashFlows && cashFlows.length > 0; else noData">
+      <table style="width: 100%; border-collapse: collapse; margin-bottom: 20px;">
+        <thead>
+          <tr style="border-bottom: 2px solid #ccc; background-color: #f9f9f9;">
+            <th style="text-align: center; padding: 12px;">Action</th>
+            <th style="text-align: left; padding: 12px;">Date</th>
+            <th style="text-align: right; padding: 12px;">Days</th>
+            <th style="text-align: right; padding: 12px;">Opening Balance</th>
+            <th style="text-align: right; padding: 12px;">Gross Interest</th>
+            <th style="text-align: right; padding: 12px;">Closing Balance</th>
+            <th style="text-align: right; padding: 12px;">Total</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let cf of cashFlows" style="border-bottom: 1px solid #eee;">
+            <td style="text-align: center; padding: 12px;">
+              <span *ngIf="cf.cashFlowType === 'PRINCIPAL'">—</span>
+              <button *ngIf="cf.cashFlowType !== 'PRINCIPAL'" type="button" class="action-btn edit" (click)="editCashFlow(cf)">Edit</button>
+            </td>
+            <td style="padding: 12px;">{{ cf.cashFlowDate | date:'dd-MMM-yyyy' }}</td>
+            <td style="text-align: right; padding: 12px;">{{ cf.days }}</td>
+            <td style="text-align: right; padding: 12px;">{{ cf.openingBalance | currency:'INR':'symbol':'1.2-2' }}</td>
+            <td style="text-align: right; padding: 12px;">{{ cf.grossInterest | currency:'INR':'symbol':'1.2-2' }}</td>
+            <td style="text-align: right; padding: 12px;">{{ cf.closingBalance | currency:'INR':'symbol':'1.2-2' }}</td>
+            <td style="text-align: right; padding: 12px;">{{ cf.totalAmount | currency:'INR':'symbol':'1.2-2' }}</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Add CashFlow button removed as requested -->
+
+    <ng-template #noData>
+      <p style="text-align: center;">No CashFlows found.</p>
+    </ng-template>
+  </div>
+
+  <div *ngIf="showForm" class="cashflow-form-container" style="border: 1px solid #ccc; padding: 20px; border-radius: 5px;">
+    <h3>{{ isEdit ? 'Edit CashFlow' : 'Add CashFlow' }}</h3>
+    <form [formGroup]="cashFlowForm" (ngSubmit)="saveCashFlow()">
+      <div class="form-grid" style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
+        <div class="form-group">
+          <label>Cash Flow Date <span>*</span></label>
+          <input type="date" formControlName="cashFlowDate" style="width: 100%; padding: 8px;">
+        </div>
+        <div class="form-group">
+          <label>Cash Flow Type</label>
+          <select formControlName="cashFlowType" style="width: 100%; padding: 8px;">
+            <option value="">Select Type</option>
+            <option value="PRINCIPAL">PRINCIPAL</option>
+            <option value="INTEREST">INTEREST</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Direction</label>
+          <select formControlName="direction" style="width: 100%; padding: 8px;">
+            <option value="">Select Direction</option>
+            <option value="INFLOW">INFLOW</option>
+            <option value="OUTFLOW">OUTFLOW</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Currency</label>
+          <input type="text" formControlName="currencyCode" style="width: 100%; padding: 8px;">
+        </div>
+        <div class="form-group">
+          <label>Principal Amount</label>
+          <input type="number" formControlName="principalAmount" style="width: 100%; padding: 8px;">
+        </div>
+        <div class="form-group">
+          <label>Gross Interest</label>
+          <input type="number" formControlName="grossInterest" style="width: 100%; padding: 8px;">
+        </div>
+        <div class="form-group">
+          <label>TDS Amount</label>
+          <input type="number" formControlName="tdsAmount" style="width: 100%; padding: 8px;">
+        </div>
+        <div class="form-group">
+          <label>Net Interest</label>
+          <input type="number" formControlName="netInterest" style="width: 100%; padding: 8px;">
+        </div>
+        <div class="form-group">
+          <label>Total Amount</label>
+          <input type="number" formControlName="totalAmount" style="width: 100%; padding: 8px;">
+        </div>
+        <div class="form-group">
+          <label>Status</label>
+          <select formControlName="status" style="width: 100%; padding: 8px;">
+            <option value="PENDING">PENDING</option>
+            <option value="ACTIVE">ACTIVE</option>
+            <option value="SETTLED">SETTLED</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Reference No</label>
+          <input type="text" formControlName="referenceNo" style="width: 100%; padding: 8px;">
+        </div>
+      </div>
+      <div class="form-actions" style="margin-top: 20px; display: flex; gap: 10px; justify-content: center;">
+        <button type="submit" class="save-btn" style="padding: 10px 20px;">{{ isEdit ? 'Update' : 'Save CashFlow' }}</button>
+        <button type="button" class="cancel-btn" (click)="cancel()" style="padding: 10px 20px;">Cancel</button>
+      </div>
+    </form>
+  </div>
+</div>

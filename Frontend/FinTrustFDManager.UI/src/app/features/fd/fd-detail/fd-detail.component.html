@@ -1,334 +1,165 @@
 <div class="fd-detail-page">
 
-
   <!-- HEADER -->
-
   <div class="detail-header">
-
     <div>
-
-      <h2>
-        Fixed Deposit
-      </h2>
-
+      <h2>Fixed Deposit</h2>
     </div>
-
-
-    <button
-      class="back-btn"
-      (click)="goBack()">
-
-      Go Back
-
-    </button>
-
+    <button class="back-btn" (click)="goBack()">Go Back</button>
   </div>
-
 
   <!-- CARD -->
-
   <div class="fd-card">
 
-
     <!-- TABS -->
-
     <div class="tabs">
-
-      <div class="tab active">
+      <div class="tab" [class.active]="activeTab === 'general'" (click)="selectTab('general')">
         General
       </div>
-
-      <div class="tab">
+      <div class="tab" [class.active]="activeTab === 'interest'" (click)="selectTab('interest')">
         Interest
       </div>
-
-      <div class="tab">
+      <div class="tab" [class.active]="activeTab === 'cashflow'" (click)="selectTab('cashflow')">
         CashFlow
       </div>
-
-      <div class="reference-label"
-           *ngIf="isEdit">
-
-        FD_{{ fdId }}
-
+      <div class="reference-label" *ngIf="isEdit && fixedDeposit.fdReferenceNo">
+        {{ fixedDeposit.fdReferenceNo }}
       </div>
-
     </div>
 
-
-    <!-- FORM -->
-
-    <form
-      [formGroup]="fdForm"
-      (ngSubmit)="save()">
-
-
-      <div class="form-grid">
-
-
-        <!-- REFERENCE -->
-
-        <div class="form-group">
-
-          <label>
-            Reference
-            <span>*</span>
-          </label>
-
-          <input
-            type="text"
-            formControlName="fdReferenceNo"
-            placeholder="Auto Generated"
-            readonly>
-
+    <!-- GENERAL TAB FORM -->
+    <div *ngIf="activeTab === 'general'" class="tab-content">
+      
+      <!-- READ ONLY VIEW -->
+      <div *ngIf="isGeneralReadOnly" class="read-only-view">
+        <div class="summary-grid" style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 20px;">
+          <div><strong>FD Reference:</strong> {{ fixedDeposit.fdReferenceNo }}</div>
+          <div><strong>Entity:</strong> {{ getEntityName(fixedDeposit.entityId) }}</div>
+          <div><strong>Counterparty:</strong> {{ getCounterpartyName(fixedDeposit.counterpartyId) }}</div>
+          <div><strong>Currency:</strong> {{ fixedDeposit.currencyCode }}</div>
+          <div><strong>Principal Amount:</strong> {{ fixedDeposit.principalAmount | number:'1.2-2' }}</div>
+          <div><strong>Start Date:</strong> {{ fixedDeposit.startDate | date:'dd-MMM-yyyy' }}</div>
+          <div><strong>Maturity Date:</strong> {{ fixedDeposit.endDate | date:'dd-MMM-yyyy' }}</div>
+          <div><strong>Status:</strong> {{ fixedDeposit.status || 'ACTIVE' }}</div>
         </div>
-
-
-        <!-- ENTITY -->
-
-        <div class="form-group">
-
-          <label>
-            Entity
-            <span>*</span>
-          </label>
-
-          <select
-            formControlName="entityId">
-
-            <option value="">
-              Select Entity
-            </option>
-
-            <option value="101">
-              101
-            </option>
-
-            <option value="102">
-              102
-            </option>
-
-          </select>
-
+        <div class="form-actions">
+          <button type="button" class="save-btn" (click)="editGeneral()">Edit</button>
         </div>
-
-
-        <!-- COUNTERPARTY -->
-
-        <div class="form-group">
-
-          <label>
-            Counterparty
-            <span>*</span>
-          </label>
-
-          <select
-            formControlName="counterpartyId">
-
-            <option value="">
-              Select Counterparty
-            </option>
-
-            <option value="1">
-              Counterparty 1
-            </option>
-
-            <option value="2">
-              Counterparty 2
-            </option>
-
-          </select>
-
-        </div>
-
-
-        <!-- COUNTERPARTY TYPE -->
-
-        <div class="form-group">
-
-          <label>
-            Counterparty Type
-          </label>
-
-          <select>
-
-            <option>
-              Select Type
-            </option>
-
-            <option>
-              Bank
-            </option>
-
-            <option>
-              Financial Institution
-            </option>
-
-          </select>
-
-        </div>
-
-
-       <!-- CURRENCY -->
-
-<div class="form-group">
-
-  <label>
-    Transaction Currency
-    <span>*</span>
-  </label>
-
-  <select formControlName="currencyCode">
-
-    <option value="" disabled>
-      Select Currency
-    </option>
-
-    <option
-      *ngFor="let currency of currencies"
-      [value]="currency.currencyCode">
-
-      {{ currency.currencyCode }}
-
-    </option>
-
-  </select>
-
-</div>
-
-
-        <!-- AMOUNT -->
-
-        <div class="form-group">
-
-          <label>
-            Transaction Amount
-            <span>*</span>
-          </label>
-
-          <input
-            type="number"
-            formControlName="principalAmount"
-            placeholder="Enter Amount">
-
-        </div>
-
-
-        <!-- START DATE -->
-
-        <div class="form-group">
-
-          <label>
-            Start Date
-            <span>*</span>
-          </label>
-
-          <input
-            type="date"
-            formControlName="startDate">
-
-        </div>
-
-
-        <!-- END DATE -->
-
-        <div class="form-group">
-
-          <label>
-            End Date
-            <span>*</span>
-          </label>
-
-          <input
-            type="date"
-            formControlName="endDate">
-
-        </div>
-
-
-        <!-- SETTLEMENT DATE -->
-
-        <div class="form-group">
-
-          <label>
-            Settlement Date
-            <span>*</span>
-          </label>
-
-          <input
-            type="date"
-            formControlName="settlementDate">
-
-        </div>
-
-
-        <!-- BANK ACCOUNT -->
-
-        <div class="form-group">
-
-          <label>
-            Bank Account
-            <span>*</span>
-          </label>
-
-          <select>
-
-            <option>
-              Select Bank Account
-            </option>
-
-            <option>
-              HDFC - 001
-            </option>
-
-            <option>
-              ICICI - 002
-            </option>
-
-          </select>
-
-        </div>
-
-
-        <!-- REMARKS -->
-
-        <div class="form-group full-width">
-
-    
-
-        </div>
-
-
       </div>
 
+      <!-- FORM VIEW -->
+      <div *ngIf="!isGeneralReadOnly">
+        <div class="form-grid">
 
-      <!-- BUTTONS -->
+          <!-- REFERENCE -->
+          <div class="form-group">
+            <label>
+              Reference <span>*</span>
+            </label>
+            <input type="text" [(ngModel)]="fixedDeposit.fdReferenceNo" placeholder="Auto Generated" readonly>
+          </div>
 
-      <div class="form-actions">
+          <!-- ENTITY -->
+          <div class="form-group">
+            <label>
+              Entity <span>*</span>
+            </label>
+            <select [(ngModel)]="fixedDeposit.entityId">
+              <option [ngValue]="null">Select Entity</option>
+              <option *ngFor="let entity of entities" [ngValue]="entity.entityId">
+                {{ entity.entityCode }} - {{ entity.entityName }}
+              </option>
+            </select>
+          </div>
 
-        <button
-          type="submit"
-          class="save-btn">
+          <!-- COUNTERPARTY -->
+          <div class="form-group">
+            <label>
+              Counterparty <span>*</span>
+            </label>
+            <select [(ngModel)]="fixedDeposit.counterpartyId">
+              <option [ngValue]="null">Select Counterparty</option>
+              <option *ngFor="let cp of counterparties" [ngValue]="cp.counterPartyId">
+                {{ cp.counterPartyCode }} - {{ cp.counterPartyName }}
+              </option>
+            </select>
+          </div>
 
-          {{ isEdit ? 'Update' : 'Save' }}
+          <!-- CURRENCY -->
+          <div class="form-group">
+            <label>
+              Transaction Currency <span>*</span>
+            </label>
+            <select [(ngModel)]="fixedDeposit.currencyCode">
+              <option value="">Select Currency</option>
+              <option *ngFor="let currency of currencies" [value]="currency.currencyCode">
+                {{ currency.currencyCode }} - {{ currency.currencyName }}
+              </option>
+            </select>
+          </div>
 
-        </button>
+          <!-- AMOUNT -->
+          <div class="form-group">
+            <label>
+              Principal Amount <span>*</span>
+            </label>
+            <input type="number" [(ngModel)]="fixedDeposit.principalAmount" placeholder="Enter Amount">
+          </div>
 
+          <!-- START DATE -->
+          <div class="form-group">
+            <label>
+              Start Date <span>*</span>
+            </label>
+            <input type="date" [(ngModel)]="fixedDeposit.startDate">
+          </div>
 
-        <button
-          type="button"
-          class="cancel-btn"
-          (click)="cancel()">
+          <!-- END DATE -->
+          <div class="form-group">
+            <label>
+              End Date <span>*</span>
+            </label>
+            <input type="date" [(ngModel)]="fixedDeposit.endDate">
+          </div>
 
-          Cancel
+          <!-- SETTLEMENT DATE -->
+          <div class="form-group">
+            <label>
+              Settlement Date <span>*</span>
+            </label>
+            <input type="date" [(ngModel)]="fixedDeposit.settlementDate">
+          </div>
 
-        </button>
+          <!-- REMARKS -->
+          <div class="form-group">
+            <label>
+              Remarks
+            </label>
+            <input type="text" [(ngModel)]="fixedDeposit.remarks" placeholder="Enter Remarks">
+          </div>
 
+        </div>
+
+        <div class="form-actions">
+          <button type="button" class="save-btn" (click)="save()">
+            {{ isEdit ? 'Update' : 'Save' }}
+          </button>
+          <button type="button" class="cancel-btn" (click)="cancel()">
+            Cancel
+          </button>
+        </div>
       </div>
+    </div>
 
+    <!-- INTEREST TAB -->
+    <div *ngIf="activeTab === 'interest'">
+      <app-fd-interest *ngIf="fdId" [fdId]="fdId" [interestData]="interestData" (interestSaved)="onInterestSaved($event)"></app-fd-interest>
+    </div>
 
-    </form>
+    <!-- CASHFLOW TAB -->
+    <div *ngIf="activeTab === 'cashflow'">
+      <app-fd-cashflow *ngIf="fdId" [fdId]="fdId" [cashFlows]="cashFlows" (cashFlowSaved)="loadFDDetails()"></app-fd-cashflow>
+    </div>
 
   </div>
-
 </div>

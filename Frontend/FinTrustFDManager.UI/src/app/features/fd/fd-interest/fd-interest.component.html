@@ -1,0 +1,69 @@
+<div class="interest-page">
+
+  <!-- FORM VIEW -->
+  <form [formGroup]="interestForm" (ngSubmit)="saveInterest()">
+    <div class="form-grid">
+      <div class="form-group">
+        <label>Interest Rate Type</label>
+        <select formControlName="interestRateType">
+          <option value="FIXED">FIXED</option>
+          <option value="FLOATING">FLOATING</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Interest Rate (%)</label>
+        <input type="number" formControlName="interestRate">
+      </div>
+      <div class="form-group">
+        <label>Benchmark Name</label>
+        <input type="text" formControlName="benchmarkName">
+      </div>
+      <div class="form-group">
+        <label>Benchmark Rate</label>
+        <input type="number" formControlName="benchmarkRate">
+      </div>
+      <div class="form-group">
+        <label>Margin</label>
+        <input type="number" formControlName="margin">
+      </div>
+      <div class="form-group">
+        <label>Interest Frequency</label>
+        <select formControlName="interestFrequency">
+          <option value="MONTHLY">MONTHLY</option>
+          <option value="QUARTERLY">QUARTERLY</option>
+          <option value="ANNUALLY">ANNUALLY</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Compounding Frequency</label>
+        <select formControlName="compoundingFrequency">
+          <option value="MONTHLY">MONTHLY</option>
+          <option value="QUARTERLY">QUARTERLY</option>
+          <option value="ANNUALLY">ANNUALLY</option>
+        </select>
+      </div>
+      <div class="form-group" style="display: flex; align-items: center; gap: 10px;">
+        <input type="checkbox" formControlName="isCompounding" id="isCompounding">
+        <label for="isCompounding" style="margin-bottom: 0;">Apply Compounding Interest</label>
+      </div>
+      <div class="form-group">
+        <label>Calculation Basis</label>
+        <select formControlName="calculationBasis">
+          <option value="ACTUAL_365">ACTUAL_365</option>
+          <option value="ACTUAL_360">ACTUAL_360</option>
+        </select>
+      </div>
+
+      <div class="form-group">
+        <label>Payment Convention</label>
+        <input type="text" formControlName="paymentConvention">
+      </div>
+
+    </div>
+    <div class="form-actions">
+      <button type="submit" class="save-btn">
+        {{ isEdit ? 'Update Interest' : 'Save Interest' }}
+      </button>
+    </div>
+  </form>
+</div>

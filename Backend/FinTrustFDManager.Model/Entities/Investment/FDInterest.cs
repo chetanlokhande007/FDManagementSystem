@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 
 namespace FinTrustFDManager.Model.Entities.Investment
 {
@@ -16,16 +16,10 @@ namespace FinTrustFDManager.Model.Entities.Investment
 
         public string InterestFrequency { get; set; } = string.Empty;
         public string? CompoundingFrequency { get; set; }
+        public bool IsCompounding { get; set; }
         public string CalculationBasis { get; set; } = string.Empty;
 
-        public string? CalendarCode { get; set; }
         public string? PaymentConvention { get; set; }
-
-        public DateTime? FirstInterestDate { get; set; }
-        public DateTime? FirstCompoundingDate { get; set; }
-
-        public bool TdsApplicable { get; set; }
-        public decimal? TdsRate { get; set; }
 
         public DateTime CreatedDate { get; set; }
     }

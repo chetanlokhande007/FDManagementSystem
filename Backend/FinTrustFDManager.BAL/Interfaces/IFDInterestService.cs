@@ -1,4 +1,4 @@
-﻿using FinTrustFDManager.Model.Entities.Investment;
+using FinTrustFDManager.Model.Entities.Investment;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -12,6 +12,8 @@ namespace FinTrustFDManager.BAL.Interfaces
         Task<IEnumerable<FDInterest>> GetAllAsync();
 
         Task<FDInterest?> GetByIdAsync(long id);
+
+        Task<FDInterest?> GetByFdIdAsync(long fdId);
 
         Task<FDInterest> CreateAsync(FDInterest model);
 

@@ -61,12 +61,7 @@ namespace FinTrustFDManager.DAL.Repositories
             existing.InterestFrequency = model.InterestFrequency;
             existing.CompoundingFrequency = model.CompoundingFrequency;
             existing.CalculationBasis = model.CalculationBasis;
-            existing.CalendarCode = model.CalendarCode;
             existing.PaymentConvention = model.PaymentConvention;
-            existing.FirstInterestDate = model.FirstInterestDate;
-            existing.FirstCompoundingDate = model.FirstCompoundingDate;
-            existing.TdsApplicable = model.TdsApplicable;
-            existing.TdsRate = model.TdsRate;
 
             await _context.SaveChangesAsync();
 

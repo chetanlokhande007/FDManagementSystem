@@ -3,48 +3,28 @@ import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
 
 export interface FDLanding {
-
   fdId: number;
+  fdReferenceNo?: string;
+  entityName?: string;
+  counterpartyName?: string;
+  transactionCurrency?: string;
+  transactionAmount?: number;
+  startDate?: string;
+  endDate?: string;
+  status?: string;
+  customerName?: string;
 
-  fdReferenceNo: string;
-
-  entityId: number;
-
-  counterpartyId: number;
-
-  currencyCode: string;
-
-  principalAmount: number;
-
-  startDate: string;
-
-  endDate: string;
-
-  settlementDate: string;
-
-  status: string;
-
-  interestRate: number;
-
-  interestRateType: string;
-
-  interestFrequency: string;
-
-  compoundingFrequency: string;
-
-  calculationBasis: string;
-
-  totalPrincipal: number;
-
-  totalGrossInterest: number;
-
-  totalTds: number;
-
-  totalNetInterest: number;
-
-  totalAmount: number;
+  entityId?: number;
+  counterpartyId?: number;
+  counterpartyType?: string;
+  currencyCode?: string;
+  principalAmount?: number;
+  settlementDate?: string;
+  bankAccountId?: number;
+  remarks?: string;
+  interestRate?: number;
+  totalAmount?: number;
 }
-
 
 @Injectable({
   providedIn: 'root'
@@ -54,79 +34,32 @@ export class FDIdentificationService {
   private apiUrl =
     'http://localhost:5075/api/FDIdentification';
 
+  constructor(private http: HttpClient) {}
 
-  constructor(
-    private http: HttpClient
-  ) {}
-
-
-  // ==============================
-  // LANDING DATA
-  // ==============================
+  getAll(): Observable<FDLanding[]> {
+    return this.http.get<FDLanding[]>(this.apiUrl);
+  }
 
   getLandingData(): Observable<FDLanding[]> {
-
-    return this.http.get<FDLanding[]>(
-      `${this.apiUrl}/landing`
-    );
-
+    return this.http.get<FDLanding[]>(`${this.apiUrl}/landing`);
   }
 
-
-  // ==============================
-  // GET BY ID
-  // ==============================
-
-  getById(id: number): Observable<any> {
-
-    return this.http.get<any>(
-      `${this.apiUrl}/${id}`
-    );
-
+  getById(id: number): Observable<FDLanding> {
+    return this.http.get<FDLanding>(`${this.apiUrl}/${id}`);
   }
 
-
-  // ==============================
-  // CREATE
-  // ==============================
-
-  create(data: any): Observable<any> {
-
-    return this.http.post<any>(
-      this.apiUrl,
-      data
-    );
-
+  create(data: Partial<FDLanding>): Observable<FDLanding> {
+    return this.http.post<FDLanding>(this.apiUrl, data);
   }
 
-
-  // ==============================
-  // UPDATE
-  // ==============================
-
-  update(
-    id: number,
-    data: any
-  ): Observable<any> {
-
-    return this.http.put<any>(
+  update(id: number, data: Partial<FDLanding>): Observable<FDLanding> {
+    return this.http.put<FDLanding>(
       `${this.apiUrl}/${id}`,
       data
     );
-
   }
 
-
-  // ==============================
-  // DELETE
-  // ==============================
-
-  delete(id: number): Observable<any> {
-
-    return this.http.delete(
-      `${this.apiUrl}/${id}`
-    );
-
+  delete(id: number): Observable<void> {
+    return this.http.delete<void>(`${this.apiUrl}/${id}`);
   }
-
 }

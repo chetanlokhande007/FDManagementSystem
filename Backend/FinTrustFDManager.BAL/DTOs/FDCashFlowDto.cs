@@ -14,6 +14,12 @@ namespace FinTrustFDManager.BAL.DTOs
 
         public string Direction { get; set; } = string.Empty;
 
+        public int Days { get; set; }
+
+        public decimal OpeningBalance { get; set; }
+
+        public decimal ClosingBalance { get; set; }
+
         public decimal PrincipalAmount { get; set; }
 
         public decimal GrossInterest { get; set; }
