@@ -47,6 +47,13 @@ namespace FinTrustFDManager.BAL.Services
                     "Currency Code already exists.");
             }
 
+            var allCurrencies = await _repository.GetAllAsync();
+            if (allCurrencies.Any(c => c.CurrencyName.Equals(dto.CurrencyName, StringComparison.OrdinalIgnoreCase)))
+            {
+                throw new InvalidOperationException(
+                    "Currency Name already exists.");
+            }
+
             var currency = new Currency
             {
                 CurrencyCode = dto.CurrencyCode,
@@ -81,6 +88,13 @@ namespace FinTrustFDManager.BAL.Services
             {
                 throw new InvalidOperationException(
                     "Currency Code already exists.");
+            }
+
+            var allCurrencies = await _repository.GetAllAsync();
+            if (allCurrencies.Any(c => c.CurrencyName.Equals(dto.CurrencyName, StringComparison.OrdinalIgnoreCase) && c.CurrencyId != id))
+            {
+                throw new InvalidOperationException(
+                    "Currency Name already exists.");
             }
 
             currency.CurrencyCode = dto.CurrencyCode;

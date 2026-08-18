@@ -1,6 +1,8 @@
 import { Injectable } from '@angular/core';
-import { HttpClient } from '@angular/common/http';
-import { Observable } from 'rxjs';
+import { HttpClient, HttpErrorResponse, HttpHeaders } from '@angular/common/http';
+import { Observable, throwError } from 'rxjs';
+import { catchError } from 'rxjs/operators';
+import { environment } from '../../../environments/environment';
 
 export interface FDLanding {
   fdId: number;
@@ -24,15 +26,10 @@ export interface FDLanding {
   remarks?: string;
   interestRate?: number;
   totalAmount?: number;
-
   interestRateType?: string;
-  interestFrequency?: string;
   compoundingFrequency?: string;
   calculationBasis?: string;
-
-  totalPrincipal?: number;
   totalGrossInterest?: number;
-  totalTds?: number;
   totalNetInterest?: number;
 }
 
@@ -41,35 +38,61 @@ export interface FDLanding {
 })
 export class FDIdentificationService {
 
-  private apiUrl =
-    'http://localhost:5075/api/FDIdentification';
+  private apiUrl = `${environment.apiUrl}/FDIdentification`;
 
   constructor(private http: HttpClient) {}
 
+  private handleError(error: HttpErrorResponse) {
+    let errorMessage = 'An error occurred';
+    if (error.error instanceof ErrorEvent) {
+      errorMessage = `Error: ${error.error.message}`;
+    } else {
+      errorMessage = error.error?.message || `Error Code: ${error.status}\nMessage: ${error.message}`;
+    }
+    console.error('API Error:', errorMessage);
+    return throwError(() => new Error(errorMessage));
+  }
+
   getAll(): Observable<FDLanding[]> {
-    return this.http.get<FDLanding[]>(this.apiUrl);
-  }
-
-  getLandingData(): Observable<FDLanding[]> {
-    return this.http.get<FDLanding[]>(`${this.apiUrl}/landing`);
-  }
-
-  getById(id: number): Observable<FDLanding> {
-    return this.http.get<FDLanding>(`${this.apiUrl}/${id}`);
-  }
-
-  create(data: Partial<FDLanding>): Observable<FDLanding> {
-    return this.http.post<FDLanding>(this.apiUrl, data);
-  }
-
-  update(id: number, data: Partial<FDLanding>): Observable<FDLanding> {
-    return this.http.put<FDLanding>(
-      `${this.apiUrl}/${id}`,
-      data
+    return this.http.get<FDLanding[]>(this.apiUrl).pipe(
+      catchError(this.handleError)
     );
   }
 
-  delete(id: number): Observable<void> {
-    return this.http.delete<void>(`${this.apiUrl}/${id}`);
+  getLandingData(): Observable<FDLanding[]> {
+    return this.http.get<FDLanding[]>(`${this.apiUrl}/landing`).pipe(
+      catchError(this.handleError)
+    );
+  }
+
+  getById(id: number): Observable<FDLanding> {
+    return this.http.get<FDLanding>(`${this.apiUrl}/${id}`).pipe(
+      catchError(this.handleError)
+    );
+  }
+
+  create(data: Partial<FDLanding>): Observable<FDLanding> {
+    return this.http.post<FDLanding>(this.apiUrl, data).pipe(
+      catchError(this.handleError)
+    );
+  }
+
+  update(id: number, data: Partial<FDLanding>): Observable<FDLanding> {
+    return this.http.put<FDLanding>(`${this.apiUrl}/${id}`, data).pipe(
+      catchError(this.handleError)
+    );
+  }
+
+  delete(id: number): Observable<{ success: boolean; message: string }> {
+    return this.http.delete<{ success: boolean; message: string }>(`${this.apiUrl}/${id}`).pipe(
+      catchError(this.handleError)
+    );
+  }
+
+  changeStatus(id: number, status: string): Observable<{ success: boolean; message: string }> {
+    const headers = new HttpHeaders({ 'Content-Type': 'application/json' });
+    return this.http.patch<{ success: boolean; message: string }>(`${this.apiUrl}/${id}/status`, JSON.stringify(status), { headers }).pipe(
+      catchError(this.handleError)
+    );
   }
 }

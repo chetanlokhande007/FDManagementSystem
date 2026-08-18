@@ -210,12 +210,12 @@ namespace FinTrustFDManager.BAL.Services
                 Direction = "INFLOW",
                 Days = 0,
                 OpeningBalance = openingBalance,
-                ClosingBalance = openingBalance, // Usually principal is returned
+                ClosingBalance = 0, // Account closes out
                 PrincipalAmount = fd.PrincipalAmount,
                 GrossInterest = 0,
                 TdsAmount = 0,
                 NetInterest = 0,
-                TotalAmount = fd.PrincipalAmount,
+                TotalAmount = openingBalance, // Full compounded payout
                 CurrencyCode = fd.CurrencyCode ?? "INR",
                 Status = "PENDING",
                 ReferenceNo = fd.FdReferenceNo ?? "",

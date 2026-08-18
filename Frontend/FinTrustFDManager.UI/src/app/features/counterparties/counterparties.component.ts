@@ -19,6 +19,7 @@ export class CounterpartiesComponent implements OnInit {
   showForm = false;
   isEdit = false;
   loading = false;
+  errorMessage = '';
 
   counterParty: CounterParty = this.emptyCounterParty();
 
@@ -106,14 +107,11 @@ export class CounterpartiesComponent implements OnInit {
 
   saveCounterParty(): void {
 
-    if (
-      !this.counterParty.counterPartyName ||
-      !this.counterParty.counterPartyCode ||
-      !this.counterParty.countryId
-    ) {
-      alert('Please fill all required fields');
+    if (!this.counterParty.counterPartyName || (this.isEdit && !this.counterParty.counterPartyCode) || !this.counterParty.countryId) {
+      this.errorMessage = 'Please fill all required fields';
       return;
     }
+    this.errorMessage = '';
 
     const request = {
       counterPartyCode: this.counterParty.counterPartyCode,
@@ -141,12 +139,7 @@ export class CounterpartiesComponent implements OnInit {
 
             console.error('Update failed', error);
 
-            const msg =
-              error.error ||
-              error.message ||
-              'Unknown error';
-
-            alert('Failed to update counterparty: ' + msg);
+            this.errorMessage = error.error || error.message || 'Unknown error';
           }
         });
 
@@ -170,12 +163,7 @@ export class CounterpartiesComponent implements OnInit {
 
           console.error('Create failed', error);
 
-          const msg =
-            error.error ||
-            error.message ||
-            'Unknown error';
-
-          alert('Failed to create counterparty: ' + msg);
+          this.errorMessage = error.error || error.message || 'Unknown error';
         }
       });
   }
@@ -212,6 +200,7 @@ export class CounterpartiesComponent implements OnInit {
   closeForm(): void {
 
     this.showForm = false;
+    this.errorMessage = '';
 
     this.counterParty = this.emptyCounterParty();
   }

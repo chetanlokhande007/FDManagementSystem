@@ -19,5 +19,7 @@ namespace FinTrustFDManager.BAL.Interfaces
 
         // Landing Page
         Task<IEnumerable<FDLandingDto>> GetLandingDataAsync();
+
+        Task<bool> ChangeStatusAsync(long id, string status);
     }
 }

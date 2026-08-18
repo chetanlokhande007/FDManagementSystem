@@ -22,6 +22,7 @@ export class CurrenciesComponent implements OnInit {
   loading = false;
 
   currency: Currency = this.emptyCurrency();
+  errorMessage: string = '';
 
   constructor(
     private currencyService: CurrencyService,
@@ -93,13 +94,11 @@ export class CurrenciesComponent implements OnInit {
 
   saveCurrency(): void {
 
-    if (
-      !this.currency.currencyName ||
-      !this.currency.currencyCode
-    ) {
-      alert('Please fill all required fields');
+    if (!this.currency.currencyName || !this.currency.currencyCode) {
+      this.errorMessage = 'Please fill all required fields';
       return;
     }
+    this.errorMessage = '';
 
     const request = {
       currencyName: this.currency.currencyName,
@@ -128,12 +127,7 @@ export class CurrenciesComponent implements OnInit {
 
             console.error('Update failed', error);
 
-            const msg =
-              error.error ||
-              error.message ||
-              'Unknown error';
-
-            alert('Failed to update currency: ' + msg);
+            this.errorMessage = error.error || error.message || 'Failed to update currency';
           }
         });
 
@@ -157,12 +151,7 @@ export class CurrenciesComponent implements OnInit {
 
           console.error('Create failed', error);
 
-          const msg =
-            error.error ||
-            error.message ||
-            'Unknown error';
-
-          alert('Failed to create currency: ' + msg);
+          this.errorMessage = error.error || error.message || 'Failed to create currency';
         }
       });
   }
@@ -191,7 +180,7 @@ export class CurrenciesComponent implements OnInit {
 
           console.error('Delete failed', error);
 
-          alert('Failed to delete currency');
+          this.errorMessage = 'Failed to delete currency';
         }
       });
   }
@@ -199,7 +188,7 @@ export class CurrenciesComponent implements OnInit {
   closeForm(): void {
 
     this.showForm = false;
-
+    this.errorMessage = '';
     this.currency = this.emptyCurrency();
   }
 }

@@ -7,7 +7,7 @@ import { FdInterestComponent } from '../fd-interest/fd-interest.component';
 
 import {
   EntityService,
-  Entity
+  EntityDto
 } from '../../../core/services/entity.service';
 
 import {
@@ -88,7 +88,7 @@ export class FDDetailComponent implements OnInit {
      CORE DATA
   ========================= */
 
-  entities: Entity[] = [];
+  entities: EntityDto[] = [];
 
   counterparties: CounterParty[] = [];
 
@@ -173,8 +173,14 @@ export class FDDetailComponent implements OnInit {
       this.isGeneralReadOnly = true;
     }
 
+    // Store the requested tab, but don't set activeTab yet
+    // It will be set after FD details load (if navigating to interest/cashflow)
     if (tab) {
-      this.activeTab = tab;
+      sessionStorage.setItem('FD_REQUESTED_TAB', tab);
+      // Only set directly if it's 'general'
+      if (tab === 'general') {
+        this.activeTab = tab;
+      }
     }
 
     this.loadCoreData();
@@ -188,19 +194,22 @@ export class FDDetailComponent implements OnInit {
   ========================= */
 
   loadCoreData(): void {
+    let hasCache = false;
     if (cachedCoreData) {
       this.applyCoreData(cachedCoreData);
-      return;
+      hasCache = true;
+    } else {
+      const storedCache = sessionStorage.getItem(CORE_DATA_CACHE_KEY);
+      if (storedCache) {
+        cachedCoreData = JSON.parse(storedCache);
+        this.applyCoreData(cachedCoreData);
+        hasCache = true;
+      }
     }
 
-    const storedCache = sessionStorage.getItem(CORE_DATA_CACHE_KEY);
-    if (storedCache) {
-      cachedCoreData = JSON.parse(storedCache);
-      this.applyCoreData(cachedCoreData);
-      return;
+    if (!hasCache) {
+      this.loading = true;
     }
-
-    this.loading = true;
 
     forkJoin({
       entities: this.entityService.getAll().pipe(catchError((err) => { console.error('Entity API Error:', err); return of([]); })),
@@ -214,7 +223,7 @@ export class FDDetailComponent implements OnInit {
         cachedCoreData = results;
         sessionStorage.setItem(CORE_DATA_CACHE_KEY, JSON.stringify(results));
 
-        this.applyCoreData(results);
+        this.applyCoreData(results, hasCache);
       },
       error: (error) => {
         console.error('Error loading core data', error);
@@ -223,7 +232,7 @@ export class FDDetailComponent implements OnInit {
     });
   }
 
-  private applyCoreData(cache: any): void {
+  private applyCoreData(cache: any, isBackground: boolean = false): void {
     this.entities = cache.entities.filter((x: any) => x.status === 1);
     this.counterparties = cache.counterparties.filter((x: any) => x.isActive);
     this.currencies = cache.currencies.filter((x: any) => x.isActive);
@@ -231,10 +240,12 @@ export class FDDetailComponent implements OnInit {
     this.interestFrequencies = cache.interestFrequencies;
     this.dayCountConventions = cache.dayCountConventions;
 
-    if (this.isEdit && this.fdId) {
-      this.loadFDDetails();
-    } else {
-      this.loading = false;
+    if (!isBackground) {
+      if (this.isEdit && this.fdId) {
+        this.loadFDDetails();
+      } else {
+        this.loading = false;
+      }
     }
   }
 
@@ -243,10 +254,13 @@ export class FDDetailComponent implements OnInit {
      LOAD FD DETAILS
   ========================= */
 
-  loadFDDetails(): void {
+  loadFDDetails(forceRefresh: boolean = false): void {
     if (!this.fdId) return;
 
     const cacheKey = `FINTRUST_FD_DETAIL_CACHE_${this.fdId}`;
+    if (forceRefresh) {
+      sessionStorage.removeItem(cacheKey);
+    }
     const cachedData = sessionStorage.getItem(cacheKey);
     
     if (cachedData) {
@@ -299,8 +313,19 @@ export class FDDetailComponent implements OnInit {
     };
 
     this.interestData = result.interest;
-    this.cashFlows = result.cashFlows;
+    if (result.cashFlows && Array.isArray(result.cashFlows)) {
+      this.cashFlows = result.cashFlows.sort((a: any, b: any) => new Date(a.cashFlowDate).getTime() - new Date(b.cashFlowDate).getTime());
+    } else {
+      this.cashFlows = result.cashFlows;
+    }
     this.loading = false;
+
+    // After FD details are loaded, set the requested tab
+    const requestedTab = sessionStorage.getItem('FD_REQUESTED_TAB');
+    if (requestedTab && (requestedTab === 'interest' || requestedTab === 'cashflow')) {
+      this.activeTab = requestedTab;
+      sessionStorage.removeItem('FD_REQUESTED_TAB');
+    }
   }
 
 
@@ -469,7 +494,6 @@ export class FDDetailComponent implements OnInit {
 
           next: response => {
             console.log('FD updated:', response);
-            alert('Fixed Deposit updated successfully.');
             this.isGeneralReadOnly = true;
             this.activeTab = 'interest';
             this.loadFDDetails();
@@ -504,11 +528,11 @@ export class FDDetailComponent implements OnInit {
             this.fdId =
               response.fdId;
 
-            this.isEdit = true;
+            this.fixedDeposit.fdReferenceNo = 
+              response.fdReferenceNo;
 
-            alert(
-              'Fixed Deposit created successfully.'
-            );
+            this.isEdit = true;
+            this.isGeneralReadOnly = true;
 
             /*
               After General Save,
@@ -553,12 +577,13 @@ export class FDDetailComponent implements OnInit {
      CASH FLOW GENERATION (NOW HANDLED BY BACKEND)
   ========================= */
 
-  onInterestSaved(interestData: any): void {
+  onInterestSaved(interest: any): void {
     if (!this.fdId) return;
 
     alert('Interest configuration and associated Cash Flows generated successfully.');
-    this.activeTab = 'cashflow';
-    this.loadFDDetails();
+    this.interestData = interest;
+    
+    this.loadFDDetails(true); // force refresh to get new cash flows instantly
   }
 
   /* =========================

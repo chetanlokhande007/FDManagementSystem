@@ -17,6 +17,7 @@ export class CountriesComponent implements OnInit {
   showForm = false;
   isEdit = false;
   loading = false;
+  errorMessage = '';
 
   country: Country = this.emptyCountry();
 
@@ -80,13 +81,11 @@ export class CountriesComponent implements OnInit {
 
   saveCountry(): void {
 
-    if (
-      !this.country.countryName ||
-      !this.country.countryCode
-    ) {
-      alert('Please fill all required fields');
+    if (!this.country.countryName || !this.country.countryCode) {
+      this.errorMessage = 'Please fill all required fields';
       return;
     }
+    this.errorMessage = '';
 
     const request = {
       countryName: this.country.countryName,
@@ -109,9 +108,7 @@ export class CountriesComponent implements OnInit {
           },
 
           error: (error) => {
-            console.error('Update failed', error);
-            const msg = error.error || error.message || 'Unknown error';
-            alert('Failed to update country: ' + msg);
+            this.errorMessage = error.error || error.message || 'Unknown error';
           }
         });
 
@@ -130,9 +127,7 @@ export class CountriesComponent implements OnInit {
         },
 
         error: (error) => {
-          console.error('Create failed', error);
-          const msg = error.error || error.message || 'Unknown error';
-          alert('Failed to create country: ' + msg);
+          this.errorMessage = error.error || error.message || 'Unknown error';
         }
       });
   }
@@ -165,6 +160,7 @@ export class CountriesComponent implements OnInit {
 
   closeForm(): void {
     this.showForm = false;
+    this.errorMessage = '';
     this.country = this.emptyCountry();
   }
 }

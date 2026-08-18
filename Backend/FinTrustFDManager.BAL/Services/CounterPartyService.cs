@@ -42,18 +42,25 @@ namespace FinTrustFDManager.BAL.Services
         public async Task<CounterPartyDto> CreateAsync(
             CreateCounterPartyDto dto)
         {
-            var existing = await _repository
-                .GetByCodeAsync(dto.CounterPartyCode);
 
-            if (existing != null)
+
+            var allCounterParties = await _repository.GetAllAsync();
+            if (allCounterParties.Any(cp => cp.CounterPartyName.Equals(dto.CounterPartyName, StringComparison.OrdinalIgnoreCase)))
             {
                 throw new InvalidOperationException(
-                    "Counter Party Code already exists.");
+                    "Counter Party Name already exists.");
             }
+
+            long nextId = 1;
+            if (allCounterParties.Any())
+            {
+                nextId = allCounterParties.Max(x => x.CounterPartyId) + 1;
+            }
+            string generatedCode = $"CP{nextId:D3}";
 
             var counterParty = new CounterParty
             {
-                CounterPartyCode = dto.CounterPartyCode,
+                CounterPartyCode = generatedCode,
                 CounterPartyName = dto.CounterPartyName,
                 CountryId = dto.CountryId,
                 IsActive = dto.IsActive
@@ -88,6 +95,13 @@ namespace FinTrustFDManager.BAL.Services
             {
                 throw new InvalidOperationException(
                     "Counter Party Code already exists.");
+            }
+
+            var allCounterParties = await _repository.GetAllAsync();
+            if (allCounterParties.Any(cp => cp.CounterPartyName.Equals(dto.CounterPartyName, StringComparison.OrdinalIgnoreCase) && cp.CounterPartyId != id))
+            {
+                throw new InvalidOperationException(
+                    "Counter Party Name already exists.");
             }
 
             counterParty.CounterPartyCode =

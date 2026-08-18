@@ -47,11 +47,11 @@ export class FDListComponent implements OnInit {
     private fdService: FDIdentificationService,
     private router: Router,
     private eRef: ElementRef
-  ) {}
+  ) { }
 
   @HostListener('document:click', ['$event'])
   clickout(event: Event) {
-    if(!this.eRef.nativeElement.contains(event.target)) {
+    if (!this.eRef.nativeElement.contains(event.target)) {
       this.openDropdownId = null;
     }
   }
@@ -108,15 +108,15 @@ export class FDListComponent implements OnInit {
     this.fdService
       .getLandingData()
       .subscribe({
-        next: (data) => {
+        next: (data: FDLanding[]) => {
           // Update cache with fresh data
           sessionStorage.setItem('FINTRUST_FD_LANDING_CACHE', JSON.stringify(data));
-          
+
           // Update UI
           this.fdList = data.sort((a, b) => b.fdId - a.fdId);
           this.loading = false;
         },
-        error: (error) => {
+        error: (error: any) => {
           console.error('Error fetching FDs:', error);
           this.loading = false;
         }
@@ -155,6 +155,10 @@ export class FDListComponent implements OnInit {
       case 'cashflow':
         this.cashFlow(fd);
         break;
+
+      case 'status':
+        this.openStatusModal(fd);
+        break;
     }
   }
   // ADD FD
@@ -182,7 +186,7 @@ export class FDListComponent implements OnInit {
 
   editFD(fdId: number): void {
     console.log('Edit FD:', fdId);
-    this.router.navigate(['/fd-detail', fdId]);
+    this.router.navigate(['/fd-detail', fdId], { queryParams: { tab: 'general' } });
   }
 
   // ==============================
@@ -204,19 +208,84 @@ export class FDListComponent implements OnInit {
       return;
     }
 
+    // Optimistic UI update: instantly remove from list
+    const previousList = [...this.fdList];
+    this.fdList = this.fdList.filter(f => f.fdId !== fd.fdId);
+    sessionStorage.setItem('FINTRUST_FD_LANDING_CACHE', JSON.stringify(this.fdList));
+    this.openDropdownId = null;
+
     this.fdService
       .delete(fd.fdId)
       .subscribe({
         next: () => {
-          alert('FD deleted successfully');
-          this.loadFDs();
+          // Silent success. Refresh data in background just to be safe.
+          this.fdService.getLandingData().subscribe(data => {
+            sessionStorage.setItem('FINTRUST_FD_LANDING_CACHE', JSON.stringify(data));
+            this.fdList = data.sort((a: any, b: any) => b.fdId - a.fdId);
+          });
         },
-        error: (error) => {
-          console.error('Delete failed', error);
-          alert('Unable to delete FD');
+        error: (error: any) => {
+          // Revert optimistic delete on error
+          this.fdList = previousList;
+          sessionStorage.setItem('FINTRUST_FD_LANDING_CACHE', JSON.stringify(this.fdList));
+
+          console.error('Delete failed:', error);
+          const errorMsg = error?.error?.message || error?.message || 'Unable to delete FD.';
+          alert(`Delete Error: ${errorMsg}`);
         }
       });
   }
 
+  // ==============================
+  // CHANGE STATUS MODAL
+  // ==============================
+
+  showStatusModal = false;
+  statusFd: FDLanding | null = null;
+  newStatus = '';
+
+  openStatusModal(fd: FDLanding): void {
+    this.statusFd = fd;
+    // Assuming current statuses might be DRAFT, Active, Inactive
+    // If it's Active, we suggest Inactive. If it's Inactive or DRAFT, we suggest Active.
+    this.newStatus = (fd.status === 'Active') ? 'Inactive' : 'Active';
+    this.showStatusModal = true;
+  }
+
+  closeStatusModal(): void {
+    this.showStatusModal = false;
+    this.statusFd = null;
+    this.newStatus = '';
+  }
+
+  confirmChangeStatus(): void {
+    if (!this.statusFd) return;
+
+    const fd = this.statusFd;
+    const oldStatus = fd.status;
+    const updatedStatus = this.newStatus;
+
+    // Optimistic UI update
+    fd.status = updatedStatus;
+    sessionStorage.setItem('FINTRUST_FD_LANDING_CACHE', JSON.stringify(this.fdList));
+    this.closeStatusModal();
+
+    this.fdService.changeStatus(fd.fdId, updatedStatus).subscribe({
+      next: () => {
+        // Silent success, optionally refresh in background
+        this.fdService.getLandingData().subscribe(data => {
+          sessionStorage.setItem('FINTRUST_FD_LANDING_CACHE', JSON.stringify(data));
+          this.fdList = data.sort((a: any, b: any) => b.fdId - a.fdId);
+        });
+      },
+      error: (error: any) => {
+        // Revert on error
+        fd.status = oldStatus;
+        sessionStorage.setItem('FINTRUST_FD_LANDING_CACHE', JSON.stringify(this.fdList));
+        console.error('Change status failed:', error);
+        alert('Failed to change FD status.');
+      }
+    });
+  }
 
 }

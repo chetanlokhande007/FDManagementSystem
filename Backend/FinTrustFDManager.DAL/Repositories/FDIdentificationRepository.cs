@@ -52,7 +52,7 @@ namespace FinTrustFDManager.DAL.Repositories
             if (existing == null)
                 return null;
 
-            existing.FdReferenceNo = model.FdReferenceNo;
+            // DO NOT update FdReferenceNo since it's auto-generated and immutable
             existing.EntityId = model.EntityId;
             existing.CounterpartyId = model.CounterpartyId;
             existing.CurrencyCode = model.CurrencyCode;
@@ -80,6 +80,21 @@ namespace FinTrustFDManager.DAL.Repositories
                 return false;
 
             _context.FDIdentifications.Remove(existing);
+
+            await _context.SaveChangesAsync();
+
+            return true;
+        }
+
+        public async Task<bool> ChangeStatusAsync(long id, string status)
+        {
+            var existing = await _context.FDIdentifications
+                .FirstOrDefaultAsync(x => x.FdId == id);
+
+            if (existing == null)
+                return false;
+
+            existing.Status = status;
 
             await _context.SaveChangesAsync();
 

@@ -142,6 +142,35 @@
   box-sizing: border-box;
 }
 
+.general-summary-card {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 20px 40px;
+  background-color: #f8f9fa;
+  border: 1px solid #e0e0e0;
+  border-radius: 8px;
+  padding: 24px;
+  margin: 24px;
+}
+
+.summary-item {
+  display: flex;
+  flex-direction: column;
+  min-width: 180px;
+}
+
+.summary-label {
+  font-size: 13px;
+  color: #6b7280;
+  margin-bottom: 4px;
+}
+
+.summary-value {
+  font-size: 15px;
+  font-weight: 600;
+  color: #1f2937;
+}
+
 
 /* =========================================================
    FORM

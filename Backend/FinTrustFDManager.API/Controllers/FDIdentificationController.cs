@@ -125,9 +125,24 @@ namespace FinTrustFDManager.API.Controllers
             var result = await _service.DeleteAsync(id);
 
             if (!result)
-                return NotFound("FD Identification not found.");
+                return NotFound(new { success = false, message = "FD Identification not found." });
 
-            return Ok("FD Identification deleted successfully.");
+            return Ok(new { success = true, message = "FD Identification deleted successfully." });
+        }
+
+        // PATCH: api/FDIdentification/1/status
+        [HttpPatch("{id}/status")]
+        public async Task<IActionResult> ChangeStatus(long id, [FromBody] string status)
+        {
+            if (string.IsNullOrWhiteSpace(status))
+                return BadRequest("Status cannot be empty.");
+
+            var result = await _service.ChangeStatusAsync(id, status);
+
+            if (!result)
+                return NotFound(new { success = false, message = "FD Identification not found." });
+
+            return Ok(new { success = true, message = "Status updated successfully." });
         }
     }
 }

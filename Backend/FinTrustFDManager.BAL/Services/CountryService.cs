@@ -75,6 +75,15 @@ namespace FinTrustFDManager.BAL.Services
                     "Country code already exists.");
             }
 
+            var nameExists = await _context.Countries
+                .AnyAsync(c => c.CountryName == dto.CountryName);
+
+            if (nameExists)
+            {
+                throw new InvalidOperationException(
+                    "Country name already exists.");
+            }
+
             var country = new Country
             {
                 CountryCode = dto.CountryCode.Trim(),
@@ -111,6 +120,24 @@ namespace FinTrustFDManager.BAL.Services
             if (country == null)
             {
                 return null;
+            }
+
+            var codeExists = await _context.Countries
+                .AnyAsync(c => c.CountryCode == dto.CountryCode && c.CountryId != id);
+
+            if (codeExists)
+            {
+                throw new InvalidOperationException(
+                    "Country code already exists.");
+            }
+
+            var nameExists = await _context.Countries
+                .AnyAsync(c => c.CountryName == dto.CountryName && c.CountryId != id);
+
+            if (nameExists)
+            {
+                throw new InvalidOperationException(
+                    "Country name already exists.");
             }
 
             country.CountryCode = dto.CountryCode.Trim();

@@ -36,19 +36,25 @@ namespace FinTrustFDManager.BAL.Services
         public async Task<EntityDto> CreateAsync(
             CreateEntityDto dto)
         {
-            // Check duplicate Entity Code
-            var existing = await _repository
-                .GetByCodeAsync(dto.EntityCode);
 
-            if (existing != null)
+
+            var allEntities = await _repository.GetAllAsync();
+            if (allEntities.Any(e => e.EntityName.Equals(dto.EntityName, StringComparison.OrdinalIgnoreCase)))
             {
                 throw new InvalidOperationException(
-                    "Entity Code already exists.");
+                    "Entity Name already exists.");
             }
+
+            long nextId = 1;
+            if (allEntities.Any())
+            {
+                nextId = allEntities.Max(x => x.EntityId) + 1;
+            }
+            string generatedCode = $"ENT{nextId:D3}";
 
             var entity = new Entity
             {
-                EntityCode = dto.EntityCode,
+                EntityCode = generatedCode,
                 EntityName = dto.EntityName,
                 CountryId = dto.CountryId,
                 Status = dto.Status
@@ -83,6 +89,13 @@ namespace FinTrustFDManager.BAL.Services
             {
                 throw new InvalidOperationException(
                     "Entity Code already exists.");
+            }
+
+            var allEntities = await _repository.GetAllAsync();
+            if (allEntities.Any(e => e.EntityName.Equals(dto.EntityName, StringComparison.OrdinalIgnoreCase) && e.EntityId != id))
+            {
+                throw new InvalidOperationException(
+                    "Entity Name already exists.");
             }
 
             entity.EntityCode = dto.EntityCode;

@@ -44,15 +44,39 @@
       
       <!-- READ ONLY VIEW -->
       <div *ngIf="isGeneralReadOnly" class="read-only-view">
-        <div class="summary-grid" style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 20px;">
-          <div><strong>FD Reference:</strong> {{ fixedDeposit.fdReferenceNo }}</div>
-          <div><strong>Entity:</strong> {{ getEntityName(fixedDeposit.entityId) }}</div>
-          <div><strong>Counterparty:</strong> {{ getCounterpartyName(fixedDeposit.counterpartyId) }}</div>
-          <div><strong>Currency:</strong> {{ fixedDeposit.currencyCode }}</div>
-          <div><strong>Principal Amount:</strong> {{ fixedDeposit.principalAmount | number:'1.2-2' }}</div>
-          <div><strong>Start Date:</strong> {{ fixedDeposit.startDate | date:'dd-MMM-yyyy' }}</div>
-          <div><strong>Maturity Date:</strong> {{ fixedDeposit.endDate | date:'dd-MMM-yyyy' }}</div>
-          <div><strong>Status:</strong> {{ fixedDeposit.status || 'ACTIVE' }}</div>
+        <div class="general-summary-card">
+          <div class="summary-item">
+            <span class="summary-label">FD Reference</span>
+            <span class="summary-value">{{ fixedDeposit.fdReferenceNo }}</span>
+          </div>
+          <div class="summary-item">
+            <span class="summary-label">Entity</span>
+            <span class="summary-value">{{ getEntityName(fixedDeposit.entityId) }}</span>
+          </div>
+          <div class="summary-item">
+            <span class="summary-label">Counterparty</span>
+            <span class="summary-value">{{ getCounterpartyName(fixedDeposit.counterpartyId) }}</span>
+          </div>
+          <div class="summary-item">
+            <span class="summary-label">Currency</span>
+            <span class="summary-value">{{ fixedDeposit.currencyCode }}</span>
+          </div>
+          <div class="summary-item">
+            <span class="summary-label">Principal Amount</span>
+            <span class="summary-value">{{ fixedDeposit.principalAmount | number:'1.2-2' }}</span>
+          </div>
+          <div class="summary-item">
+            <span class="summary-label">Start Date</span>
+            <span class="summary-value">{{ fixedDeposit.startDate | date:'dd-MMM-yyyy' }}</span>
+          </div>
+          <div class="summary-item">
+            <span class="summary-label">Maturity Date</span>
+            <span class="summary-value">{{ fixedDeposit.endDate | date:'dd-MMM-yyyy' }}</span>
+          </div>
+          <div class="summary-item">
+            <span class="summary-label">Status</span>
+            <span class="summary-value">{{ fixedDeposit.status || 'ACTIVE' }}</span>
+          </div>
         </div>
         <div class="form-actions">
           <button type="button" class="save-btn" (click)="editGeneral()">Edit</button>

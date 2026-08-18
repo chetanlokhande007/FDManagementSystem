@@ -15,10 +15,7 @@ export class SidebarComponent implements OnInit {
   @Output() closeSidebar = new EventEmitter<void>();
 
   isMasterDataOpen = false;
-  isCoreDataOpen = false;
-
-  // ADD THIS
-  isInvestmentsOpen = false;
+  isInvestmentsOpen = true; // Open by default
 
   constructor(private router: Router) {}
 
@@ -33,7 +30,6 @@ export class SidebarComponent implements OnInit {
   }
 
   checkActiveRoute(url: string) {
-
     // Master Data
     if (
       url.includes('/entities') ||
@@ -44,20 +40,12 @@ export class SidebarComponent implements OnInit {
       this.isMasterDataOpen = true;
     }
 
-    // Core Data
+    // Investments
     if (
+      url.includes('/fd') ||
       url.includes('/investments') ||
-      url.includes('/approvals') ||
-      url.includes('/cash-flows') ||
-      url.includes('/interest-frequency') ||
-      url.includes('/day-count-convention')
+      url.includes('/fixed-deposit')
     ) {
-      this.isCoreDataOpen = true;
-    }
-
-    // ADD THIS
-    // Automatically open Investments when FD page is active
-    if (url.includes('/investments/fixed-deposit')) {
       this.isInvestmentsOpen = true;
     }
   }
@@ -66,12 +54,23 @@ export class SidebarComponent implements OnInit {
     this.isMasterDataOpen = !this.isMasterDataOpen;
   }
 
+  toggleInvestments(): void {
+    this.isInvestmentsOpen = !this.isInvestmentsOpen;
+  }
+
+  isCoreDataOpen = false;
+  isOperationsOpen = false;
+  isReportingOpen = false;
+
   toggleCoreData(): void {
     this.isCoreDataOpen = !this.isCoreDataOpen;
   }
 
-  // ADD THIS
-  toggleInvestments(): void {
-    this.isInvestmentsOpen = !this.isInvestmentsOpen;
+  toggleOperations(): void {
+    this.isOperationsOpen = !this.isOperationsOpen;
+  }
+
+  toggleReporting(): void {
+    this.isReportingOpen = !this.isReportingOpen;
   }
 }

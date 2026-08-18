@@ -29,7 +29,7 @@ export class CashFlowComponent implements OnInit {
   }
 
   loadEntity(id: number): void {
-    this.entityService.getById(id).subscribe(data => {
+    this.entityService.getById(id).subscribe((data: EntityDto) => {
       this.entity = data;
     });
   }

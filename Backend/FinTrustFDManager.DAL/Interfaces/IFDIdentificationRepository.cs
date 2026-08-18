@@ -1,4 +1,4 @@
-﻿using FinTrustFDManager.Model.Entities.Investment;
+using FinTrustFDManager.Model.Entities.Investment;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -18,5 +18,6 @@ namespace FinTrustFDManager.DAL.Interfaces
         Task<FDIdentification?> UpdateAsync(FDIdentification model);
         Task<FDIdentification?> GetLastAsync();
         Task<bool> DeleteAsync(long id);
+        Task<bool> ChangeStatusAsync(long id, string status);
     }
 }

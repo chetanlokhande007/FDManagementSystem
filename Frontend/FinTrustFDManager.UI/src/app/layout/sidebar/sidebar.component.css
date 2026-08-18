@@ -192,6 +192,13 @@
   overflow: hidden;
 }
 
+.nav-items {
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
 :host {
   display: block;
   height: 100%;

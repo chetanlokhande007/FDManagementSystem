@@ -67,10 +67,19 @@
             <button class="close-btn" (click)="closeForm()">×</button>
         </div>
 
+        <div *ngIf="errorMessage" style="padding: 0 24px; color: #dc2626; font-size: 13px; font-weight: 500; margin-bottom: -10px;">
+            {{ errorMessage }}
+        </div>
+
         <div class="form-body">
             <div class="form-group">
                 <label>Entity Code *</label>
-                <input type="text" name="entityCode" [(ngModel)]="entity.entityCode" placeholder="Enter entity code">
+                <input type="text" 
+                       name="entityCode" 
+                       [ngModel]="!isEdit ? 'Auto Generated' : entity.entityCode" 
+                       (ngModelChange)="entity.entityCode = $event"
+                       [disabled]="!isEdit"
+                       placeholder="Enter entity code">
             </div>
 
             <div class="form-group">

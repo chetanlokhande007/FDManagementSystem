@@ -16,14 +16,6 @@
         <span class="summary-value">{{ fdData.principalAmount | currency:'INR':'symbol':'1.2-2' }}</span>
       </div>
       <div class="summary-item">
-        <span class="summary-label">Start Date</span>
-        <span class="summary-value">{{ fdData.startDate | date:'dd-MMM-yyyy' }}</span>
-      </div>
-      <div class="summary-item">
-        <span class="summary-label">End Date</span>
-        <span class="summary-value">{{ fdData.endDate | date:'dd-MMM-yyyy' }}</span>
-      </div>
-      <div class="summary-item">
         <span class="summary-label">Interest Rate</span>
         <span class="summary-value">{{ interestData.interestRate | number:'1.2-2' }}%</span>
       </div>
@@ -43,25 +35,40 @@
       <table>
         <thead>
           <tr>
-            <th style="text-align: center;">Action</th>
+            <th style="text-align: center;">Action / Type</th>
             <th>Start Date</th>
             <th>End Date</th>
             <th style="text-align: right;">Days</th>
             <th style="text-align: right;">Opening Balance</th>
             <th style="text-align: right;">Gross Interest</th>
             <th style="text-align: right;">Closing Balance</th>
-            <th style="text-align: right;">Total</th>
+            <th style="text-align: right;">Cashflow Amount</th>
           </tr>
         </thead>
         <tbody>
           <tr *ngFor="let cf of enrichedCashFlows">
             <td style="text-align: center;">
-              <span *ngIf="cf.cashFlowType === 'PRINCIPAL'">—</span>
-              <button *ngIf="cf.cashFlowType !== 'PRINCIPAL'" type="button" class="action-btn edit" (click)="editCashFlow(cf)">Edit</button>
+              <span *ngIf="cf.cashFlowType === 'PRINCIPAL'" style="font-weight: 500; color: #475569;">Initial Deposit</span>
+              <span *ngIf="cf.cashFlowType === 'MATURITY'" style="font-weight: 500; color: #15803d;">MATURITY</span>
+              <button *ngIf="cf.cashFlowType === 'INTEREST'" type="button" class="action-btn edit" (click)="editCashFlow(cf)">Edit</button>
             </td>
-            <td>{{ cf.periodStart | date:'dd-MMM-yyyy' }}</td>
-            <td>{{ cf.periodEnd | date:'dd-MMM-yyyy' }}</td>
-            <td style="text-align: right;">{{ cf.days }}</td>
+            <td>
+              <ng-container *ngIf="cf.cashFlowType === 'INTEREST'; else blankDate">
+                {{ cf.periodStart | date:'dd-MMM-yyyy' }}
+              </ng-container>
+            </td>
+            <td>
+              <ng-container *ngIf="cf.cashFlowType === 'INTEREST'; else blankDate">
+                {{ cf.periodEnd | date:'dd-MMM-yyyy' }}
+              </ng-container>
+            </td>
+            <ng-template #blankDate>
+              <span style="color: #94a3b8;">—</span>
+            </ng-template>
+            <td style="text-align: right;">
+              <span *ngIf="cf.cashFlowType === 'INTEREST'">{{ cf.days }}</span>
+              <span *ngIf="cf.cashFlowType !== 'INTEREST'" style="color: #94a3b8;">—</span>
+            </td>
             <td style="text-align: right;">{{ cf.openingBalance | currency:'INR':'symbol':'1.2-2' }}</td>
             <td style="text-align: right;">{{ cf.grossInterest | currency:'INR':'symbol':'1.2-2' }}</td>
             <td style="text-align: right;">{{ cf.closingBalance | currency:'INR':'symbol':'1.2-2' }}</td>

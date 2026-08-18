@@ -97,6 +97,18 @@ namespace FinTrustFDManager.BAL.Services
 
         public async Task<bool> DeleteAsync(long id)
         {
+            var cashFlows = await _cashFlowRepository.GetByFdIdAsync(id);
+            foreach (var cf in cashFlows)
+            {
+                await _cashFlowRepository.DeleteAsync(cf.CashFlowId);
+            }
+
+            var interest = await _interestRepository.GetByFdIdAsync(id);
+            if (interest != null)
+            {
+                await _interestRepository.DeleteAsync(interest.FdInterestId);
+            }
+
             return await _repository.DeleteAsync(id);
         }
 
@@ -168,6 +180,11 @@ namespace FinTrustFDManager.BAL.Services
             }
 
             return result;
+        }
+
+        public async Task<bool> ChangeStatusAsync(long id, string status)
+        {
+            return await _repository.ChangeStatusAsync(id, status);
         }
     }
 }

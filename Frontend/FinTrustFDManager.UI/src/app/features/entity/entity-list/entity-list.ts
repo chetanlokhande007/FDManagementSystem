@@ -19,6 +19,7 @@ export class EntityListComponent implements OnInit {
   showForm = false;
   isEdit = false;
   loading = false;
+  errorMessage = '';
 
   entity: Partial<EntityDto> = this.emptyEntity();
 
@@ -35,11 +36,11 @@ export class EntityListComponent implements OnInit {
 
   loadCountries(): void {
     this.countryService.getCountries().subscribe({
-      next: (data) => {
-        this.countries = data.filter(c => c.isActive === true || String(c.isActive).toLowerCase() === 'true');
+      next: (data: Country[]) => {
+        this.countries = data.filter((c: Country) => c.isActive === true || String(c.isActive).toLowerCase() === 'true');
         this.cdr.detectChanges();
       },
-      error: (error) => {
+      error: (error: any) => {
         console.error('Failed to load countries', error);
       }
     });
@@ -95,14 +96,11 @@ export class EntityListComponent implements OnInit {
   }
 
   saveEntity(): void {
-    if (
-      !this.entity.entityName ||
-      !this.entity.entityCode ||
-      !this.entity.countryId
-    ) {
-      alert('Please fill all required fields');
+    if (!this.entity.entityName || (this.isEdit && !this.entity.entityCode) || !this.entity.countryId) {
+      this.errorMessage = 'Please fill all required fields';
       return;
     }
+    this.errorMessage = '';
 
     const request: any = {
       entityName: this.entity.entityName,
@@ -119,9 +117,8 @@ export class EntityListComponent implements OnInit {
             this.closeForm();
             this.loadEntities();
           },
-          error: (error) => {
-            console.error('Update failed', error);
-            alert('Failed to update entity');
+          error: (error: any) => {
+            this.errorMessage = error.error || error.message || 'Unknown error';
           }
         });
       return;
@@ -134,9 +131,8 @@ export class EntityListComponent implements OnInit {
           this.closeForm();
           this.loadEntities();
         },
-        error: (error) => {
-          console.error('Create failed', error);
-          alert('Failed to create entity');
+        error: (error: any) => {
+          this.errorMessage = error.error || error.message || 'Unknown error';
         }
       });
   }
@@ -153,7 +149,7 @@ export class EntityListComponent implements OnInit {
         next: () => {
           this.loadEntities();
         },
-        error: (error) => {
+        error: (error: any) => {
           console.error('Delete failed', error);
           alert('Failed to delete entity');
         }
@@ -162,6 +158,7 @@ export class EntityListComponent implements OnInit {
 
   closeForm(): void {
     this.showForm = false;
+    this.errorMessage = '';
     this.entity = this.emptyEntity();
   }
 }
