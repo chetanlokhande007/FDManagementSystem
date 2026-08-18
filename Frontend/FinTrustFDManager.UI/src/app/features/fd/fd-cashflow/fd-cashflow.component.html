@@ -2,43 +2,87 @@
 
   <div *ngIf="!showForm">
     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
-      <h3>Cash Flows for FD ID: {{ fdId }}</h3>
+      <h3>FD Cash Flow</h3>
+    </div>
+
+    <!-- SUMMARY HEADER -->
+    <div *ngIf="fdData && interestData" class="cashflow-summary-card">
+      <div class="summary-item">
+        <span class="summary-label">FD Reference</span>
+        <span class="summary-value">{{ fdData.fdReferenceNo }}</span>
+      </div>
+      <div class="summary-item">
+        <span class="summary-label">Principal</span>
+        <span class="summary-value">{{ fdData.principalAmount | currency:'INR':'symbol':'1.2-2' }}</span>
+      </div>
+      <div class="summary-item">
+        <span class="summary-label">Start Date</span>
+        <span class="summary-value">{{ fdData.startDate | date:'dd-MMM-yyyy' }}</span>
+      </div>
+      <div class="summary-item">
+        <span class="summary-label">End Date</span>
+        <span class="summary-value">{{ fdData.endDate | date:'dd-MMM-yyyy' }}</span>
+      </div>
+      <div class="summary-item">
+        <span class="summary-label">Interest Rate</span>
+        <span class="summary-value">{{ interestData.interestRate | number:'1.2-2' }}%</span>
+      </div>
+      <div class="summary-item">
+        <span class="summary-label">Apply Compounding</span>
+        <span class="summary-value" [ngStyle]="{'color': interestData.isCompounding ? '#059669' : '#dc2626'}">
+          {{ interestData.isCompounding ? 'YES' : 'NO' }}
+        </span>
+      </div>
+      <div class="summary-item" *ngIf="interestData.isCompounding">
+        <span class="summary-label">Compounding Frequency</span>
+        <span class="summary-value">{{ interestData.compoundingFrequency }}</span>
+      </div>
     </div>
 
     <div *ngIf="cashFlows && cashFlows.length > 0; else noData">
-      <table style="width: 100%; border-collapse: collapse; margin-bottom: 20px;">
+      <table>
         <thead>
-          <tr style="border-bottom: 2px solid #ccc; background-color: #f9f9f9;">
-            <th style="text-align: center; padding: 12px;">Action</th>
-            <th style="text-align: left; padding: 12px;">Date</th>
-            <th style="text-align: right; padding: 12px;">Days</th>
-            <th style="text-align: right; padding: 12px;">Opening Balance</th>
-            <th style="text-align: right; padding: 12px;">Gross Interest</th>
-            <th style="text-align: right; padding: 12px;">Closing Balance</th>
-            <th style="text-align: right; padding: 12px;">Total</th>
+          <tr>
+            <th style="text-align: center;">Action</th>
+            <th>Start Date</th>
+            <th>End Date</th>
+            <th style="text-align: right;">Days</th>
+            <th style="text-align: right;">Opening Balance</th>
+            <th style="text-align: right;">Gross Interest</th>
+            <th style="text-align: right;">Closing Balance</th>
+            <th style="text-align: right;">Total</th>
           </tr>
         </thead>
         <tbody>
-          <tr *ngFor="let cf of cashFlows" style="border-bottom: 1px solid #eee;">
-            <td style="text-align: center; padding: 12px;">
+          <tr *ngFor="let cf of enrichedCashFlows">
+            <td style="text-align: center;">
               <span *ngIf="cf.cashFlowType === 'PRINCIPAL'">—</span>
               <button *ngIf="cf.cashFlowType !== 'PRINCIPAL'" type="button" class="action-btn edit" (click)="editCashFlow(cf)">Edit</button>
             </td>
-            <td style="padding: 12px;">{{ cf.cashFlowDate | date:'dd-MMM-yyyy' }}</td>
-            <td style="text-align: right; padding: 12px;">{{ cf.days }}</td>
-            <td style="text-align: right; padding: 12px;">{{ cf.openingBalance | currency:'INR':'symbol':'1.2-2' }}</td>
-            <td style="text-align: right; padding: 12px;">{{ cf.grossInterest | currency:'INR':'symbol':'1.2-2' }}</td>
-            <td style="text-align: right; padding: 12px;">{{ cf.closingBalance | currency:'INR':'symbol':'1.2-2' }}</td>
-            <td style="text-align: right; padding: 12px;">{{ cf.totalAmount | currency:'INR':'symbol':'1.2-2' }}</td>
+            <td>{{ cf.periodStart | date:'dd-MMM-yyyy' }}</td>
+            <td>{{ cf.periodEnd | date:'dd-MMM-yyyy' }}</td>
+            <td style="text-align: right;">{{ cf.days }}</td>
+            <td style="text-align: right;">{{ cf.openingBalance | currency:'INR':'symbol':'1.2-2' }}</td>
+            <td style="text-align: right;">{{ cf.grossInterest | currency:'INR':'symbol':'1.2-2' }}</td>
+            <td style="text-align: right;">{{ cf.closingBalance | currency:'INR':'symbol':'1.2-2' }}</td>
+            <td style="text-align: right;">{{ cf.totalAmount | currency:'INR':'symbol':'1.2-2' }}</td>
           </tr>
         </tbody>
       </table>
+      
+      <!-- FOOTER TOTALS -->
+      <div class="totals-section">
+        <div class="totals-group">
+          <p><strong>Total Interest:</strong> {{ totalInterest | currency:'INR':'symbol':'1.2-2' }}</p>
+          <p style="margin-bottom: 0;"><strong>Maturity Amount:</strong> {{ maturityAmount | currency:'INR':'symbol':'1.2-2' }}</p>
+        </div>
+      </div>
     </div>
 
     <!-- Add CashFlow button removed as requested -->
 
     <ng-template #noData>
-      <p style="text-align: center;">No CashFlows found.</p>
+      <p style="text-align: center; color: #6b7280; margin-top: 40px;">No CashFlows found.</p>
     </ng-template>
   </div>
 

@@ -44,18 +44,50 @@ namespace FinTrustFDManager.API.Controllers
             return Ok(result);
         }
 
+        private IActionResult? ValidateFD(FDIdentification model)
+        {
+            var errors = new Dictionary<string, string>();
+
+            if (model.EntityId <= 0)
+                errors["entityId"] = "Entity is required.";
+
+            if (model.CounterpartyId <= 0)
+                errors["counterpartyId"] = "Counterparty is required.";
+
+            if (string.IsNullOrWhiteSpace(model.CurrencyCode))
+                errors["currencyCode"] = "Transaction Currency is required.";
+
+            if (model.PrincipalAmount <= 0)
+                errors["principalAmount"] = "Principal Amount must be greater than 0.";
+
+            if (model.StartDate == default)
+                errors["startDate"] = "Start Date is required.";
+
+            if (model.EndDate == default)
+                errors["endDate"] = "End Date is required.";
+            else if (model.EndDate <= model.StartDate)
+                errors["endDate"] = "End Date must be after Start Date.";
+
+            if (model.SettlementDate == default)
+                errors["settlementDate"] = "Settlement Date is required.";
+            else if (model.SettlementDate < model.EndDate)
+                errors["settlementDate"] = "Settlement Date must be on or after End Date.";
+
+            if (errors.Any())
+            {
+                return BadRequest(new { success = false, errors = errors });
+            }
+
+            return null;
+        }
+
         // POST: api/FDIdentification
         [HttpPost]
         public async Task<IActionResult> Create([FromBody] FDIdentification model)
         {
-            if (!ModelState.IsValid)
-                return BadRequest(ModelState);
-
-            if (model.StartDate > model.EndDate)
-                return BadRequest("Start date cannot be greater than end date.");
-
-            if (model.PrincipalAmount <= 0)
-                return BadRequest("Principal amount must be greater than zero.");
+            var validationResult = ValidateFD(model);
+            if (validationResult != null)
+                return validationResult;
 
             var result = await _service.CreateAsync(model);
 
@@ -71,17 +103,12 @@ namespace FinTrustFDManager.API.Controllers
             long id,
             [FromBody] FDIdentification model)
         {
-            if (!ModelState.IsValid)
-                return BadRequest(ModelState);
-
             if (id != model.FdId)
-                return BadRequest("FD ID mismatch.");
+                return BadRequest(new { success = false, errors = new { global = "FD ID mismatch." } });
 
-            if (model.StartDate > model.EndDate)
-                return BadRequest("Start date cannot be greater than end date.");
-
-            if (model.PrincipalAmount <= 0)
-                return BadRequest("Principal amount must be greater than zero.");
+            var validationResult = ValidateFD(model);
+            if (validationResult != null)
+                return validationResult;
 
             var result = await _service.UpdateAsync(id, model);
 

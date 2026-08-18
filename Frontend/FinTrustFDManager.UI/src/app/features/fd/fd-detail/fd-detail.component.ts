@@ -51,6 +51,9 @@ import {
 import { forkJoin, of } from 'rxjs';
 import { catchError, map } from 'rxjs/operators';
 
+let cachedCoreData: any = null;
+const CORE_DATA_CACHE_KEY = 'FINTRUST_CORE_DATA';
+
 @Component({
   selector: 'app-fd-detail',
   standalone: true,
@@ -154,13 +157,15 @@ export class FDDetailComponent implements OnInit {
 
     private router: Router
 
-  ) {}
+  ) { }
 
 
   ngOnInit(): void {
 
     const id =
       this.route.snapshot.paramMap.get('id');
+    const tab =
+      this.route.snapshot.queryParamMap.get('tab');
 
     if (id) {
       this.fdId = Number(id);
@@ -168,9 +173,14 @@ export class FDDetailComponent implements OnInit {
       this.isGeneralReadOnly = true;
     }
 
+    if (tab) {
+      this.activeTab = tab;
+    }
+
     this.loadCoreData();
 
   }
+
 
 
   /* =========================
@@ -178,158 +188,54 @@ export class FDDetailComponent implements OnInit {
   ========================= */
 
   loadCoreData(): void {
+    if (cachedCoreData) {
+      this.applyCoreData(cachedCoreData);
+      return;
+    }
+
+    const storedCache = sessionStorage.getItem(CORE_DATA_CACHE_KEY);
+    if (storedCache) {
+      cachedCoreData = JSON.parse(storedCache);
+      this.applyCoreData(cachedCoreData);
+      return;
+    }
 
     this.loading = true;
 
+    forkJoin({
+      entities: this.entityService.getAll().pipe(catchError((err) => { console.error('Entity API Error:', err); return of([]); })),
+      counterparties: this.counterPartyService.getAll().pipe(catchError((err) => { console.error('Counterparty API Error:', err); return of([]); })),
+      currencies: this.currencyService.getAll().pipe(catchError((err) => { console.error('Currency API Error:', err); return of([]); })),
+      countries: this.countryService.getAll().pipe(catchError((err) => { console.error('Country API Error:', err); return of([]); })),
+      interestFrequencies: this.interestFrequencyService.getAll().pipe(catchError((err) => { console.error('Interest Frequency API Error:', err); return of([]); })),
+      dayCountConventions: this.dayCountConventionService.getAll().pipe(catchError((err) => { console.error('Day Count API Error:', err); return of([]); }))
+    }).subscribe({
+      next: (results) => {
+        cachedCoreData = results;
+        sessionStorage.setItem(CORE_DATA_CACHE_KEY, JSON.stringify(results));
 
-    this.entityService
-      .getAll()
-      .subscribe({
+        this.applyCoreData(results);
+      },
+      error: (error) => {
+        console.error('Error loading core data', error);
+        this.loading = false;
+      }
+    });
+  }
 
-        next: data => {
-
-          this.entities =
-            data.filter(x => x.status === 1);
-
-        },
-
-        error: error => {
-
-          console.error(
-            'Entity API Error:',
-            error
-          );
-
-        }
-
-      });
-
-
-    this.counterPartyService
-      .getAll()
-      .subscribe({
-
-        next: data => {
-
-          this.counterparties =
-            data.filter(x => x.isActive);
-
-        },
-
-        error: error => {
-
-          console.error(
-            'Counterparty API Error:',
-            error
-          );
-
-        }
-
-      });
-
-
-    this.currencyService
-      .getAll()
-      .subscribe({
-
-        next: data => {
-
-          this.currencies =
-            data.filter(x => x.isActive);
-
-        },
-
-        error: error => {
-
-          console.error(
-            'Currency API Error:',
-            error
-          );
-
-        }
-
-      });
-
-
-    this.countryService
-      .getAll()
-      .subscribe({
-
-        next: data => {
-
-          this.countries =
-            data.filter(x => x.isActive);
-
-        },
-
-        error: error => {
-
-          console.error(
-            'Country API Error:',
-            error
-          );
-
-        }
-
-      });
-
-
-    this.interestFrequencyService
-      .getAll()
-      .subscribe({
-
-        next: data => {
-
-          this.interestFrequencies = data;
-
-        },
-
-        error: error => {
-
-          console.error(
-            'Interest Frequency API Error:',
-            error
-          );
-
-        }
-
-      });
-
-
-    this.dayCountConventionService
-      .getAll()
-      .subscribe({
-
-        next: data => {
-
-          this.dayCountConventions = data;
-
-        },
-
-        error: error => {
-
-          console.error(
-            'Day Count API Error:',
-            error
-          );
-
-        }
-
-      });
-
-
-    /*
-      Load FD only after core data is loaded.
-    */
+  private applyCoreData(cache: any): void {
+    this.entities = cache.entities.filter((x: any) => x.status === 1);
+    this.counterparties = cache.counterparties.filter((x: any) => x.isActive);
+    this.currencies = cache.currencies.filter((x: any) => x.isActive);
+    this.countries = cache.countries.filter((x: any) => x.isActive);
+    this.interestFrequencies = cache.interestFrequencies;
+    this.dayCountConventions = cache.dayCountConventions;
 
     if (this.isEdit && this.fdId) {
-
       this.loadFDDetails();
-
+    } else {
+      this.loading = false;
     }
-
-    this.loading = false;
-
   }
 
 
@@ -339,39 +245,33 @@ export class FDDetailComponent implements OnInit {
 
   loadFDDetails(): void {
     if (!this.fdId) return;
-    this.loading = true;
+
+    const cacheKey = `FINTRUST_FD_DETAIL_CACHE_${this.fdId}`;
+    const cachedData = sessionStorage.getItem(cacheKey);
+    
+    if (cachedData) {
+      const result = JSON.parse(cachedData);
+      this.applyFDDetails(result);
+    } else {
+      this.loading = true;
+    }
 
     forkJoin({
       general: this.fdService.getById(this.fdId),
       interest: this.fdInterestService.getByFdId(this.fdId).pipe(
-         catchError(() => of(null))
+        catchError(() => of(null))
       ),
       cashFlows: this.cashFlowService.getAll().pipe(
-         map(cfs => {
-           const arr = Array.isArray(cfs) ? cfs : [cfs];
-           return arr.filter(x => Number(x.fdId) === Number(this.fdId));
-         }),
-         catchError(() => of([]))
+        map(cfs => {
+          const arr = Array.isArray(cfs) ? cfs : [cfs];
+          return arr.filter(x => Number(x.fdId) === Number(this.fdId));
+        }),
+        catchError(() => of([]))
       )
     }).subscribe({
       next: (result) => {
-        const fd = result.general;
-        this.fixedDeposit = {
-          fdReferenceNo: fd.fdReferenceNo ?? '',
-          entityId: fd.entityId ?? null,
-          counterpartyId: fd.counterpartyId ?? null,
-          currencyCode: fd.currencyCode ?? '',
-          principalAmount: fd.principalAmount ?? null,
-          startDate: this.formatDate(fd.startDate),
-          endDate: this.formatDate(fd.endDate),
-          settlementDate: this.formatDate(fd.settlementDate),
-          remarks: fd.remarks ?? '',
-          status: fd.status ?? ''
-        };
-
-        this.interestData = result.interest;
-        this.cashFlows = result.cashFlows;
-        this.loading = false;
+        sessionStorage.setItem(cacheKey, JSON.stringify(result));
+        this.applyFDDetails(result);
       },
       error: (error) => {
         console.error('Error loading FD details:', error);
@@ -379,6 +279,28 @@ export class FDDetailComponent implements OnInit {
         this.loading = false;
       }
     });
+  }
+
+  private applyFDDetails(result: any): void {
+    const rawFd = result.general as any;
+    const fd = Array.isArray(rawFd) ? rawFd[0] : rawFd;
+
+    this.fixedDeposit = {
+      fdReferenceNo: fd?.fdReferenceNo || fd?.FdReferenceNo || '',
+      entityId: fd?.entityId || fd?.EntityId || null,
+      counterpartyId: fd?.counterpartyId || fd?.CounterpartyId || null,
+      currencyCode: fd?.currencyCode || fd?.CurrencyCode || '',
+      principalAmount: fd?.principalAmount || fd?.PrincipalAmount || null,
+      startDate: this.formatDate(fd?.startDate || fd?.StartDate),
+      endDate: this.formatDate(fd?.endDate || fd?.EndDate),
+      settlementDate: this.formatDate(fd?.settlementDate || fd?.SettlementDate),
+      remarks: fd?.remarks || fd?.Remarks || '',
+      status: fd?.status || fd?.Status || ''
+    };
+
+    this.interestData = result.interest;
+    this.cashFlows = result.cashFlows;
+    this.loading = false;
   }
 
 
@@ -396,6 +318,16 @@ export class FDDetailComponent implements OnInit {
   ========================= */
 
   selectTab(tab: string): void {
+    if (tab === 'interest' || tab === 'cashflow') {
+      if (!this.fdId) {
+        alert('Please save the General details first.');
+        return;
+      }
+      if (!this.isGeneralReadOnly) {
+        alert('Please save or cancel your changes before switching tabs.');
+        return;
+      }
+    }
     this.activeTab = tab;
   }
 
@@ -415,14 +347,83 @@ export class FDDetailComponent implements OnInit {
     return cp ? cp.counterPartyName : '';
   }
 
+  errors: any = {};
+
+  /* =========================
+     VALIDATION
+  ========================= */
+
+  validateField(field: string): void {
+    if (field === 'entityId') {
+      if (!this.fixedDeposit.entityId) this.errors.entityId = 'Entity is required.';
+      else delete this.errors.entityId;
+    }
+    else if (field === 'counterpartyId') {
+      if (!this.fixedDeposit.counterpartyId) this.errors.counterpartyId = 'Counterparty is required.';
+      else delete this.errors.counterpartyId;
+    }
+    else if (field === 'currencyCode') {
+      if (!this.fixedDeposit.currencyCode) this.errors.currencyCode = 'Transaction Currency is required.';
+      else delete this.errors.currencyCode;
+    }
+    else if (field === 'principalAmount') {
+      if (!this.fixedDeposit.principalAmount) {
+        this.errors.principalAmount = 'Principal Amount is required.';
+      } else if (Number(this.fixedDeposit.principalAmount) <= 0) {
+        this.errors.principalAmount = 'Principal Amount must be greater than 0.';
+      } else {
+        delete this.errors.principalAmount;
+      }
+    }
+  }
+
+  validateDates(): void {
+    const sDate = this.fixedDeposit.startDate;
+    const eDate = this.fixedDeposit.endDate;
+    const setDate = this.fixedDeposit.settlementDate;
+
+    if (!sDate) this.errors.startDate = 'Start Date is required.';
+    else delete this.errors.startDate;
+
+    if (!eDate) {
+      this.errors.endDate = 'End Date is required.';
+    } else if (sDate && eDate <= sDate) {
+      this.errors.endDate = 'End Date must be after Start Date.';
+    } else {
+      delete this.errors.endDate;
+    }
+
+    if (!setDate) {
+      this.errors.settlementDate = 'Settlement Date is required.';
+    } else if (eDate && setDate < eDate) {
+      this.errors.settlementDate = 'Settlement Date must be on or after End Date.';
+    } else {
+      delete this.errors.settlementDate;
+    }
+  }
+
+  validateAll(): boolean {
+    this.errors = {};
+    this.validateField('entityId');
+    this.validateField('counterpartyId');
+    this.validateField('currencyCode');
+    this.validateField('principalAmount');
+    this.validateDates();
+    return Object.keys(this.errors).length === 0;
+  }
+
   /* =========================
      SAVE / UPDATE
   ========================= */
 
   save(): void {
+    if (!this.validateAll()) {
+      console.log('Validation failed', this.errors);
+      return; // Stop if invalid
+    }
 
     const payload = {
-
+      fdId: this.fdId || 0,
       fdReferenceNo:
         this.fixedDeposit.fdReferenceNo,
 
@@ -443,7 +444,13 @@ export class FDDetailComponent implements OnInit {
         this.fixedDeposit.settlementDate,
 
       remarks:
-        this.fixedDeposit.remarks
+        this.fixedDeposit.remarks,
+
+      status:
+        this.fixedDeposit.status || 'DRAFT',
+
+      bankAccountId:
+        this.fixedDeposit.bankAccountId || null
 
     };
 
@@ -464,20 +471,17 @@ export class FDDetailComponent implements OnInit {
             console.log('FD updated:', response);
             alert('Fixed Deposit updated successfully.');
             this.isGeneralReadOnly = true;
+            this.activeTab = 'interest';
             this.loadFDDetails();
           },
 
           error: error => {
-
-            console.error(
-              'FD update error:',
-              error
-            );
-
-            alert(
-              'Unable to update Fixed Deposit.'
-            );
-
+            console.error('FD update error:', error);
+            if (error.error && error.error.errors) {
+              this.errors = error.error.errors;
+            } else {
+              alert('Unable to update Fixed Deposit.');
+            }
           }
 
         });
@@ -517,16 +521,12 @@ export class FDDetailComponent implements OnInit {
           },
 
           error: error => {
-
-            console.error(
-              'FD create error:',
-              error
-            );
-
-            alert(
-              'Unable to create Fixed Deposit.'
-            );
-
+            console.error('FD create error:', error);
+            if (error.error && error.error.errors) {
+              this.errors = error.error.errors;
+            } else {
+              alert('Unable to create Fixed Deposit.');
+            }
           }
 
         });
@@ -555,7 +555,7 @@ export class FDDetailComponent implements OnInit {
 
   onInterestSaved(interestData: any): void {
     if (!this.fdId) return;
-    
+
     alert('Interest configuration and associated Cash Flows generated successfully.');
     this.activeTab = 'cashflow';
     this.loadFDDetails();

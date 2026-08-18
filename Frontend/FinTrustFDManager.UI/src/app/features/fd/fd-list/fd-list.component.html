@@ -18,7 +18,7 @@
 
 
     <button
-      class="add-btn"
+      class="add-btn btn-primary"
       (click)="addFD()">
 
       + Add FD
@@ -32,7 +32,7 @@
 
   <div class="table-card">
 
-    <table>
+    <table class="fintrust-table">
 
       <thead>
 
@@ -101,160 +101,79 @@
 
 
         <!-- FD DATA -->
-
-        <tr
-          *ngFor="let fd of fdList">
-
-
-          <!-- ACTION -->
-
-          <td class="actions">
-
-            <button
-              class="action-btn"
-              title="Edit"
-              (click)="editFD(fd.fdId)">
-
-              ✏️
-
-            </button>
-
-
-            <button
-              class="action-btn"
-              title="Cash Flow"
-              (click)="cashFlow(fd)">
-
-              💰
-
-            </button>
-
-
-            <button
-              class="action-btn"
-              title="Delete"
-              (click)="deleteFD(fd)">
-
-              🗑️
-
-            </button>
-
-          </td>
-
-
-          <!-- REFERENCE -->
-
-          <td>
-
-            <button
-              class="fd-reference"
-              (click)="openFD(fd)">
-
-              {{ fd.fdReferenceNo }}
-
-            </button>
-
-          </td>
-
-
-          <!-- ENTITY -->
-
-          <td>
-
-            {{ fd.entityId }}
-
-          </td>
-
-
-          <!-- CURRENCY -->
-
-          <td>
-
-            {{ fd.currencyCode }}
-
-          </td>
-
-
-          <!-- PRINCIPAL -->
-
-          <td class="amount">
-
-            {{ fd.principalAmount
-              | currency:'INR':'symbol':'1.0-0'
-            }}
-
-          </td>
-
-
-          <!-- INTEREST -->
-
-          <td>
-
-            {{ fd.interestRate }}%
-
-          </td>
-
-
-          <!-- START DATE -->
-
-          <td>
-
-            {{ fd.startDate
-              | date:'dd-MMM-yyyy'
-            }}
-
-          </td>
-
-
-          <!-- END DATE -->
-
-          <td>
-
-            {{ fd.endDate
-              | date:'dd-MMM-yyyy'
-            }}
-
-          </td>
-
-
-          <!-- STATUS -->
-
-          <td>
-
-            <span
-              class="status"
-
-              [class.approved]="
-                fd.status === 'APPROVED'
-              "
-
-              [class.draft]="
-                fd.status === 'DRAFT'
-              "
-
-              [class.rejected]="
-                fd.status === 'REJECTED'
-              ">
-
-              {{ fd.status }}
-
-            </span>
-
-          </td>
-
-
-          <!-- TOTAL -->
-
-          <td class="amount">
-
-            {{ fd.totalAmount
-              | currency:'INR':'symbol':'1.0-0'
-            }}
-
-          </td>
-
-
-        </tr>
+        <ng-container *ngFor="let fd of paginatedList">
+          <tr>
+            <!-- ACTION -->
+            <td class="action-cell">
+              <div class="kebab-menu-container">
+                <button class="kebab-btn" (click)="toggleDropdown(fd.fdId, $event)">⋮</button>
+                <div class="kebab-dropdown" *ngIf="openDropdownId === fd.fdId">
+                  <button class="kebab-item" (click)="handleAction('view', fd)">👁️ View</button>
+                  <button class="kebab-item" (click)="handleAction('edit', fd)">✏️ Edit</button>
+                  <button class="kebab-item" (click)="handleAction('cashflow', fd)">💰 Cashflow</button>
+                  <div class="kebab-divider"></div>
+                  <button class="kebab-item danger" (click)="handleAction('delete', fd)">🗑️ Delete</button>
+                </div>
+              </div>
+            </td>
+
+            <!-- REFERENCE -->
+            <td>
+              <button class="fd-reference" (click)="openFD(fd)">
+                {{ fd.fdReferenceNo }}
+              </button>
+            </td>
+
+            <!-- ENTITY -->
+            <td>{{ fd.entityId }}</td>
+
+            <!-- CURRENCY -->
+            <td>{{ fd.currencyCode }}</td>
+
+            <!-- PRINCIPAL -->
+            <td class="amount">{{ fd.principalAmount | currency:'INR':'symbol':'1.0-0' }}</td>
+
+            <!-- INTEREST -->
+            <td>{{ fd.interestRate }}%</td>
+
+            <!-- START DATE -->
+            <td>{{ fd.startDate | date:'dd-MMM-yyyy' }}</td>
+
+            <!-- END DATE -->
+            <td>{{ fd.endDate | date:'dd-MMM-yyyy' }}</td>
+
+            <!-- STATUS -->
+            <td>
+              <span class="status"
+                [class.approved]="fd.status === 'APPROVED'"
+                [class.draft]="fd.status === 'DRAFT'"
+                [class.rejected]="fd.status === 'REJECTED'">
+                {{ fd.status }}
+              </span>
+            </td>
+
+            <!-- TOTAL -->
+            <td class="amount">{{ fd.totalAmount | currency:'INR':'symbol':'1.0-0' }}</td>
+
+          </tr>
+
+          <!-- FAST VIEW ROW -->
+          <tr *ngIf="expandedFdId === fd.fdId" class="fast-view-row">
+            <td colspan="10">
+              <div class="fast-view-container">
+                <h4>Quick Preview - {{ fd.fdReferenceNo }}</h4>
+                <div class="fast-view-grid">
+                  <div><strong>Counterparty ID:</strong> {{ fd.counterpartyId || 'N/A' }}</div>
+                  <div><strong>Interest Rate Type:</strong> {{ fd.interestRateType || 'N/A' }}</div>
+                  <div><strong>Compounding Frequency:</strong> {{ fd.compoundingFrequency || 'N/A' }}</div>
+                  <div><strong>Calculation Basis:</strong> {{ fd.calculationBasis || 'N/A' }}</div>
+                  <div><strong>Total Gross Interest:</strong> {{ fd.totalGrossInterest | currency:'INR':'symbol':'1.2-2' }}</div>
+                  <div><strong>Total Net Interest:</strong> {{ fd.totalNetInterest | currency:'INR':'symbol':'1.2-2' }}</div>
+                </div>
+              </div>
+            </td>
+          </tr>
+        </ng-container>
 
 
         <!-- NO DATA -->
@@ -278,6 +197,25 @@
       </tbody>
 
     </table>
+
+    <!-- PAGINATION CONTROLS -->
+    <div class="pagination-controls" *ngIf="fdList.length > 0">
+      <div class="page-size-selector">
+        <label for="pageSize">Items per page:</label>
+        <select id="pageSize" [(ngModel)]="pageSize" (change)="onPageSizeChange()">
+          <option [ngValue]="5">5</option>
+          <option [ngValue]="10">10</option>
+          <option [ngValue]="20">20</option>
+          <option [ngValue]="50">50</option>
+          <option [ngValue]="100">100</option>
+        </select>
+      </div>
+      <div class="page-navigation">
+        <button class="page-btn" [disabled]="currentPage === 1" (click)="prevPage()">Previous</button>
+        <span class="page-info">Page {{ currentPage }} of {{ totalPages }}</span>
+        <button class="page-btn" [disabled]="currentPage === totalPages" (click)="nextPage()">Next</button>
+      </div>
+    </div>
 
   </div>
 

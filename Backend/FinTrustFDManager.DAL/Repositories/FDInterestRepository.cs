@@ -60,6 +60,7 @@ namespace FinTrustFDManager.DAL.Repositories
             existing.Margin = model.Margin;
             existing.InterestFrequency = model.InterestFrequency;
             existing.CompoundingFrequency = model.CompoundingFrequency;
+            existing.IsCompounding = model.IsCompounding;
             existing.CalculationBasis = model.CalculationBasis;
             existing.PaymentConvention = model.PaymentConvention;
 

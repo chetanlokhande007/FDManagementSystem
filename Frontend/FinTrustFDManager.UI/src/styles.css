@@ -1,31 +1,44 @@
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
 
+/* =========================================================
+   1. THEME / VARIABLES
+   ========================================================= */
 :root {
-  --primary-blue: #2c7aee;
+  --primary-blue: #007bff;
+  --primary-hover: #0056b3;
+  
   --sidebar-bg: #051b42;
   --sidebar-hover: rgba(255, 255, 255, 0.08);
   --sidebar-text: #a1b0c7;
   --sidebar-active-bg: rgba(44, 122, 238, 0.15);
   --sidebar-active-text: #ffffff;
-  --bg-color: #f5f7fa;
-  --text-primary: #1e293b;
-  --text-secondary: #64748b;
-  --border-color: #e2e8f0;
   
-  --success: #10b981;
-  --warning: #f59e0b;
-  --danger: #ef4444;
-  --purple: #8b5cf6;
+  --bg-color: #f4f6f9;
+  --card-bg: #ffffff;
+  
+  --text-primary: #333333;
+  --text-secondary: #666666;
+  
+  --border-light: #eeeeee;
+  
+  --success-bg: #d4edda;
+  --success-text: #155724;
+  --danger-bg: #f8d7da;
+  --danger-text: #721c24;
+  
+  --btn-edit: #ffc107;
+  --btn-edit-hover: #e0a800;
+  --btn-delete: #dc3545;
+  --btn-delete-hover: #c82333;
 }
 
 body {
   margin: 0;
   padding: 0;
-  font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
   background-color: var(--bg-color);
   color: var(--text-primary);
   -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
 }
 
 * {
@@ -42,4 +55,303 @@ button {
   cursor: pointer;
   border: none;
   outline: none;
+}
+
+/* =========================================================
+   2. LAYOUT
+   ========================================================= */
+.page-container {
+  padding: 20px;
+}
+
+/* =========================================================
+   3. CARDS & PAGE HEADERS
+   ========================================================= */
+.page-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+}
+
+.page-title h1, .page-title h2 {
+  margin: 0;
+  font-size: 24px;
+  color: var(--text-primary);
+  font-weight: 700;
+}
+
+.fintrust-card {
+  background: var(--card-bg);
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  padding: 20px;
+  overflow-x: auto;
+}
+
+/* =========================================================
+   4. BUTTONS
+   ========================================================= */
+.btn-primary {
+  padding: 10px 20px;
+  background-color: var(--primary-blue);
+  color: white;
+  border: none;
+  border-radius: 4px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.btn-primary:hover {
+  background-color: var(--primary-hover);
+}
+
+/* Action Buttons (Edit/Delete) */
+.action-btn {
+  margin-right: 8px;
+  padding: 6px 12px;
+  border: none;
+  border-radius: 4px;
+  font-size: 13px;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.action-btn.edit {
+  background-color: var(--btn-edit);
+  color: #212529;
+}
+
+.action-btn.edit:hover {
+  background-color: var(--btn-edit-hover);
+}
+
+.action-btn.delete {
+  background-color: var(--btn-delete);
+  color: white;
+}
+
+.action-btn.delete:hover {
+  background-color: var(--btn-delete-hover);
+}
+
+/* =========================================================
+   5. FORMS
+   ========================================================= */
+.form-group {
+  margin-bottom: 16px;
+}
+
+.form-group label {
+  display: block;
+  margin-bottom: 8px;
+  font-weight: 500;
+  color: var(--text-primary);
+}
+
+.form-group input, .form-group select, .form-group textarea {
+  width: 100%;
+  padding: 8px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  font-size: 14px;
+  font-family: 'Inter', sans-serif;
+}
+
+.form-group input:focus, .form-group select:focus, .form-group textarea:focus {
+  outline: none;
+  border-color: var(--primary-blue);
+}
+
+/* =========================================================
+   6. TABLES (CLEAN/AIRY)
+   ========================================================= */
+.fintrust-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.fintrust-table th, .fintrust-table td {
+  padding: 12px;
+  text-align: left;
+  border-bottom: 1px solid var(--border-light);
+  font-size: 14px;
+}
+
+.fintrust-table th {
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.fintrust-table td {
+  color: var(--text-secondary);
+}
+
+/* =========================================================
+   7. BADGES
+   ========================================================= */
+.badge {
+  padding: 4px 8px;
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: 500;
+  display: inline-block;
+}
+
+.badge-active, .badge-success {
+  background-color: var(--success-bg);
+  color: var(--success-text);
+}
+
+.badge-inactive, .badge-danger {
+  background-color: var(--danger-bg);
+  color: var(--danger-text);
+}
+
+.badge-draft, .badge-warning {
+  background-color: #fff3cd;
+  color: #856404;
+}
+
+/* =========================================================
+   8. PAGINATION
+   ========================================================= */
+.pagination-controls {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 15px 0 0 0;
+  border-top: 1px solid var(--border-light);
+  margin-top: 20px;
+}
+
+.page-size-selector {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  color: var(--text-secondary);
+}
+
+.page-size-selector select {
+  padding: 4px 8px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  font-size: 13px;
+  background-color: #fff;
+  cursor: pointer;
+}
+
+.page-navigation {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+}
+
+.page-btn {
+  background: white;
+  border: 1px solid #ccc;
+  padding: 6px 12px;
+  border-radius: 4px;
+  font-size: 13px;
+  color: var(--text-primary);
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.page-btn:hover:not(:disabled) {
+  background: #f8f9fa;
+}
+
+.page-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.page-info {
+  font-size: 13px;
+  color: var(--text-secondary);
+}
+
+/* =========================================================
+   9. MODAL / FAST VIEW
+   ========================================================= */
+.form-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0,0,0,0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+}
+
+.form-card {
+  background: white;
+  padding: 24px;
+  border-radius: 8px;
+  width: 400px;
+  max-width: 90vw;
+  box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+}
+
+.form-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+}
+
+.form-header h3 {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 600;
+}
+
+.close-btn {
+  background: none;
+  border: none;
+  font-size: 24px;
+  cursor: pointer;
+  color: var(--text-secondary);
+}
+
+.form-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  margin-top: 24px;
+}
+
+.btn-secondary {
+  padding: 8px 16px;
+  background-color: #6c757d;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  font-size: 14px;
+  cursor: pointer;
+}
+
+.btn-secondary:hover {
+  background-color: #5a6268;
+}
+
+.btn-success {
+  padding: 8px 16px;
+  background-color: #28a745;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  font-size: 14px;
+  cursor: pointer;
+}
+
+.btn-success:hover {
+  background-color: #218838;
 }

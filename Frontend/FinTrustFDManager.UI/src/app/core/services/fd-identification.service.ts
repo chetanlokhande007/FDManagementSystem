@@ -24,6 +24,16 @@ export interface FDLanding {
   remarks?: string;
   interestRate?: number;
   totalAmount?: number;
+
+  interestRateType?: string;
+  interestFrequency?: string;
+  compoundingFrequency?: string;
+  calculationBasis?: string;
+
+  totalPrincipal?: number;
+  totalGrossInterest?: number;
+  totalTds?: number;
+  totalNetInterest?: number;
 }
 
 @Injectable({

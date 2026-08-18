@@ -176,12 +176,7 @@ namespace FinTrustFDManager.BAL.Services
                     }
                     else if (current.CashFlowType == "MATURITY")
                     {
-                        decimal maturityAmount = interest.IsCompounding
-                            ? current.OpeningBalance
-                            : fd.PrincipalAmount;
-                            
-                        current.ClosingBalance = maturityAmount;
-                        current.TotalAmount = maturityAmount;
+                        current.ClosingBalance = current.OpeningBalance;
                     }
                 }
             }

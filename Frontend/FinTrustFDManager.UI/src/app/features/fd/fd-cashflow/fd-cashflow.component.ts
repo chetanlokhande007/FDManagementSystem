@@ -29,6 +29,8 @@ import {
 export class FdCashflowComponent implements OnInit {
 
   @Input() fdId!: number;
+  @Input() fdData: any = null;
+  @Input() interestData: any = null;
   @Input() cashFlows: FDCashFlow[] = [];
   @Output() cashFlowSaved = new EventEmitter<void>();
 
@@ -137,5 +139,38 @@ export class FdCashflowComponent implements OnInit {
 
   cancel(): void {
     this.showForm = false;
+  }
+
+  get enrichedCashFlows() {
+    if (!this.cashFlows || this.cashFlows.length === 0) return [];
+    
+    return this.cashFlows.map((cf, index) => {
+      let startDate = this.fdData?.startDate;
+      if (index > 0) {
+        startDate = this.cashFlows[index - 1].cashFlowDate;
+      }
+      
+      let endDate = cf.cashFlowDate;
+      if (cf.cashFlowType === 'PRINCIPAL' && this.cashFlows.length > 1) {
+         endDate = this.cashFlows[1].cashFlowDate; 
+      }
+      
+      return {
+        ...cf,
+        periodStart: startDate,
+        periodEnd: endDate
+      };
+    });
+  }
+
+  get totalInterest(): number {
+    return this.cashFlows
+      .filter(cf => cf.cashFlowType === 'INTEREST')
+      .reduce((sum, cf) => sum + cf.grossInterest, 0);
+  }
+
+  get maturityAmount(): number {
+    const maturityFlow = this.cashFlows.find(cf => cf.cashFlowType === 'MATURITY');
+    return maturityFlow ? maturityFlow.totalAmount : 0;
   }
 }

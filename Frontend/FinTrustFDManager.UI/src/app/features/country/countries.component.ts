@@ -1,4 +1,4 @@
-import { Component, OnInit, ChangeDetectorRef } from '@angular/core';
+import { Component, OnInit, ChangeDetectorRef, HostListener, ElementRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Country, CountryService } from '../../services/country.service';
@@ -30,17 +30,24 @@ export class CountriesComponent implements OnInit {
   }
 
   loadCountries(): void {
+    // 1. Instant Load from Cache
+    const cachedData = sessionStorage.getItem('FINTRUST_COUNTRIES_CACHE');
+    if (cachedData) {
+      this.countries = JSON.parse(cachedData);
+      this.cdr.detectChanges();
+    } else {
+      this.loading = true;
+      this.cdr.detectChanges();
+    }
 
-    this.loading = true;
-    this.cdr.detectChanges();
-
+    // 2. Background Fetch
     this.countryService.getCountries().subscribe({
       next: (data) => {
+        sessionStorage.setItem('FINTRUST_COUNTRIES_CACHE', JSON.stringify(data));
         this.countries = data;
         this.loading = false;
         this.cdr.detectChanges();
       },
-
       error: (error) => {
         console.error('Failed to load countries', error);
         this.loading = false;

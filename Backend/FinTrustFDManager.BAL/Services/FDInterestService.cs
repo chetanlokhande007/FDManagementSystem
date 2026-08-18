@@ -201,10 +201,6 @@ namespace FinTrustFDManager.BAL.Services
                 }
             }
 
-            decimal maturityAmount = interest.IsCompounding
-                ? openingBalance
-                : fd.PrincipalAmount;
-
             // Maturity
             cashFlows.Add(new FDCashFlow
             {
@@ -214,12 +210,12 @@ namespace FinTrustFDManager.BAL.Services
                 Direction = "INFLOW",
                 Days = 0,
                 OpeningBalance = openingBalance,
-                ClosingBalance = maturityAmount,
+                ClosingBalance = openingBalance, // Usually principal is returned
                 PrincipalAmount = fd.PrincipalAmount,
                 GrossInterest = 0,
                 TdsAmount = 0,
                 NetInterest = 0,
-                TotalAmount = maturityAmount,
+                TotalAmount = fd.PrincipalAmount,
                 CurrencyCode = fd.CurrencyCode ?? "INR",
                 Status = "PENDING",
                 ReferenceNo = fd.FdReferenceNo ?? "",

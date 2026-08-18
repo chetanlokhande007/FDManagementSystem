@@ -46,11 +46,20 @@ export class EntityListComponent implements OnInit {
   }
 
   loadEntities(): void {
-    this.loading = true;
-    this.cdr.detectChanges();
+    // 1. Instant Load from Cache
+    const cachedData = sessionStorage.getItem('FINTRUST_ENTITIES_CACHE');
+    if (cachedData) {
+      this.entities = JSON.parse(cachedData);
+      this.cdr.detectChanges();
+    } else {
+      this.loading = true;
+      this.cdr.detectChanges();
+    }
 
+    // 2. Background Fetch
     this.entityService.getAll().subscribe({
       next: (data) => {
+        sessionStorage.setItem('FINTRUST_ENTITIES_CACHE', JSON.stringify(data));
         this.entities = data;
         this.loading = false;
         this.cdr.detectChanges();

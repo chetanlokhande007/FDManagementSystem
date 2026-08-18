@@ -33,27 +33,30 @@ export class CurrenciesComponent implements OnInit {
   }
 
   loadCurrencies(): void {
+    // 1. Instant Load from Cache
+    const cachedData = sessionStorage.getItem('FINTRUST_CURRENCIES_CACHE');
+    if (cachedData) {
+      this.currencies = JSON.parse(cachedData);
+      this.cdr.detectChanges();
+    } else {
+      this.loading = true;
+      this.cdr.detectChanges();
+    }
 
-    this.loading = true;
-    this.cdr.detectChanges();
-
+    // 2. Background Fetch
     this.currencyService.getCurrencies().subscribe({
-
       next: (data) => {
-
+        sessionStorage.setItem('FINTRUST_CURRENCIES_CACHE', JSON.stringify(data ?? []));
         this.currencies = data ?? [];
-
         this.loading = false;
         this.cdr.detectChanges();
       },
-
       error: (error) => {
-
         console.error('Failed to load currencies', error);
-
-        this.currencies = [];
+        if (!cachedData) {
+          this.currencies = [];
+        }
         this.loading = false;
-
         this.cdr.detectChanges();
       }
     });

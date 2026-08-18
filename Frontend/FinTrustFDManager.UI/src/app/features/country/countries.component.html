@@ -2,21 +2,21 @@
 
   <div class="page-header">
 
-    <div>
-      <h2>Countries</h2>
+    <div class="page-title">
+      <h1>Countries</h1>
       <p>Manage countries</p>
     </div>
 
-    <button class="add-btn" (click)="addCountry()">
+    <button class="btn-primary" (click)="addCountry()">
       + Add Country
     </button>
 
   </div>
 
 
-  <div class="table-card">
+  <div class="fintrust-card">
 
-    <table>
+    <table class="fintrust-table">
 
       <thead>
         <tr>
@@ -24,49 +24,28 @@
           <th>Country Name</th>
           <th>Country Code</th>
           <th>Status</th>
-          <th>Actions</th>
+          <th>Action</th>
         </tr>
       </thead>
 
       <tbody>
 
-      
-
         <!-- Backend data -->
         <tr *ngFor="let country of countries; let i = index">
 
-          <td>
-            {{ i + 1 }}
-          </td>
+          <td>{{ i + 1 }}</td>
+          <td>{{ country.countryName }}</td>
+          <td>{{ country.countryCode }}</td>
 
           <td>
-            {{ country.countryName }}
-          </td>
-
-          <td>
-            {{ country.countryCode }}
-          </td>
-
-          <td>
-
-            <span class="status" [class.active]="country.isActive" [class.inactive]="!country.isActive">
-
+            <span class="badge" [ngClass]="country.isActive ? 'badge-active' : 'badge-inactive'">
               {{ country.isActive ? 'Active' : 'Inactive' }}
-
             </span>
-
           </td>
 
-          <td class="actions">
-
-            <button class="edit-btn" (click)="editCountry(country)">
-              Edit
-            </button>
-
-            <button class="delete-btn" (click)="deleteCountry(country.countryId)">
-              Delete
-            </button>
-
+          <td class="action-cell">
+            <button class="action-btn edit" (click)="editCountry(country)">Edit</button>
+            <button class="action-btn delete" (click)="deleteCountry(country.countryId)">Delete</button>
           </td>
 
         </tr>

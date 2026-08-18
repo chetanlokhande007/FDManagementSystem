@@ -8,18 +8,30 @@
     <button class="back-btn" (click)="goBack()">Go Back</button>
   </div>
 
+  <!-- LOADING -->
+  <div *ngIf="loading" class="loading-container">
+    <div class="spinner"></div>
+    <p>Loading data, please wait...</p>
+  </div>
+
   <!-- CARD -->
-  <div class="fd-card">
+  <div *ngIf="!loading" class="fd-card">
 
     <!-- TABS -->
     <div class="tabs">
       <div class="tab" [class.active]="activeTab === 'general'" (click)="selectTab('general')">
         General
       </div>
-      <div class="tab" [class.active]="activeTab === 'interest'" (click)="selectTab('interest')">
+      <div class="tab" 
+           [class.active]="activeTab === 'interest'" 
+           [class.disabled]="!fdId || !isGeneralReadOnly" 
+           (click)="selectTab('interest')">
         Interest
       </div>
-      <div class="tab" [class.active]="activeTab === 'cashflow'" (click)="selectTab('cashflow')">
+      <div class="tab" 
+           [class.active]="activeTab === 'cashflow'" 
+           [class.disabled]="!fdId || !isGeneralReadOnly" 
+           (click)="selectTab('cashflow')">
         CashFlow
       </div>
       <div class="reference-label" *ngIf="isEdit && fixedDeposit.fdReferenceNo">
@@ -64,12 +76,13 @@
             <label>
               Entity <span>*</span>
             </label>
-            <select [(ngModel)]="fixedDeposit.entityId">
+            <select [(ngModel)]="fixedDeposit.entityId" (ngModelChange)="validateField('entityId')">
               <option [ngValue]="null">Select Entity</option>
               <option *ngFor="let entity of entities" [ngValue]="entity.entityId">
                 {{ entity.entityCode }} - {{ entity.entityName }}
               </option>
             </select>
+            <small class="text-danger" *ngIf="errors.entityId">{{ errors.entityId }}</small>
           </div>
 
           <!-- COUNTERPARTY -->
@@ -77,12 +90,13 @@
             <label>
               Counterparty <span>*</span>
             </label>
-            <select [(ngModel)]="fixedDeposit.counterpartyId">
+            <select [(ngModel)]="fixedDeposit.counterpartyId" (ngModelChange)="validateField('counterpartyId')">
               <option [ngValue]="null">Select Counterparty</option>
               <option *ngFor="let cp of counterparties" [ngValue]="cp.counterPartyId">
                 {{ cp.counterPartyCode }} - {{ cp.counterPartyName }}
               </option>
             </select>
+            <small class="text-danger" *ngIf="errors.counterpartyId">{{ errors.counterpartyId }}</small>
           </div>
 
           <!-- CURRENCY -->
@@ -90,12 +104,13 @@
             <label>
               Transaction Currency <span>*</span>
             </label>
-            <select [(ngModel)]="fixedDeposit.currencyCode">
+            <select [(ngModel)]="fixedDeposit.currencyCode" (ngModelChange)="validateField('currencyCode')">
               <option value="">Select Currency</option>
               <option *ngFor="let currency of currencies" [value]="currency.currencyCode">
                 {{ currency.currencyCode }} - {{ currency.currencyName }}
               </option>
             </select>
+            <small class="text-danger" *ngIf="errors.currencyCode">{{ errors.currencyCode }}</small>
           </div>
 
           <!-- AMOUNT -->
@@ -103,7 +118,8 @@
             <label>
               Principal Amount <span>*</span>
             </label>
-            <input type="number" [(ngModel)]="fixedDeposit.principalAmount" placeholder="Enter Amount">
+            <input type="number" [(ngModel)]="fixedDeposit.principalAmount" placeholder="Enter Amount" (ngModelChange)="validateField('principalAmount')">
+            <small class="text-danger" *ngIf="errors.principalAmount">{{ errors.principalAmount }}</small>
           </div>
 
           <!-- START DATE -->
@@ -111,7 +127,8 @@
             <label>
               Start Date <span>*</span>
             </label>
-            <input type="date" [(ngModel)]="fixedDeposit.startDate">
+            <input type="date" [(ngModel)]="fixedDeposit.startDate" (ngModelChange)="validateDates()">
+            <small class="text-danger" *ngIf="errors.startDate">{{ errors.startDate }}</small>
           </div>
 
           <!-- END DATE -->
@@ -119,7 +136,8 @@
             <label>
               End Date <span>*</span>
             </label>
-            <input type="date" [(ngModel)]="fixedDeposit.endDate">
+            <input type="date" [(ngModel)]="fixedDeposit.endDate" [min]="fixedDeposit.startDate" (ngModelChange)="validateDates()">
+            <small class="text-danger" *ngIf="errors.endDate">{{ errors.endDate }}</small>
           </div>
 
           <!-- SETTLEMENT DATE -->
@@ -127,7 +145,8 @@
             <label>
               Settlement Date <span>*</span>
             </label>
-            <input type="date" [(ngModel)]="fixedDeposit.settlementDate">
+            <input type="date" [(ngModel)]="fixedDeposit.settlementDate" [min]="fixedDeposit.endDate" (ngModelChange)="validateDates()">
+            <small class="text-danger" *ngIf="errors.settlementDate">{{ errors.settlementDate }}</small>
           </div>
 
           <!-- REMARKS -->
@@ -135,7 +154,7 @@
             <label>
               Remarks
             </label>
-            <input type="text" [(ngModel)]="fixedDeposit.remarks" placeholder="Enter Remarks">
+            <input type="text" [(ngModel)]="fixedDeposit.remarks" placeholder="Enter Remarks" maxlength="500">
           </div>
 
         </div>
@@ -158,7 +177,7 @@
 
     <!-- CASHFLOW TAB -->
     <div *ngIf="activeTab === 'cashflow'">
-      <app-fd-cashflow *ngIf="fdId" [fdId]="fdId" [cashFlows]="cashFlows" (cashFlowSaved)="loadFDDetails()"></app-fd-cashflow>
+      <app-fd-cashflow *ngIf="fdId" [fdId]="fdId" [fdData]="fixedDeposit" [interestData]="interestData" [cashFlows]="cashFlows" (cashFlowSaved)="loadFDDetails()"></app-fd-cashflow>
     </div>
 
   </div>

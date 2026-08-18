@@ -47,27 +47,30 @@ export class CounterpartiesComponent implements OnInit {
   }
 
   loadCounterParties(): void {
+    // 1. Instant Load from Cache
+    const cachedData = sessionStorage.getItem('FINTRUST_COUNTERPARTIES_CACHE');
+    if (cachedData) {
+      this.counterParties = JSON.parse(cachedData);
+      this.cdr.detectChanges();
+    } else {
+      this.loading = true;
+      this.cdr.detectChanges();
+    }
 
-    this.loading = true;
-    this.cdr.detectChanges();
-
+    // 2. Background Fetch
     this.counterPartyService.getCounterParties().subscribe({
-
       next: (data) => {
-
+        sessionStorage.setItem('FINTRUST_COUNTERPARTIES_CACHE', JSON.stringify(data ?? []));
         this.counterParties = data ?? [];
-
         this.loading = false;
         this.cdr.detectChanges();
       },
-
       error: (error) => {
-
         console.error('Failed to load counterparties', error);
-
-        this.counterParties = [];
+        if (!cachedData) {
+          this.counterParties = [];
+        }
         this.loading = false;
-
         this.cdr.detectChanges();
       }
     });

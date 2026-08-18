@@ -1,7 +1,7 @@
 import { Component, Input, OnInit, Output, EventEmitter } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, FormGroup, ReactiveFormsModule } from '@angular/forms';
-import { FDInterestService } from '../../../core/services/fd-interest.service';
+import { FDInterestService, FDInterest } from '../../../core/services/fd-interest.service';
 
 @Component({
   selector: 'app-fd-interest',
@@ -43,8 +43,8 @@ export class FdInterestComponent implements OnInit {
       benchmarkName: [''],
       benchmarkRate: [0],
       margin: [0],
-      interestFrequency: ['QUARTERLY'],
-      compoundingFrequency: ['QUARTERLY'],
+      interestFrequency: ['ANNUALLY'],
+      compoundingFrequency: ['ANNUALLY'],
       isCompounding: [false],
       calculationBasis: ['ACTUAL_365'],
       paymentConvention: ['']
@@ -73,30 +73,45 @@ export class FdInterestComponent implements OnInit {
   }
 
   saveInterest(): void {
-    if (this.interestForm.invalid) return;
+    if (this.interestForm.invalid) {
+      return;
+    }
 
-    const data = this.interestForm.value;
-    // ensure fdId is set correctly
-    data.fdId = this.fdId;
+    const data: FDInterest = {
+      ...this.interestForm.getRawValue(),
+      fdId: this.fdId
+    };
+
+    console.log('Sending FD Interest:', data);
 
     if (this.isEdit && data.fdInterestId) {
-      this.fdInterestService.update(data.fdInterestId, data).subscribe({
-        next: (res: any) => {
-          console.log('Interest updated:', res);
-          this.interestSaved.emit(data);
-        },
-        error: (err: any) => console.error('Error updating interest', err)
-      });
+      this.fdInterestService
+        .update(data.fdInterestId, data)
+        .subscribe({
+          next: (res: FDInterest) => {
+            console.log('Interest updated:', res);
+            this.interestSaved.emit(res);
+          },
+          error: (err) => {
+            console.error('Error updating interest:', err);
+          }
+        });
     } else {
-      this.fdInterestService.create(data).subscribe({
-        next: (res: any) => {
-          console.log('Interest created:', res);
-          this.isEdit = true;
-          this.interestForm.patchValue({ fdInterestId: res.fdInterestId });
-          this.interestSaved.emit(data);
-        },
-        error: (err: any) => console.error('Error creating interest', err)
-      });
+      this.fdInterestService
+        .create(data)
+        .subscribe({
+          next: (res: FDInterest) => {
+            console.log('Interest created:', res);
+            this.isEdit = true;
+            this.interestForm.patchValue({
+              fdInterestId: res.fdInterestId
+            });
+            this.interestSaved.emit(res);
+          },
+          error: (err) => {
+            console.error('Error creating interest:', err);
+          }
+        });
     }
   }
 }

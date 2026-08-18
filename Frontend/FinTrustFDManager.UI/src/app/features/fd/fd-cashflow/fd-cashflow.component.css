@@ -103,3 +103,50 @@ td {
     grid-template-columns: 1fr;
   }
 }
+
+.cashflow-summary-card {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 20px 40px;
+  background-color: #f8f9fa;
+  border: 1px solid #e0e0e0;
+  border-radius: 8px;
+  padding: 16px 20px;
+  margin-bottom: 24px;
+}
+
+.summary-item {
+  display: flex;
+  flex-direction: column;
+  min-width: 150px;
+}
+
+.summary-label {
+  font-size: 13px;
+  color: #6b7280;
+  margin-bottom: 4px;
+}
+
+.summary-value {
+  font-size: 15px;
+  font-weight: 600;
+  color: #1f2937;
+}
+
+.totals-section {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 24px;
+  padding-top: 20px;
+  border-top: 2px solid #e5e7eb;
+}
+
+.totals-group p {
+  margin-bottom: 8px;
+  font-size: 16px;
+  color: #1f2937;
+}
+
+.totals-group strong {
+  font-weight: 600;
+}

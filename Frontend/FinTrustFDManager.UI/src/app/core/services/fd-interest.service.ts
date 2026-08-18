@@ -12,6 +12,7 @@ export interface FDInterest {
   margin: number;
   interestFrequency: string;
   compoundingFrequency: string;
+  isCompounding: boolean;
   calculationBasis: string;
   calendarCode: string;
   paymentConvention: string;

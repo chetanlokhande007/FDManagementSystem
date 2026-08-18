@@ -9,163 +9,89 @@
 }
 
 
-.page-header {
+.fd-list-container {
+  padding: 24px;
+}
 
+/* =========================================================
+   FAST VIEW / EXPANDED ROW
+   ========================================================= */
+.expanded-row td {
+  padding: 0 !important;
+  border-top: none;
+  background: #f8fafc;
+}
+
+.fast-view-container {
+  padding: 20px 30px;
+  background: #f8fafc;
+  border-top: 1px dashed #cbd5e1;
+  border-bottom: 2px solid #94a3b8;
   display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
 
+.fast-view-header {
+  display: flex;
   justify-content: space-between;
-
   align-items: center;
-
-  margin-bottom: 20px;
-
+  border-bottom: 1px solid #e2e8f0;
+  padding-bottom: 8px;
 }
 
-
-.page-header h2 {
-
+.fast-view-header h4 {
   margin: 0;
-
-  font-size: 24px;
-
-  font-weight: 700;
-
-  color: #172033;
-
-}
-
-
-.page-header p {
-
-  margin: 6px 0 0;
-
-  color: #6b7280;
-
-}
-
-
-.add-btn {
-
-  background: #173f7a;
-
-  color: white;
-
-  border: none;
-
-  border-radius: 6px;
-
-  padding: 10px 18px;
-
-  cursor: pointer;
-
-  font-weight: 600;
-
-}
-
-
-.add-btn:hover {
-
-  background: #123461;
-
-}
-
-
-.table-card {
-
-  background: white;
-
-  border-radius: 8px;
-
-  overflow-x: auto;
-
-  box-shadow:
-    0 2px 8px
-    rgba(0, 0, 0, 0.08);
-
-}
-
-
-table {
-
-  width: 100%;
-
-  border-collapse: collapse;
-
-}
-
-
-thead {
-
-  background: #f8f9fb;
-
-}
-
-
-th {
-
-  padding: 14px;
-
-  text-align: left;
-
-  color: #596579;
-
-  font-size: 13px;
-
-  font-weight: 600;
-
-  white-space: nowrap;
-
-}
-
-
-td {
-
-  padding: 14px;
-
-  border-top: 1px solid #edf0f4;
-
-  font-size: 14px;
-
-  white-space: nowrap;
-
-}
-
-
-tr:hover {
-
-  background: #fafcff;
-
-}
-
-
-.actions {
-
-  display: flex;
-
-  gap: 6px;
-
-}
-
-
-.action-btn {
-
-  border: none;
-
-  background: transparent;
-
-  cursor: pointer;
-
+  color: #0f172a;
   font-size: 16px;
-
-  padding: 3px;
-
+  font-weight: 600;
 }
 
+.fast-view-actions .action-btn {
+  font-size: 14px;
+  padding: 4px 12px;
+  border: 1px solid #cbd5e1;
+  background: white;
+  border-radius: 4px;
+  color: #334155;
+  font-weight: 500;
+}
 
-.action-btn:hover {
+.fast-view-actions .action-btn:hover {
+  background: #f1f5f9;
+  border-color: #94a3b8;
+}
 
-  transform: scale(1.15);
+.fast-view-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 20px;
+}
 
+.fv-item {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.fv-label {
+  font-size: 12px;
+  color: #64748b;
+  text-transform: uppercase;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+}
+
+.fv-value {
+  font-size: 14px;
+  color: #0f172a;
+  font-weight: 500;
+}
+
+.fv-value.highlight {
+  color: #0284c7;
+  font-weight: 700;
+  font-size: 15px;
 }
 
 
@@ -241,13 +167,199 @@ tr:hover {
 
 
 .loading,
-
 .no-data {
-
   text-align: center;
-
   padding: 30px;
-
   color: #6b7280;
+  margin-bottom: 15px;
+  color: #173f7a;
+  font-size: 16px;
+}
 
+.fast-view-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 15px;
+  font-size: 13px;
+  color: #4b5563;
+}
+
+.fast-view-grid strong {
+  display: block;
+  color: #111827;
+  margin-bottom: 4px;
+}
+
+/* =========================================================
+   DENSE TABLE (EXCEL-LIKE) - LOCAL OVERRIDE FOR FD LIST
+   ========================================================= */
+.fintrust-table {
+  width: 100%;
+  border-collapse: collapse;
+  border: 1px solid #e2e8f0;
+}
+
+.fintrust-table th {
+  padding: 8px 12px;
+  text-align: left;
+  color: #64748b;
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  white-space: nowrap;
+  border: 1px solid #e2e8f0;
+  border-bottom: 2px solid #94a3b8;
+  background-color: #f3f4f6;
+}
+
+.fintrust-table td {
+  padding: 6px 12px;
+  border: 1px solid #f1f5f9;
+  font-size: 13px;
+  font-family: 'Inter', monospace;
+  color: #334155;
+  white-space: nowrap;
+  vertical-align: middle;
+}
+
+.fintrust-table tbody tr:hover {
+  background: #f9fafb;
+}
+
+/* =========================================================
+   KEBAB MENUS (ACTION MENUS)
+   ========================================================= */
+.action-cell {
+  text-align: center;
+  position: relative;
+  width: 50px;
+}
+
+.kebab-menu-container {
+  position: relative;
+  display: inline-block;
+}
+
+.kebab-btn {
+  background: transparent;
+  border: none;
+  font-size: 20px;
+  color: #64748b;
+  cursor: pointer;
+  padding: 0 8px;
+  border-radius: 4px;
+}
+
+.kebab-btn:hover {
+  background: #e5e7eb;
+  color: #0f172a;
+}
+
+.kebab-dropdown {
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  z-index: 50;
+  min-width: 140px;
+  background: white;
+  border: 1px solid #f1f5f9;
+  border-radius: 6px;
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+  padding: 4px 0;
+  margin-top: -10px;
+}
+
+.kebab-item {
+  display: block;
+  width: 100%;
+  text-align: left;
+  padding: 8px 16px;
+  background: none;
+  border: none;
+  font-size: 13px;
+  color: #374151;
+  cursor: pointer;
+  font-family: 'Inter', sans-serif;
+}
+
+.kebab-item:hover {
+  background: #f3f4f6;
+  color: #0f172a;
+}
+
+.kebab-item.danger {
+  color: #dc2626;
+}
+
+.kebab-item.danger:hover {
+  background: #fef2f2;
+}
+
+.kebab-divider {
+  height: 1px;
+  background: #f1f5f9;
+  margin: 4px 0;
+}
+/* Pagination Controls */
+.pagination-controls {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 15px;
+  border-top: 1px solid #edf0f4;
+}
+
+.page-size-selector {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  color: #6b7280;
+}
+
+.page-size-selector select {
+  padding: 4px 8px;
+  border: 1px solid #d1d5db;
+  border-radius: 4px;
+  font-size: 13px;
+  color: #374151;
+  background-color: #fff;
+  cursor: pointer;
+}
+
+.page-size-selector select:focus {
+  outline: none;
+  border-color: #173f7a;
+}
+
+.page-navigation {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+}
+
+.page-btn {
+  background: #fff;
+  border: 1px solid #d1d5db;
+  padding: 6px 12px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 13px;
+  color: #374151;
+  transition: all 0.2s;
+}
+
+.page-btn:not(:disabled):hover {
+  background: #f3f4f6;
+  border-color: #9ca3af;
+}
+
+.page-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.page-info {
+  font-size: 13px;
+  color: #6b7280;
 }
