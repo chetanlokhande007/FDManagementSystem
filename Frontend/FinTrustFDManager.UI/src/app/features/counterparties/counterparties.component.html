@@ -112,9 +112,7 @@
         <label>Counterparty Code *</label>
         <input type="text" 
                name="counterPartyCode" 
-               [ngModel]="!isEdit ? 'Auto Generated' : counterParty.counterPartyCode" 
-               (ngModelChange)="counterParty.counterPartyCode = $event"
-               [disabled]="!isEdit"
+               [(ngModel)]="counterParty.counterPartyCode" 
                placeholder="Enter counterparty code">
       </div>
 

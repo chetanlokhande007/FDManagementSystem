@@ -405,8 +405,13 @@ form {
 }
 
 @keyframes spin {
-  0% { transform: rotate(0deg); }
-  100% { transform: rotate(360deg); }
+  0% {
+    transform: rotate(0deg);
+  }
+
+  100% {
+    transform: rotate(360deg);
+  }
 }
 
 
@@ -461,11 +466,7 @@ form {
   display: grid;
 
   grid-template-columns:
-    160px
-    160px
-    160px
-    180px
-    200px;
+    160px 160px 160px 180px 200px;
 
   gap: 0;
 

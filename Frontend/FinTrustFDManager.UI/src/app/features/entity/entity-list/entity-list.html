@@ -76,9 +76,7 @@
                 <label>Entity Code *</label>
                 <input type="text" 
                        name="entityCode" 
-                       [ngModel]="!isEdit ? 'Auto Generated' : entity.entityCode" 
-                       (ngModelChange)="entity.entityCode = $event"
-                       [disabled]="!isEdit"
+                       [(ngModel)]="entity.entityCode" 
                        placeholder="Enter entity code">
             </div>
 

@@ -38,6 +38,13 @@ namespace FinTrustFDManager.BAL.Services
         {
 
 
+            var existingCode = await _repository.GetByCodeAsync(dto.EntityCode);
+            if (existingCode != null)
+            {
+                throw new InvalidOperationException(
+                    "Entity Code already exists.");
+            }
+
             var allEntities = await _repository.GetAllAsync();
             if (allEntities.Any(e => e.EntityName.Equals(dto.EntityName, StringComparison.OrdinalIgnoreCase)))
             {
@@ -45,16 +52,9 @@ namespace FinTrustFDManager.BAL.Services
                     "Entity Name already exists.");
             }
 
-            long nextId = 1;
-            if (allEntities.Any())
-            {
-                nextId = allEntities.Max(x => x.EntityId) + 1;
-            }
-            string generatedCode = $"ENT{nextId:D3}";
-
             var entity = new Entity
             {
-                EntityCode = generatedCode,
+                EntityCode = dto.EntityCode,
                 EntityName = dto.EntityName,
                 CountryId = dto.CountryId,
                 Status = dto.Status

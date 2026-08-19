@@ -44,6 +44,13 @@ namespace FinTrustFDManager.BAL.Services
         {
 
 
+            var existingCode = await _repository.GetByCodeAsync(dto.CounterPartyCode);
+            if (existingCode != null)
+            {
+                throw new InvalidOperationException(
+                    "Counter Party Code already exists.");
+            }
+
             var allCounterParties = await _repository.GetAllAsync();
             if (allCounterParties.Any(cp => cp.CounterPartyName.Equals(dto.CounterPartyName, StringComparison.OrdinalIgnoreCase)))
             {
@@ -51,16 +58,9 @@ namespace FinTrustFDManager.BAL.Services
                     "Counter Party Name already exists.");
             }
 
-            long nextId = 1;
-            if (allCounterParties.Any())
-            {
-                nextId = allCounterParties.Max(x => x.CounterPartyId) + 1;
-            }
-            string generatedCode = $"CP{nextId:D3}";
-
             var counterParty = new CounterParty
             {
-                CounterPartyCode = generatedCode,
+                CounterPartyCode = dto.CounterPartyCode,
                 CounterPartyName = dto.CounterPartyName,
                 CountryId = dto.CountryId,
                 IsActive = dto.IsActive
