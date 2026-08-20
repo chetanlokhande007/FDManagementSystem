@@ -154,26 +154,26 @@ namespace FinTrustFDManager.BAL.Services
                         interest?.InterestFrequency ?? string.Empty,
 
                     CompoundingFrequency =
-                        interest?.CompoundingFrequency ?? string.Empty,
+                        (interest != null && interest.IsCompounding) ? (interest.CompoundingFrequency ?? "Not Applicable") : "Not Applicable",
 
                     CalculationBasis =
                         interest?.CalculationBasis ?? string.Empty,
 
                     // Cash Flow
                     TotalPrincipal =
-                        cashFlows?.Sum(x => x.PrincipalAmount) ?? 0,
+                        fd.PrincipalAmount,
 
                     TotalGrossInterest =
-                        cashFlows?.Sum(x => x.GrossInterest) ?? 0,
+                        cashFlows?.Where(x => x.Event != "FD Created" && x.Event != "Maturity" && x.Event != "Compounding Interest").Sum(x => x.InterestAmount) ?? 0,
 
                     TotalTds =
-                        cashFlows?.Sum(x => x.TdsAmount) ?? 0,
+                        0, // TDS removed from Cash Flow
 
                     TotalNetInterest =
-                        cashFlows?.Sum(x => x.NetInterest) ?? 0,
+                        cashFlows?.Where(x => x.Event != "FD Created" && x.Event != "Maturity" && x.Event != "Compounding Interest").Sum(x => x.InterestAmount) ?? 0,
 
                     TotalAmount =
-                        cashFlows?.Sum(x => x.TotalAmount) ?? 0
+                        (fd.PrincipalAmount) + (cashFlows?.Where(x => x.Event != "FD Created" && x.Event != "Maturity" && x.Event != "Compounding Interest").Sum(x => x.InterestAmount) ?? 0)
                 };
 
                 result.Add(data);

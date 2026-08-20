@@ -5,17 +5,16 @@ import { Observable } from 'rxjs';
 export interface FDCashFlow {
   cashFlowId: number;
   fdId: number;
-  cashFlowDate: string;
-  cashFlowType: string;
-  direction: string;
+  event: string;
+  startDate: string;
+  endDate: string;
   days: number;
+  interestRate: number;
   openingBalance: number;
+  interestAmount: number;
   closingBalance: number;
-  principalAmount: number;
-  grossInterest: number;
-  tdsAmount: number;
-  netInterest: number;
-  totalAmount: number;
+  cashFlowAmount: number;
+  direction: string;
   currencyCode: string;
   status: string;
   referenceNo: string;
@@ -51,6 +50,6 @@ export class FDCashFlowService {
   }
 
   getByFdId(fdId: number): Observable<FDCashFlow[]> {
-    return this.http.get<FDCashFlow[]>(`${this.apiUrl}?fdId=${fdId}`);
+    return this.http.get<FDCashFlow[]>(`${this.apiUrl}/fd/${fdId}`);
   }
 }

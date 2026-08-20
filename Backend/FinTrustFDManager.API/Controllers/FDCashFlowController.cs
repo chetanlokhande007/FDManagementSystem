@@ -42,6 +42,14 @@ namespace FinTrustFDManager.API.Controllers
             return Ok(result);
         }
 
+        // GET: api/FDCashFlow/fd/1
+        [HttpGet("fd/{fdId:long}")]
+        public async Task<IActionResult> GetByFdId(long fdId)
+        {
+            var result = await _service.GetByFdIdAsync(fdId);
+            return Ok(result ?? new List<FDCashFlowDto>());
+        }
+
         // POST: api/FDCashFlow
         [HttpPost]
         public async Task<IActionResult> Create(

@@ -64,14 +64,16 @@ namespace FinTrustFDManager.DAL.Repositories
                 return null;
 
             existingCashFlow.FdId = cashFlow.FdId;
-            existingCashFlow.CashFlowDate = cashFlow.CashFlowDate;
-            existingCashFlow.CashFlowType = cashFlow.CashFlowType;
+            existingCashFlow.Event = cashFlow.Event;
+            existingCashFlow.StartDate = cashFlow.StartDate;
+            existingCashFlow.EndDate = cashFlow.EndDate;
+            existingCashFlow.Days = cashFlow.Days;
+            existingCashFlow.InterestRate = cashFlow.InterestRate;
+            existingCashFlow.OpeningBalance = cashFlow.OpeningBalance;
+            existingCashFlow.InterestAmount = cashFlow.InterestAmount;
+            existingCashFlow.ClosingBalance = cashFlow.ClosingBalance;
+            existingCashFlow.CashFlowAmount = cashFlow.CashFlowAmount;
             existingCashFlow.Direction = cashFlow.Direction;
-            existingCashFlow.PrincipalAmount = cashFlow.PrincipalAmount;
-            existingCashFlow.GrossInterest = cashFlow.GrossInterest;
-            existingCashFlow.TdsAmount = cashFlow.TdsAmount;
-            existingCashFlow.NetInterest = cashFlow.NetInterest;
-            existingCashFlow.TotalAmount = cashFlow.TotalAmount;
             existingCashFlow.CurrencyCode = cashFlow.CurrencyCode;
             existingCashFlow.Status = cashFlow.Status;
             existingCashFlow.ReferenceNo = cashFlow.ReferenceNo;

@@ -14,6 +14,7 @@ export class FdInterestComponent implements OnInit {
 
   @Input() fdId!: number;
   @Input() interestData: any = null;
+  @Input() interestFrequencies: any[] = [];
   @Output() interestSaved = new EventEmitter<any>();
 
   interestForm!: FormGroup;
@@ -23,16 +24,7 @@ export class FdInterestComponent implements OnInit {
   constructor(
     private fb: FormBuilder,
     private fdInterestService: FDInterestService
-  ) {}
-
-  ngOnInit(): void {
-    this.createForm();
-    if (this.interestData) {
-      this.isEdit = true;
-      this.isReadOnly = true;
-      this.populateForm(this.interestData);
-    }
-  }
+  ) { }
 
   createForm(): void {
     this.interestForm = this.fb.group({
@@ -66,6 +58,36 @@ export class FdInterestComponent implements OnInit {
       calculationBasis: interest.calculationBasis,
       paymentConvention: interest.paymentConvention
     });
+    this.toggleCompoundingFrequency(interest.isCompounding || false);
+  }
+
+  ngOnInit(): void {
+    this.createForm();
+    if (this.interestData) {
+      this.isEdit = true;
+      this.isReadOnly = true;
+      this.populateForm(this.interestData);
+    } else {
+      this.toggleCompoundingFrequency(false);
+    }
+
+    this.interestForm.get('isCompounding')?.valueChanges.subscribe(val => {
+      this.toggleCompoundingFrequency(val);
+    });
+  }
+
+  toggleCompoundingFrequency(isCompounding: boolean): void {
+    const compoundingControl = this.interestForm.get('compoundingFrequency');
+    if (isCompounding) {
+      compoundingControl?.enable();
+      if (!compoundingControl?.value) {
+        const intFreq = this.interestForm.get('interestFrequency')?.value;
+        compoundingControl?.setValue(intFreq ? intFreq : 'QUARTERLY');
+      }
+    } else {
+      compoundingControl?.disable();
+      compoundingControl?.setValue('');
+    }
   }
 
   edit(): void {

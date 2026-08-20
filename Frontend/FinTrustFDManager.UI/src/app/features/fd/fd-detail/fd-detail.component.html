@@ -22,16 +22,12 @@
       <div class="tab" [class.active]="activeTab === 'general'" (click)="selectTab('general')">
         General
       </div>
-      <div class="tab" 
-           [class.active]="activeTab === 'interest'" 
-           [class.disabled]="!fdId || !isGeneralReadOnly" 
-           (click)="selectTab('interest')">
+      <div class="tab" [class.active]="activeTab === 'interest'" [class.disabled]="!fdId || !isGeneralReadOnly"
+        (click)="selectTab('interest')">
         Interest
       </div>
-      <div class="tab" 
-           [class.active]="activeTab === 'cashflow'" 
-           [class.disabled]="!fdId || !isGeneralReadOnly" 
-           (click)="selectTab('cashflow')">
+      <div class="tab" [class.active]="activeTab === 'cashflow'" [class.disabled]="!fdId || !isGeneralReadOnly"
+        (click)="selectTab('cashflow')">
         CashFlow
       </div>
       <div class="reference-label" *ngIf="isEdit && fixedDeposit.fdReferenceNo">
@@ -41,7 +37,7 @@
 
     <!-- GENERAL TAB FORM -->
     <div *ngIf="activeTab === 'general'" class="tab-content">
-      
+
       <!-- READ ONLY VIEW -->
       <div *ngIf="isGeneralReadOnly" class="read-only-view">
         <div class="general-summary-card">
@@ -142,7 +138,8 @@
             <label>
               Principal Amount <span>*</span>
             </label>
-            <input type="number" [(ngModel)]="fixedDeposit.principalAmount" placeholder="Enter Amount" (ngModelChange)="validateField('principalAmount')">
+            <input type="number" [(ngModel)]="fixedDeposit.principalAmount" placeholder="Enter Amount"
+              (ngModelChange)="validateField('principalAmount')">
             <small class="text-danger" *ngIf="errors.principalAmount">{{ errors.principalAmount }}</small>
           </div>
 
@@ -160,8 +157,12 @@
             <label>
               End Date <span>*</span>
             </label>
-            <input type="date" [(ngModel)]="fixedDeposit.endDate" [min]="fixedDeposit.startDate" (ngModelChange)="validateDates()">
+            <input type="date" [(ngModel)]="fixedDeposit.endDate" [min]="fixedDeposit.startDate"
+              (ngModelChange)="validateDates()">
             <small class="text-danger" *ngIf="errors.endDate">{{ errors.endDate }}</small>
+            <div class="alert alert-warning mt-2" *ngIf="oddTenureWarning" style="color: #856404; background-color: #fff3cd; border: 1px solid #ffeeba; padding: 0.5rem; border-radius: 0.25rem; font-size: 0.875rem;">
+              <i class="fas fa-exclamation-triangle"></i> {{ oddTenureWarning }}
+            </div>
           </div>
 
           <!-- SETTLEMENT DATE -->
@@ -169,7 +170,8 @@
             <label>
               Settlement Date <span>*</span>
             </label>
-            <input type="date" [(ngModel)]="fixedDeposit.settlementDate" [min]="fixedDeposit.endDate" (ngModelChange)="validateDates()">
+            <input type="date" [(ngModel)]="fixedDeposit.settlementDate" [min]="fixedDeposit.endDate"
+              (ngModelChange)="validateDates()">
             <small class="text-danger" *ngIf="errors.settlementDate">{{ errors.settlementDate }}</small>
           </div>
 
@@ -196,12 +198,14 @@
 
     <!-- INTEREST TAB -->
     <div *ngIf="activeTab === 'interest'">
-      <app-fd-interest *ngIf="fdId" [fdId]="fdId" [interestData]="interestData" (interestSaved)="onInterestSaved($event)"></app-fd-interest>
+      <app-fd-interest *ngIf="fdId" [fdId]="fdId" [interestData]="interestData"
+        [interestFrequencies]="interestFrequencies" (interestSaved)="onInterestSaved($event)"></app-fd-interest>
     </div>
 
     <!-- CASHFLOW TAB -->
     <div *ngIf="activeTab === 'cashflow'">
-      <app-fd-cashflow *ngIf="fdId" [fdId]="fdId" [fdData]="fixedDeposit" [interestData]="interestData" [cashFlows]="cashFlows" (cashFlowSaved)="loadFDDetails()"></app-fd-cashflow>
+      <app-fd-cashflow *ngIf="fdId" [fdId]="fdId" [fdData]="fixedDeposit" [interestData]="interestData"
+        [cashFlows]="cashFlows" (cashFlowSaved)="loadFDDetails()"></app-fd-cashflow>
     </div>
 
   </div>

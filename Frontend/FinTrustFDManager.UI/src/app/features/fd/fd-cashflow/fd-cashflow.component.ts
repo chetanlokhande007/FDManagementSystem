@@ -52,14 +52,16 @@ export class FdCashflowComponent implements OnInit {
     this.cashFlowForm = this.fb.group({
       cashFlowId: [0],
       fdId: [this.fdId],
-      cashFlowDate: [''],
-      cashFlowType: [''],
+      event: [''],
+      startDate: [''],
+      endDate: [''],
+      days: [0],
+      interestRate: [0],
+      openingBalance: [0],
+      interestAmount: [0],
+      closingBalance: [0],
+      cashFlowAmount: [0],
       direction: [''],
-      principalAmount: [0],
-      grossInterest: [0],
-      tdsAmount: [0],
-      netInterest: [0],
-      totalAmount: [0],
       currencyCode: [''],
       status: ['PENDING'],
       referenceNo: ['']
@@ -80,14 +82,16 @@ export class FdCashflowComponent implements OnInit {
     this.cashFlowForm.patchValue({
       cashFlowId: cf.cashFlowId,
       fdId: cf.fdId,
-      cashFlowDate: formatDt(cf.cashFlowDate),
-      cashFlowType: cf.cashFlowType,
+      event: cf.event,
+      startDate: formatDt(cf.startDate),
+      endDate: formatDt(cf.endDate),
+      days: cf.days,
+      interestRate: cf.interestRate,
+      openingBalance: cf.openingBalance,
+      interestAmount: cf.interestAmount,
+      closingBalance: cf.closingBalance,
+      cashFlowAmount: cf.cashFlowAmount,
       direction: cf.direction,
-      principalAmount: cf.principalAmount,
-      grossInterest: cf.grossInterest,
-      tdsAmount: cf.tdsAmount,
-      netInterest: cf.netInterest,
-      totalAmount: cf.totalAmount,
       currencyCode: cf.currencyCode,
       status: cf.status,
       referenceNo: cf.referenceNo
@@ -142,35 +146,17 @@ export class FdCashflowComponent implements OnInit {
   }
 
   get enrichedCashFlows() {
-    if (!this.cashFlows || this.cashFlows.length === 0) return [];
-    
-    return this.cashFlows.map((cf, index) => {
-      let startDate = this.fdData?.startDate;
-      if (index > 0) {
-        startDate = this.cashFlows[index - 1].cashFlowDate;
-      }
-      
-      let endDate = cf.cashFlowDate;
-      if (cf.cashFlowType === 'PRINCIPAL' && this.cashFlows.length > 1) {
-         endDate = this.cashFlows[1].cashFlowDate; 
-      }
-      
-      return {
-        ...cf,
-        periodStart: startDate,
-        periodEnd: endDate
-      };
-    });
+    return this.cashFlows;
   }
 
   get totalInterest(): number {
     return this.cashFlows
-      .filter(cf => cf.cashFlowType === 'INTEREST')
-      .reduce((sum, cf) => sum + cf.grossInterest, 0);
+      .filter(cf => cf.event !== 'FD Created' && cf.event !== 'Maturity' && cf.event !== 'Compounding Interest')
+      .reduce((sum, cf) => sum + cf.interestAmount, 0);
   }
 
   get maturityAmount(): number {
-    const maturityFlow = this.cashFlows.find(cf => cf.cashFlowType === 'MATURITY');
-    return maturityFlow ? maturityFlow.totalAmount : 0;
+    const maturityFlow = this.cashFlows.find(cf => cf.event === 'Maturity');
+    return maturityFlow ? maturityFlow.cashFlowAmount : 0;
   }
 }

@@ -30,17 +30,16 @@ namespace FinTrustFDManager.BAL.Services
             {
                 CashFlowId = x.CashFlowId,
                 FdId = x.FdId,
-                CashFlowDate = x.CashFlowDate,
-                CashFlowType = x.CashFlowType,
-                Direction = x.Direction,
+                Event = x.Event,
+                StartDate = x.StartDate,
+                EndDate = x.EndDate,
                 Days = x.Days,
+                InterestRate = x.InterestRate,
                 OpeningBalance = x.OpeningBalance,
+                InterestAmount = x.InterestAmount,
                 ClosingBalance = x.ClosingBalance,
-                PrincipalAmount = x.PrincipalAmount,
-                GrossInterest = x.GrossInterest,
-                TdsAmount = x.TdsAmount,
-                NetInterest = x.NetInterest,
-                TotalAmount = x.TotalAmount,
+                CashFlowAmount = x.CashFlowAmount,
+                Direction = x.Direction,
                 CurrencyCode = x.CurrencyCode,
                 Status = x.Status,
                 ReferenceNo = x.ReferenceNo,
@@ -60,22 +59,47 @@ namespace FinTrustFDManager.BAL.Services
             {
                 CashFlowId = x.CashFlowId,
                 FdId = x.FdId,
-                CashFlowDate = x.CashFlowDate,
-                CashFlowType = x.CashFlowType,
-                Direction = x.Direction,
+                Event = x.Event,
+                StartDate = x.StartDate,
+                EndDate = x.EndDate,
                 Days = x.Days,
+                InterestRate = x.InterestRate,
                 OpeningBalance = x.OpeningBalance,
+                InterestAmount = x.InterestAmount,
                 ClosingBalance = x.ClosingBalance,
-                PrincipalAmount = x.PrincipalAmount,
-                GrossInterest = x.GrossInterest,
-                TdsAmount = x.TdsAmount,
-                NetInterest = x.NetInterest,
-                TotalAmount = x.TotalAmount,
+                CashFlowAmount = x.CashFlowAmount,
+                Direction = x.Direction,
                 CurrencyCode = x.CurrencyCode,
                 Status = x.Status,
                 ReferenceNo = x.ReferenceNo,
                 CreatedDate = x.CreatedDate
             };
+        }
+
+        // GET BY FD ID
+        public async Task<IEnumerable<FDCashFlowDto>> GetByFdIdAsync(long fdId)
+        {
+            var cashFlows = await _repository.GetByFdIdAsync(fdId);
+
+            return cashFlows.Select(x => new FDCashFlowDto
+            {
+                CashFlowId = x.CashFlowId,
+                FdId = x.FdId,
+                Event = x.Event,
+                StartDate = x.StartDate,
+                EndDate = x.EndDate,
+                Days = x.Days,
+                InterestRate = x.InterestRate,
+                OpeningBalance = x.OpeningBalance,
+                InterestAmount = x.InterestAmount,
+                ClosingBalance = x.ClosingBalance,
+                CashFlowAmount = x.CashFlowAmount,
+                Direction = x.Direction,
+                CurrencyCode = x.CurrencyCode,
+                Status = x.Status,
+                ReferenceNo = x.ReferenceNo,
+                CreatedDate = x.CreatedDate
+            });
         }
 
         // CREATE
@@ -85,17 +109,16 @@ namespace FinTrustFDManager.BAL.Services
             var entity = new FDCashFlow
             {
                 FdId = dto.FdId,
-                CashFlowDate = dto.CashFlowDate,
-                CashFlowType = dto.CashFlowType,
-                Direction = dto.Direction,
+                Event = dto.Event,
+                StartDate = dto.StartDate,
+                EndDate = dto.EndDate,
                 Days = dto.Days,
+                InterestRate = dto.InterestRate,
                 OpeningBalance = dto.OpeningBalance,
+                InterestAmount = dto.InterestAmount,
                 ClosingBalance = dto.ClosingBalance,
-                PrincipalAmount = dto.PrincipalAmount,
-                GrossInterest = dto.GrossInterest,
-                TdsAmount = dto.TdsAmount,
-                NetInterest = dto.NetInterest,
-                TotalAmount = dto.TotalAmount,
+                CashFlowAmount = dto.CashFlowAmount,
+                Direction = dto.Direction,
                 CurrencyCode = dto.CurrencyCode,
                 Status = dto.Status,
                 ReferenceNo = dto.ReferenceNo,
@@ -116,7 +139,7 @@ namespace FinTrustFDManager.BAL.Services
             long id,
             FDCashFlowDto dto)
         {
-            var existingCashFlows = (await _repository.GetByFdIdAsync(dto.FdId)).OrderBy(c => c.CashFlowDate).ToList();
+            var existingCashFlows = (await _repository.GetByFdIdAsync(dto.FdId)).OrderBy(c => c.StartDate).ToList();
             var targetIndex = existingCashFlows.FindIndex(c => c.CashFlowId == id);
 
             if (targetIndex == -1)
@@ -129,54 +152,67 @@ namespace FinTrustFDManager.BAL.Services
                 throw new InvalidOperationException("FD or Interest configuration not found.");
 
             var editedCashFlow = existingCashFlows[targetIndex];
-            editedCashFlow.CashFlowDate = dto.CashFlowDate;
-            editedCashFlow.GrossInterest = dto.GrossInterest;
-            // Update other manually editable fields if needed
-            editedCashFlow.NetInterest = dto.GrossInterest - editedCashFlow.TdsAmount;
-            editedCashFlow.TotalAmount = editedCashFlow.NetInterest + editedCashFlow.PrincipalAmount;
-
+            editedCashFlow.EndDate = dto.EndDate;
+            editedCashFlow.InterestAmount = dto.InterestAmount;
+            editedCashFlow.CashFlowAmount = dto.CashFlowAmount;
+            
             // Recalculate subsequent cash flows
-            for (int i = targetIndex; i < existingCashFlows.Count; i++)
+            decimal uncompoundedInterestSum = 0;
+            for (int i = 0; i < existingCashFlows.Count; i++)
             {
                 var current = existingCashFlows[i];
 
-                if (i > 0)
+                if (i < targetIndex)
                 {
-                    var prev = existingCashFlows[i - 1];
-                    current.Days = (current.CashFlowDate - prev.CashFlowDate).Days;
-                    
-                    if (interest.IsCompounding)
+                    if (current.Event == "Interest") uncompoundedInterestSum += current.InterestAmount;
+                    if (current.Event == "Compounding Interest") uncompoundedInterestSum = 0;
+                }
+                else
+                {
+                    if (i > 0)
                     {
+                        var prev = existingCashFlows[i - 1];
+                        if (current.Event != "Maturity")
+                        {
+                            current.StartDate = prev.EndDate.Date;
+                            current.Days = (current.EndDate.Date - current.StartDate.Date).Days;
+                        }
                         current.OpeningBalance = prev.ClosingBalance;
                     }
-                    else
-                    {
-                        current.OpeningBalance = fd.PrincipalAmount;
-                    }
 
-                    if (current.CashFlowType == "INTEREST")
+                    if (current.Event == "Interest")
                     {
-                        if (i > targetIndex) // Only recalculate interest if it's not the manually edited row
+                        if (i >= targetIndex) 
                         {
-                            decimal interestBase = interest.IsCompounding ? current.OpeningBalance : fd.PrincipalAmount;
-                            decimal calculatedInterest = interestBase * (interest.InterestRate / 100m) * (current.Days / 365m);
-                            current.GrossInterest = Math.Round(calculatedInterest, 2, MidpointRounding.AwayFromZero);
-                            current.NetInterest = current.GrossInterest - current.TdsAmount;
-                            current.TotalAmount = current.NetInterest;
+                            decimal dayCountBasis = interest.CalculationBasis == "ACTUAL_360" ? 360m : 365m;
+                            decimal calculatedInterest = current.OpeningBalance * (current.InterestRate / 100m) * (current.Days / dayCountBasis);
+                            current.InterestAmount = Math.Round(calculatedInterest, 2, MidpointRounding.AwayFromZero);
                         }
                         
-                        if (interest.IsCompounding)
-                        {
-                            current.ClosingBalance = current.OpeningBalance + current.GrossInterest;
-                        }
-                        else
-                        {
-                            current.ClosingBalance = current.OpeningBalance;
-                        }
-                    }
-                    else if (current.CashFlowType == "MATURITY")
-                    {
+                        uncompoundedInterestSum += current.InterestAmount;
                         current.ClosingBalance = current.OpeningBalance;
+                        current.CashFlowAmount = current.InterestAmount;
+                    }
+                    else if (current.Event == "Compounding Interest")
+                    {
+                        if (i >= targetIndex)
+                        {
+                            if (current.Days > 0)
+                            {
+                                decimal dayCountBasis = interest.CalculationBasis == "ACTUAL_360" ? 360m : 365m;
+                                decimal calculatedInterest = current.OpeningBalance * (current.InterestRate / 100m) * (current.Days / dayCountBasis);
+                                uncompoundedInterestSum += Math.Round(calculatedInterest, 2, MidpointRounding.AwayFromZero);
+                            }
+                            current.InterestAmount = uncompoundedInterestSum;
+                        }
+                        uncompoundedInterestSum = 0;
+                        current.ClosingBalance = current.OpeningBalance + current.InterestAmount;
+                        current.CashFlowAmount = current.InterestAmount;
+                    }
+                    else if (current.Event == "Maturity")
+                    {
+                        current.ClosingBalance = 0;
+                        current.CashFlowAmount = current.OpeningBalance + uncompoundedInterestSum;
                     }
                 }
             }
@@ -187,17 +223,16 @@ namespace FinTrustFDManager.BAL.Services
             {
                 CashFlowId = editedCashFlow.CashFlowId,
                 FdId = editedCashFlow.FdId,
-                CashFlowDate = editedCashFlow.CashFlowDate,
-                CashFlowType = editedCashFlow.CashFlowType,
-                Direction = editedCashFlow.Direction,
+                Event = editedCashFlow.Event,
+                StartDate = editedCashFlow.StartDate,
+                EndDate = editedCashFlow.EndDate,
                 Days = editedCashFlow.Days,
+                InterestRate = editedCashFlow.InterestRate,
                 OpeningBalance = editedCashFlow.OpeningBalance,
+                InterestAmount = editedCashFlow.InterestAmount,
                 ClosingBalance = editedCashFlow.ClosingBalance,
-                PrincipalAmount = editedCashFlow.PrincipalAmount,
-                GrossInterest = editedCashFlow.GrossInterest,
-                TdsAmount = editedCashFlow.TdsAmount,
-                NetInterest = editedCashFlow.NetInterest,
-                TotalAmount = editedCashFlow.TotalAmount,
+                CashFlowAmount = editedCashFlow.CashFlowAmount,
+                Direction = editedCashFlow.Direction,
                 CurrencyCode = editedCashFlow.CurrencyCode,
                 Status = editedCashFlow.Status,
                 ReferenceNo = editedCashFlow.ReferenceNo,

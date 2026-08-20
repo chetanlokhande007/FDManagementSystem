@@ -35,44 +35,51 @@
       <table>
         <thead>
           <tr>
-            <th style="text-align: center;">Action / Type</th>
+            <th style="text-align: center;">Event</th>
             <th>Start Date</th>
             <th>End Date</th>
             <th style="text-align: right;">Days</th>
+            <th style="text-align: right;">Interest Rate</th>
             <th style="text-align: right;">Opening Balance</th>
-            <th style="text-align: right;">Gross Interest</th>
+            <th style="text-align: right;">Interest Amount</th>
             <th style="text-align: right;">Closing Balance</th>
-            <th style="text-align: right;">Cashflow Amount</th>
+            <th style="text-align: right;">Cash Flow Amount</th>
           </tr>
         </thead>
         <tbody>
           <tr *ngFor="let cf of enrichedCashFlows">
             <td style="text-align: center;">
-              <span *ngIf="cf.cashFlowType === 'PRINCIPAL'" style="font-weight: 500; color: #475569;">Initial Deposit</span>
-              <span *ngIf="cf.cashFlowType === 'MATURITY'" style="font-weight: 500; color: #15803d;">MATURITY</span>
-              <button *ngIf="cf.cashFlowType === 'INTEREST'" type="button" class="action-btn edit" (click)="editCashFlow(cf)">Edit</button>
+              <span *ngIf="cf.event === 'FD Created'" style="font-weight: 500; color: #475569;">FD Created</span>
+              <span *ngIf="cf.event === 'Maturity'" style="font-weight: 500; color: #15803d;">Maturity</span>
+              <div *ngIf="cf.event !== 'FD Created' && cf.event !== 'Maturity'">
+                {{ cf.event }}
+                <button type="button" class="action-btn edit" (click)="editCashFlow(cf)" style="margin-left: 10px;">Edit</button>
+              </div>
             </td>
             <td>
-              <ng-container *ngIf="cf.cashFlowType === 'INTEREST'; else blankDate">
-                {{ cf.periodStart | date:'dd-MMM-yyyy' }}
+              <ng-container *ngIf="cf.event !== 'FD Created' && cf.event !== 'Maturity'; else blankDate">
+                {{ cf.startDate | date:'dd-MMM-yyyy' }}
               </ng-container>
+              <ng-template #blankDate>
+                <span *ngIf="cf.event === 'FD Created' || cf.event === 'Maturity'">{{ cf.startDate | date:'dd-MMM-yyyy' }}</span>
+              </ng-template>
             </td>
             <td>
-              <ng-container *ngIf="cf.cashFlowType === 'INTEREST'; else blankDate">
-                {{ cf.periodEnd | date:'dd-MMM-yyyy' }}
+              <ng-container *ngIf="cf.event !== 'FD Created' && cf.event !== 'Maturity'; else blankDateEnd">
+                {{ cf.endDate | date:'dd-MMM-yyyy' }}
               </ng-container>
+              <ng-template #blankDateEnd>
+                <span *ngIf="cf.event === 'FD Created' || cf.event === 'Maturity'">{{ cf.endDate | date:'dd-MMM-yyyy' }}</span>
+              </ng-template>
             </td>
-            <ng-template #blankDate>
-              <span style="color: #94a3b8;">—</span>
-            </ng-template>
             <td style="text-align: right;">
-              <span *ngIf="cf.cashFlowType === 'INTEREST'">{{ cf.days }}</span>
-              <span *ngIf="cf.cashFlowType !== 'INTEREST'" style="color: #94a3b8;">—</span>
+              <span>{{ cf.days }}</span>
             </td>
+            <td style="text-align: right;">{{ cf.interestRate | number:'1.2-2' }}%</td>
             <td style="text-align: right;">{{ cf.openingBalance | currency:'INR':'symbol':'1.2-2' }}</td>
-            <td style="text-align: right;">{{ cf.grossInterest | currency:'INR':'symbol':'1.2-2' }}</td>
+            <td style="text-align: right;">{{ cf.interestAmount | currency:'INR':'symbol':'1.2-2' }}</td>
             <td style="text-align: right;">{{ cf.closingBalance | currency:'INR':'symbol':'1.2-2' }}</td>
-            <td style="text-align: right;">{{ cf.totalAmount | currency:'INR':'symbol':'1.2-2' }}</td>
+            <td style="text-align: right;">{{ cf.cashFlowAmount | currency:'INR':'symbol':'1.2-2' }}</td>
           </tr>
         </tbody>
       </table>
@@ -98,60 +105,16 @@
     <form [formGroup]="cashFlowForm" (ngSubmit)="saveCashFlow()">
       <div class="form-grid" style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
         <div class="form-group">
-          <label>Cash Flow Date <span>*</span></label>
-          <input type="date" formControlName="cashFlowDate" style="width: 100%; padding: 8px;">
+          <label>End Date <span>*</span></label>
+          <input type="date" formControlName="endDate" style="width: 100%; padding: 8px;">
         </div>
         <div class="form-group">
-          <label>Cash Flow Type</label>
-          <select formControlName="cashFlowType" style="width: 100%; padding: 8px;">
-            <option value="">Select Type</option>
-            <option value="PRINCIPAL">PRINCIPAL</option>
-            <option value="INTEREST">INTEREST</option>
-          </select>
+          <label>Interest Amount</label>
+          <input type="number" formControlName="interestAmount" style="width: 100%; padding: 8px;">
         </div>
         <div class="form-group">
-          <label>Direction</label>
-          <select formControlName="direction" style="width: 100%; padding: 8px;">
-            <option value="">Select Direction</option>
-            <option value="INFLOW">INFLOW</option>
-            <option value="OUTFLOW">OUTFLOW</option>
-          </select>
-        </div>
-        <div class="form-group">
-          <label>Currency</label>
-          <input type="text" formControlName="currencyCode" style="width: 100%; padding: 8px;">
-        </div>
-        <div class="form-group">
-          <label>Principal Amount</label>
-          <input type="number" formControlName="principalAmount" style="width: 100%; padding: 8px;">
-        </div>
-        <div class="form-group">
-          <label>Gross Interest</label>
-          <input type="number" formControlName="grossInterest" style="width: 100%; padding: 8px;">
-        </div>
-        <div class="form-group">
-          <label>TDS Amount</label>
-          <input type="number" formControlName="tdsAmount" style="width: 100%; padding: 8px;">
-        </div>
-        <div class="form-group">
-          <label>Net Interest</label>
-          <input type="number" formControlName="netInterest" style="width: 100%; padding: 8px;">
-        </div>
-        <div class="form-group">
-          <label>Total Amount</label>
-          <input type="number" formControlName="totalAmount" style="width: 100%; padding: 8px;">
-        </div>
-        <div class="form-group">
-          <label>Status</label>
-          <select formControlName="status" style="width: 100%; padding: 8px;">
-            <option value="PENDING">PENDING</option>
-            <option value="ACTIVE">ACTIVE</option>
-            <option value="SETTLED">SETTLED</option>
-          </select>
-        </div>
-        <div class="form-group">
-          <label>Reference No</label>
-          <input type="text" formControlName="referenceNo" style="width: 100%; padding: 8px;">
+          <label>Cash Flow Amount</label>
+          <input type="number" formControlName="cashFlowAmount" style="width: 100%; padding: 8px;">
         </div>
       </div>
       <div class="form-actions" style="margin-top: 20px; display: flex; gap: 10px; justify-content: center;">

@@ -29,17 +29,19 @@
       <div class="form-group">
         <label>Interest Frequency</label>
         <select formControlName="interestFrequency">
-          <option value="MONTHLY">MONTHLY</option>
-          <option value="QUARTERLY">QUARTERLY</option>
-          <option value="ANNUALLY">ANNUALLY</option>
+          <option value="">Select Frequency</option>
+          <option *ngFor="let freq of interestFrequencies" [value]="freq.frequencyCode">
+            {{ freq.frequencyName }}
+          </option>
         </select>
       </div>
       <div class="form-group">
         <label>Compounding Frequency</label>
         <select formControlName="compoundingFrequency">
-          <option value="MONTHLY">MONTHLY</option>
-          <option value="QUARTERLY">QUARTERLY</option>
-          <option value="ANNUALLY">ANNUALLY</option>
+          <option value="">Select Frequency</option>
+          <option *ngFor="let freq of interestFrequencies" [value]="freq.frequencyCode">
+            {{ freq.frequencyName }}
+          </option>
         </select>
       </div>
       <div class="form-group" style="display: flex; align-items: center; gap: 10px;">

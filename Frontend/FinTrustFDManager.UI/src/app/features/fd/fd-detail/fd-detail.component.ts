@@ -262,7 +262,7 @@ export class FDDetailComponent implements OnInit {
       sessionStorage.removeItem(cacheKey);
     }
     const cachedData = sessionStorage.getItem(cacheKey);
-    
+
     if (cachedData) {
       const result = JSON.parse(cachedData);
       this.applyFDDetails(result);
@@ -275,11 +275,7 @@ export class FDDetailComponent implements OnInit {
       interest: this.fdInterestService.getByFdId(this.fdId).pipe(
         catchError(() => of(null))
       ),
-      cashFlows: this.cashFlowService.getAll().pipe(
-        map(cfs => {
-          const arr = Array.isArray(cfs) ? cfs : [cfs];
-          return arr.filter(x => Number(x.fdId) === Number(this.fdId));
-        }),
+      cashFlows: this.cashFlowService.getByFdId(this.fdId).pipe(
         catchError(() => of([]))
       )
     }).subscribe({
@@ -425,6 +421,37 @@ export class FDDetailComponent implements OnInit {
     } else {
       delete this.errors.settlementDate;
     }
+
+    this.checkTenureWarning();
+  }
+
+  oddTenureWarning: string | null = null;
+
+  checkTenureWarning(): void {
+    this.oddTenureWarning = null;
+    const sDate = this.fixedDeposit.startDate;
+    const eDate = this.fixedDeposit.endDate;
+    if (sDate && eDate && sDate < eDate) {
+      const start = new Date(sDate);
+      const end = new Date(eDate);
+      
+      const diffTime = Math.abs(end.getTime() - start.getTime());
+      const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+
+      // Calculate the difference in months
+      const monthsDiff = (end.getFullYear() - start.getFullYear()) * 12 + (end.getMonth() - start.getMonth());
+      
+      // Expected end date if it was exactly N months
+      const expectedEnd = new Date(start.getFullYear(), start.getMonth() + monthsDiff, start.getDate());
+      
+      // Also check for exactly N years
+      const yearsDiff = end.getFullYear() - start.getFullYear();
+      const expectedEndYear = new Date(start.getFullYear() + yearsDiff, start.getMonth(), start.getDate());
+
+      if (end.getTime() !== expectedEnd.getTime() && end.getTime() !== expectedEndYear.getTime()) {
+        this.oddTenureWarning = `Tenure is ${diffDays} days — confirm this is intentional.`;
+      }
+    }
   }
 
   validateAll(): boolean {
@@ -528,7 +555,7 @@ export class FDDetailComponent implements OnInit {
             this.fdId =
               response.fdId;
 
-            this.fixedDeposit.fdReferenceNo = 
+            this.fixedDeposit.fdReferenceNo =
               response.fdReferenceNo;
 
             this.isEdit = true;
@@ -582,8 +609,12 @@ export class FDDetailComponent implements OnInit {
 
     alert('Interest configuration and associated Cash Flows generated successfully.');
     this.interestData = interest;
-    
-    this.loadFDDetails(true); // force refresh to get new cash flows instantly
+
+    // Force reload to get the newly generated cash flows from the backend
+    this.loadFDDetails(true);
+
+    // Open Cashflow tab for the same FD
+    this.activeTab = 'cashflow';
   }
 
   /* =========================
