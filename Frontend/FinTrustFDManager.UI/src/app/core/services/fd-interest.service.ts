@@ -29,7 +29,7 @@ export interface FDInterest {
 export class FDInterestService {
   private apiUrl = 'http://localhost:5075/api/FDInterest';
 
-  constructor(private http: HttpClient) {}
+  constructor(private http: HttpClient) { }
 
   getByFdId(fdId: number): Observable<FDInterest> {
     // Assuming backend has this endpoint as requested

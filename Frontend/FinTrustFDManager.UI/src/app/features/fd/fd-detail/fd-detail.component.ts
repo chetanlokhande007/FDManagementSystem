@@ -170,7 +170,9 @@ export class FDDetailComponent implements OnInit {
     if (id) {
       this.fdId = Number(id);
       this.isEdit = true;
-      this.isGeneralReadOnly = true;
+      // If they are on the General tab, default to Edit mode.
+      // If they are deep-linking to Interest or CashFlow, keep General read-only.
+      this.isGeneralReadOnly = (tab === 'interest' || tab === 'cashflow');
     }
 
     // Store the requested tab, but don't set activeTab yet
@@ -434,16 +436,16 @@ export class FDDetailComponent implements OnInit {
     if (sDate && eDate && sDate < eDate) {
       const start = new Date(sDate);
       const end = new Date(eDate);
-      
+
       const diffTime = Math.abs(end.getTime() - start.getTime());
       const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
 
       // Calculate the difference in months
       const monthsDiff = (end.getFullYear() - start.getFullYear()) * 12 + (end.getMonth() - start.getMonth());
-      
+
       // Expected end date if it was exactly N months
       const expectedEnd = new Date(start.getFullYear(), start.getMonth() + monthsDiff, start.getDate());
-      
+
       // Also check for exactly N years
       const yearsDiff = end.getFullYear() - start.getFullYear();
       const expectedEndYear = new Date(start.getFullYear() + yearsDiff, start.getMonth(), start.getDate());

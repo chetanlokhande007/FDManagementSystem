@@ -51,6 +51,7 @@ builder.Services.AddScoped<IFDInterestService, FDInterestService>();
 
 builder.Services.AddScoped<IFDCashFlowRepository, FDCashFlowRepository>();
 builder.Services.AddScoped<IFDCashFlowService, FDCashFlowService>();
+builder.Services.AddScoped<IUnitOfWork, UnitOfWork>();
 
 
 // =====================================================

@@ -152,20 +152,41 @@ namespace FinTrustFDManager.BAL.Services
                 throw new InvalidOperationException("FD or Interest configuration not found.");
 
             var editedCashFlow = existingCashFlows[targetIndex];
-            editedCashFlow.EndDate = dto.EndDate;
-            editedCashFlow.InterestAmount = dto.InterestAmount;
-            editedCashFlow.CashFlowAmount = dto.CashFlowAmount;
             
+            // Validations
+            if (dto.EndDate <= editedCashFlow.StartDate)
+                throw new InvalidOperationException("End Date must be after Start Date.");
+            
+            if (dto.EndDate > fd.EndDate)
+                throw new InvalidOperationException("End Date cannot exceed FD Maturity Date.");
+
+            editedCashFlow.EndDate = dto.EndDate;
+            
+            decimal dayCountBasis = interest.CalculationBasis == "ACTUAL_360" ? 360m : 365m;
+            bool isCompounding = interest.IsCompounding;
+
             // Recalculate subsequent cash flows
-            decimal uncompoundedInterestSum = 0;
+            decimal accruedInterest = 0;
+            
             for (int i = 0; i < existingCashFlows.Count; i++)
             {
                 var current = existingCashFlows[i];
 
                 if (i < targetIndex)
                 {
-                    if (current.Event == "Interest") uncompoundedInterestSum += current.InterestAmount;
-                    if (current.Event == "Compounding Interest") uncompoundedInterestSum = 0;
+                    if (!isCompounding && current.Event == "Interest")
+                    {
+                        accruedInterest = 0;
+                    }
+                    else if (isCompounding && current.Event == "Compounding Interest")
+                    {
+                        accruedInterest = 0;
+                    }
+                    else if (current.Event != "FD Created" && current.Event != "Maturity")
+                    {
+                        // In case of manual intermediate edits before target
+                        accruedInterest += current.InterestAmount;
+                    }
                 }
                 else
                 {
@@ -175,44 +196,53 @@ namespace FinTrustFDManager.BAL.Services
                         if (current.Event != "Maturity")
                         {
                             current.StartDate = prev.EndDate.Date;
+                            if (current.EndDate < current.StartDate) 
+                            {
+                                current.EndDate = current.StartDate; 
+                            }
                             current.Days = (current.EndDate.Date - current.StartDate.Date).Days;
                         }
                         current.OpeningBalance = prev.ClosingBalance;
                     }
 
-                    if (current.Event == "Interest")
+                    if (current.Event == "Interest" || current.Event == "Compounding Interest")
                     {
-                        if (i >= targetIndex) 
+                        if (current.Days > 0)
                         {
-                            decimal dayCountBasis = interest.CalculationBasis == "ACTUAL_360" ? 360m : 365m;
-                            decimal calculatedInterest = current.OpeningBalance * (current.InterestRate / 100m) * (current.Days / dayCountBasis);
-                            current.InterestAmount = Math.Round(calculatedInterest, 2, MidpointRounding.AwayFromZero);
+                            decimal finalInterest = FinTrustFDManager.BAL.Common.FinancialCalculator.CalculateInterest(
+                                current.OpeningBalance, 
+                                current.InterestRate, 
+                                current.Days, 
+                                interest.CalculationBasis);
+                            accruedInterest += finalInterest;
                         }
-                        
-                        uncompoundedInterestSum += current.InterestAmount;
-                        current.ClosingBalance = current.OpeningBalance;
-                        current.CashFlowAmount = current.InterestAmount;
-                    }
-                    else if (current.Event == "Compounding Interest")
-                    {
-                        if (i >= targetIndex)
+
+                        if (isCompounding && current.Event == "Compounding Interest")
                         {
-                            if (current.Days > 0)
-                            {
-                                decimal dayCountBasis = interest.CalculationBasis == "ACTUAL_360" ? 360m : 365m;
-                                decimal calculatedInterest = current.OpeningBalance * (current.InterestRate / 100m) * (current.Days / dayCountBasis);
-                                uncompoundedInterestSum += Math.Round(calculatedInterest, 2, MidpointRounding.AwayFromZero);
-                            }
-                            current.InterestAmount = uncompoundedInterestSum;
+                            current.InterestAmount = accruedInterest;
+                            current.ClosingBalance = current.OpeningBalance + accruedInterest;
+                            current.CashFlowAmount = accruedInterest;
+                            accruedInterest = 0;
                         }
-                        uncompoundedInterestSum = 0;
-                        current.ClosingBalance = current.OpeningBalance + current.InterestAmount;
-                        current.CashFlowAmount = current.InterestAmount;
+                        else if (!isCompounding && current.Event == "Interest")
+                        {
+                            current.InterestAmount = accruedInterest;
+                            current.ClosingBalance = current.OpeningBalance;
+                            current.CashFlowAmount = accruedInterest;
+                            accruedInterest = 0;
+                        }
+                        else 
+                        {
+                            // A mismatch event type (e.g. manual edit mismatch)
+                            current.InterestAmount = 0;
+                            current.ClosingBalance = current.OpeningBalance;
+                            current.CashFlowAmount = 0;
+                        }
                     }
                     else if (current.Event == "Maturity")
                     {
                         current.ClosingBalance = 0;
-                        current.CashFlowAmount = current.OpeningBalance + uncompoundedInterestSum;
+                        current.CashFlowAmount = current.OpeningBalance + accruedInterest;
                     }
                 }
             }

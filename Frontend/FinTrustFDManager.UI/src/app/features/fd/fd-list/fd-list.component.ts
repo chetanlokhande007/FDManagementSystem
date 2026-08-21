@@ -186,7 +186,7 @@ export class FDListComponent implements OnInit {
 
   editFD(fdId: number): void {
     console.log('Edit FD:', fdId);
-    this.router.navigate(['/fd-detail', fdId], { queryParams: { tab: 'general' } });
+    this.router.navigate(['/fd-detail', fdId], { queryParams: { tab: 'general', mode: 'edit' } });
   }
 
   // ==============================

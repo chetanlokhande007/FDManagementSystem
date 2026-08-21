@@ -1,4 +1,4 @@
-import { Component, Input, OnInit, Output, EventEmitter } from '@angular/core';
+import { Component, Input, OnInit, OnChanges, SimpleChanges, Output, EventEmitter } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, FormGroup, ReactiveFormsModule } from '@angular/forms';
 import { FDInterestService, FDInterest } from '../../../core/services/fd-interest.service';
@@ -10,7 +10,7 @@ import { FDInterestService, FDInterest } from '../../../core/services/fd-interes
   templateUrl: './fd-interest.component.html',
   styleUrls: ['./fd-interest.component.css']
 })
-export class FdInterestComponent implements OnInit {
+export class FdInterestComponent implements OnInit, OnChanges {
 
   @Input() fdId!: number;
   @Input() interestData: any = null;
@@ -35,8 +35,8 @@ export class FdInterestComponent implements OnInit {
       benchmarkName: [''],
       benchmarkRate: [0],
       margin: [0],
-      interestFrequency: ['ANNUALLY'],
-      compoundingFrequency: ['ANNUALLY'],
+      interestFrequency: [''],
+      compoundingFrequency: [''],
       isCompounding: [false],
       calculationBasis: ['ACTUAL_365'],
       paymentConvention: ['']
@@ -76,13 +76,35 @@ export class FdInterestComponent implements OnInit {
     });
   }
 
+  ngOnChanges(changes: SimpleChanges): void {
+    if (!this.interestForm) {
+      return; // form not created yet, ngOnInit will handle it
+    }
+
+    if (changes['interestData'] || changes['interestFrequencies']) {
+      if (this.interestData) {
+        this.isEdit = true;
+        this.isReadOnly = true;
+        this.populateForm(this.interestData);
+      } else {
+        this.toggleCompoundingFrequency(false);
+      }
+    }
+  }
+
   toggleCompoundingFrequency(isCompounding: boolean): void {
     const compoundingControl = this.interestForm.get('compoundingFrequency');
     if (isCompounding) {
       compoundingControl?.enable();
       if (!compoundingControl?.value) {
         const intFreq = this.interestForm.get('interestFrequency')?.value;
-        compoundingControl?.setValue(intFreq ? intFreq : 'QUARTERLY');
+        if (intFreq) {
+          compoundingControl?.setValue(intFreq);
+        } else {
+          // Find Quarterly or default to the first one available
+          const defaultFreq = this.interestFrequencies.find(f => f.frequencyName?.toUpperCase() === 'QUARTERLY');
+          compoundingControl?.setValue(defaultFreq ? defaultFreq.frequencyName : (this.interestFrequencies.length ? this.interestFrequencies[0].frequencyName : ''));
+        }
       }
     } else {
       compoundingControl?.disable();

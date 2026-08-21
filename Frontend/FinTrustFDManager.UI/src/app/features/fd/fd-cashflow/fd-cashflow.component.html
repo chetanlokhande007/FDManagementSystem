@@ -1,6 +1,6 @@
 <div class="cashflow-page">
 
-  <div *ngIf="!showForm">
+  <div>
     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
       <h3>FD Cash Flow</h3>
     </div>
@@ -21,13 +21,18 @@
       </div>
       <div class="summary-item">
         <span class="summary-label">Apply Compounding</span>
-        <span class="summary-value" [ngStyle]="{'color': interestData.isCompounding ? '#059669' : '#dc2626'}">
-          {{ interestData.isCompounding ? 'YES' : 'NO' }}
+        <span class="summary-value"
+          [ngStyle]="{'color': (interestData.isCompounding || interestData.IsCompounding) ? '#059669' : '#dc2626'}">
+          {{ (interestData.isCompounding || interestData.IsCompounding) ? 'YES' : 'NO' }}
         </span>
       </div>
-      <div class="summary-item" *ngIf="interestData.isCompounding">
+      <div class="summary-item">
+        <span class="summary-label">Interest Frequency</span>
+        <span class="summary-value">{{ interestData.interestFrequency || interestData.InterestFrequency }}</span>
+      </div>
+      <div class="summary-item" *ngIf="(interestData.isCompounding || interestData.IsCompounding)">
         <span class="summary-label">Compounding Frequency</span>
-        <span class="summary-value">{{ interestData.compoundingFrequency }}</span>
+        <span class="summary-value">{{ interestData.compoundingFrequency || interestData.CompoundingFrequency }}</span>
       </div>
     </div>
 
@@ -53,7 +58,6 @@
               <span *ngIf="cf.event === 'Maturity'" style="font-weight: 500; color: #15803d;">Maturity</span>
               <div *ngIf="cf.event !== 'FD Created' && cf.event !== 'Maturity'">
                 {{ cf.event }}
-                <button type="button" class="action-btn edit" (click)="editCashFlow(cf)" style="margin-left: 10px;">Edit</button>
               </div>
             </td>
             <td>
@@ -61,7 +65,8 @@
                 {{ cf.startDate | date:'dd-MMM-yyyy' }}
               </ng-container>
               <ng-template #blankDate>
-                <span *ngIf="cf.event === 'FD Created' || cf.event === 'Maturity'">{{ cf.startDate | date:'dd-MMM-yyyy' }}</span>
+                <span *ngIf="cf.event === 'FD Created' || cf.event === 'Maturity'">{{ cf.startDate | date:'dd-MMM-yyyy'
+                  }}</span>
               </ng-template>
             </td>
             <td>
@@ -69,7 +74,8 @@
                 {{ cf.endDate | date:'dd-MMM-yyyy' }}
               </ng-container>
               <ng-template #blankDateEnd>
-                <span *ngIf="cf.event === 'FD Created' || cf.event === 'Maturity'">{{ cf.endDate | date:'dd-MMM-yyyy' }}</span>
+                <span *ngIf="cf.event === 'FD Created' || cf.event === 'Maturity'">{{ cf.endDate | date:'dd-MMM-yyyy'
+                  }}</span>
               </ng-template>
             </td>
             <td style="text-align: right;">
@@ -83,44 +89,19 @@
           </tr>
         </tbody>
       </table>
-      
+
       <!-- FOOTER TOTALS -->
       <div class="totals-section">
         <div class="totals-group">
           <p><strong>Total Interest:</strong> {{ totalInterest | currency:'INR':'symbol':'1.2-2' }}</p>
-          <p style="margin-bottom: 0;"><strong>Maturity Amount:</strong> {{ maturityAmount | currency:'INR':'symbol':'1.2-2' }}</p>
+          <p style="margin-bottom: 0;"><strong>Maturity Amount:</strong> {{ maturityAmount |
+            currency:'INR':'symbol':'1.2-2' }}</p>
         </div>
       </div>
     </div>
 
-    <!-- Add CashFlow button removed as requested -->
-
     <ng-template #noData>
       <p style="text-align: center; color: #6b7280; margin-top: 40px;">No CashFlows found.</p>
     </ng-template>
-  </div>
-
-  <div *ngIf="showForm" class="cashflow-form-container" style="border: 1px solid #ccc; padding: 20px; border-radius: 5px;">
-    <h3>{{ isEdit ? 'Edit CashFlow' : 'Add CashFlow' }}</h3>
-    <form [formGroup]="cashFlowForm" (ngSubmit)="saveCashFlow()">
-      <div class="form-grid" style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
-        <div class="form-group">
-          <label>End Date <span>*</span></label>
-          <input type="date" formControlName="endDate" style="width: 100%; padding: 8px;">
-        </div>
-        <div class="form-group">
-          <label>Interest Amount</label>
-          <input type="number" formControlName="interestAmount" style="width: 100%; padding: 8px;">
-        </div>
-        <div class="form-group">
-          <label>Cash Flow Amount</label>
-          <input type="number" formControlName="cashFlowAmount" style="width: 100%; padding: 8px;">
-        </div>
-      </div>
-      <div class="form-actions" style="margin-top: 20px; display: flex; gap: 10px; justify-content: center;">
-        <button type="submit" class="save-btn" style="padding: 10px 20px;">{{ isEdit ? 'Update' : 'Save CashFlow' }}</button>
-        <button type="button" class="cancel-btn" (click)="cancel()" style="padding: 10px 20px;">Cancel</button>
-      </div>
-    </form>
   </div>
 </div>

@@ -78,12 +78,29 @@ namespace FinTrustFDManager.API.Controllers
             long id,
             FDInterest model)
         {
-            var result = await _service.UpdateAsync(id, model);
+            try
+            {
+                var result = await _service.UpdateAsync(id, model);
 
-            if (result == null)
-                return NotFound();
+                if (result == null)
+                    return NotFound();
 
-            return Ok(result);
+                return Ok(result);
+            }
+            catch (KeyNotFoundException ex)
+            {
+                return NotFound(new
+                {
+                    message = ex.Message
+                });
+            }
+            catch (InvalidOperationException ex)
+            {
+                return Conflict(new
+                {
+                    message = ex.Message
+                });
+            }
         }
 
         [HttpDelete("{id:long}")]

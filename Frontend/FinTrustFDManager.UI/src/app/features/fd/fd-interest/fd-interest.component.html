@@ -30,7 +30,7 @@
         <label>Interest Frequency</label>
         <select formControlName="interestFrequency">
           <option value="">Select Frequency</option>
-          <option *ngFor="let freq of interestFrequencies" [value]="freq.frequencyCode">
+          <option *ngFor="let freq of interestFrequencies" [value]="freq.frequencyName">
             {{ freq.frequencyName }}
           </option>
         </select>
@@ -39,7 +39,7 @@
         <label>Compounding Frequency</label>
         <select formControlName="compoundingFrequency">
           <option value="">Select Frequency</option>
-          <option *ngFor="let freq of interestFrequencies" [value]="freq.frequencyCode">
+          <option *ngFor="let freq of interestFrequencies" [value]="freq.frequencyName">
             {{ freq.frequencyName }}
           </option>
         </select>

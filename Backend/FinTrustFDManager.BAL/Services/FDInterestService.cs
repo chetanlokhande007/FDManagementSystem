@@ -4,17 +4,28 @@ using FinTrustFDManager.Model.Entities.Investment;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading.Tasks;
 
 namespace FinTrustFDManager.BAL.Services
 {
-    public class FDInterestService(
-        IFDInterestRepository interestRepository,
-        IFDIdentificationRepository fdRepository,
-        IFDCashFlowRepository cashFlowRepository) : IFDInterestService
+    public class FDInterestService : IFDInterestService
     {
-        private readonly IFDInterestRepository _interestRepository = interestRepository;
-        private readonly IFDIdentificationRepository _fdRepository = fdRepository;
-        private readonly IFDCashFlowRepository _cashFlowRepository = cashFlowRepository;
+        private readonly IFDInterestRepository _interestRepository;
+        private readonly IFDIdentificationRepository _fdRepository;
+        private readonly IFDCashFlowRepository _cashFlowRepository;
+        private readonly IUnitOfWork _unitOfWork;
+
+        public FDInterestService(
+            IFDInterestRepository interestRepository,
+            IFDIdentificationRepository fdRepository,
+            IFDCashFlowRepository cashFlowRepository,
+            IUnitOfWork unitOfWork)
+        {
+            _interestRepository = interestRepository;
+            _fdRepository = fdRepository;
+            _cashFlowRepository = cashFlowRepository;
+            _unitOfWork = unitOfWork;
+        }
 
         public async Task<IEnumerable<FDInterest>> GetAllAsync()
         {
@@ -33,6 +44,8 @@ namespace FinTrustFDManager.BAL.Services
 
         public async Task<FDInterest> CreateAsync(FDInterest model)
         {
+            ValidateInterestConfiguration(model);
+
             var fd = await _fdRepository.GetByIdAsync(model.FdId);
 
             if (fd == null)
@@ -49,44 +62,226 @@ namespace FinTrustFDManager.BAL.Services
                     $"Interest already exists for FD ID {model.FdId}.");
             }
 
-            if (!model.IsCompounding)
-            {
-                model.CompoundingFrequency = "Not Applicable";
-            }
-
             model.CreatedDate = DateTime.UtcNow;
 
-            var interest = await _interestRepository.AddAsync(model);
+            await using var transaction = await _unitOfWork.BeginTransactionAsync();
 
-            var cashFlows = GenerateCashFlows(fd, interest);
+            try
+            {
+                var interest = await _interestRepository.AddAsync(model);
 
-            await _cashFlowRepository.AddRangeAsync(cashFlows);
+                var cashFlows = GenerateCashFlows(fd, interest);
 
-            return interest;
+                await _cashFlowRepository.AddRangeAsync(cashFlows);
+
+                await _unitOfWork.CommitTransactionAsync();
+                
+                return interest;
+            }
+            catch
+            {
+                await _unitOfWork.RollbackTransactionAsync();
+                throw;
+            }
         }
 
-        /// <summary>
-        /// Explicitly validates and resolves the day-count basis.
-        /// Both "ACTUAL_360" and "ACTUAL_365" are checked directly (not via fallback),
-        /// so an unexpected/typo'd value throws instead of silently defaulting to 365.
-        /// </summary>
-        private static decimal GetDayCountBasis(string? calculationBasis)
+        public async Task<FDInterest?> UpdateAsync(
+            long id,
+            FDInterest model)
         {
-            string basis = calculationBasis?.ToUpper()?.Trim() ?? "";
+            ValidateInterestConfiguration(model);
 
-            if (basis == "ACTUAL_360")
+            var existingInterest = await _interestRepository.GetByIdAsync(id);
+
+            if (existingInterest == null)
             {
-                return 360m;
+                return null;
             }
-            else if (basis == "ACTUAL_365")
+
+            var fd = await _fdRepository.GetByIdAsync(existingInterest.FdId);
+
+            if (fd == null)
             {
-                return 365m;
+                throw new KeyNotFoundException(
+                    $"FD with ID {existingInterest.FdId} not found.");
+            }
+
+            model.FdInterestId = id;
+            model.FdId = existingInterest.FdId;
+
+            await using var transaction = await _unitOfWork.BeginTransactionAsync();
+
+            try
+            {
+                var updatedInterest = await _interestRepository.UpdateAsync(model);
+
+                if (updatedInterest != null)
+                {
+                    var existingCashFlows = await _cashFlowRepository.GetByFdIdAsync(fd.FdId);
+
+                    foreach (var cf in existingCashFlows)
+                    {
+                        await _cashFlowRepository.DeleteAsync(cf.CashFlowId);
+                    }
+
+                    var newCashFlows = GenerateCashFlows(fd, updatedInterest);
+
+                    await _cashFlowRepository.AddRangeAsync(newCashFlows);
+                }
+
+                await _unitOfWork.CommitTransactionAsync();
+                return updatedInterest;
+            }
+            catch
+            {
+                await _unitOfWork.RollbackTransactionAsync();
+                throw;
+            }
+        }
+
+        public async Task<bool> DeleteAsync(long id)
+        {
+            var existingInterest = await _interestRepository.GetByIdAsync(id);
+            if (existingInterest == null)
+            {
+                return false;
+            }
+
+            await using var transaction = await _unitOfWork.BeginTransactionAsync();
+
+            try
+            {
+                var existingCashFlows = await _cashFlowRepository.GetByFdIdAsync(existingInterest.FdId);
+
+                foreach (var cf in existingCashFlows)
+                {
+                    await _cashFlowRepository.DeleteAsync(cf.CashFlowId);
+                }
+
+                var result = await _interestRepository.DeleteAsync(id);
+
+                await _unitOfWork.CommitTransactionAsync();
+
+                return result;
+            }
+            catch
+            {
+                await _unitOfWork.RollbackTransactionAsync();
+                throw;
+            }
+        }
+
+        private static void ValidateInterestConfiguration(FDInterest model)
+        {
+            ValidateInterestFrequency(model.InterestFrequency);
+
+            if (model.IsCompounding)
+            {
+                if (string.IsNullOrWhiteSpace(model.CompoundingFrequency) ||
+                    model.CompoundingFrequency.Equals(
+                        "Not Applicable",
+                        StringComparison.OrdinalIgnoreCase))
+                {
+                    throw new InvalidOperationException(
+                        "Compounding Frequency is required when compounding is enabled.");
+                }
+
+                ValidateCompoundingFrequency(model.CompoundingFrequency);
             }
             else
             {
-                throw new InvalidOperationException(
-                    $"Unsupported CalculationBasis '{calculationBasis}'. Expected 'ACTUAL_360' or 'ACTUAL_365'.");
+                model.CompoundingFrequency = "Not Applicable";
             }
+        }
+
+        private static void ValidateInterestFrequency(string? frequency)
+        {
+            if (string.IsNullOrWhiteSpace(frequency))
+                throw new InvalidOperationException(
+                    "Interest Frequency is required.");
+
+            var value = frequency.Trim().ToUpperInvariant().Replace("-", "_");
+
+            if (value is not
+                ("MONTHLY" or
+                 "QUARTERLY" or
+                 "HALF_YEARLY" or
+                 "ANNUALLY" or
+                 "AT_MATURITY"))
+            {
+                throw new InvalidOperationException(
+                    $"Unsupported Interest Frequency '{frequency}'.");
+            }
+        }
+
+        private static void ValidateCompoundingFrequency(string? frequency)
+        {
+            if (string.IsNullOrWhiteSpace(frequency))
+                throw new InvalidOperationException(
+                    "Compounding Frequency is required.");
+
+            var value = frequency.Trim().ToUpperInvariant().Replace("-", "_");
+
+            if (value is not
+                ("MONTHLY" or
+                 "QUARTERLY" or
+                 "HALF_YEARLY" or
+                 "ANNUALLY"))
+            {
+                throw new InvalidOperationException(
+                    $"Unsupported Compounding Frequency '{frequency}'.");
+            }
+        }
+
+        private static void AddScheduleDates(
+            List<(DateTime Date, string Type)> events,
+            DateTime startDate,
+            DateTime endDate,
+            string frequency,
+            string eventType)
+        {
+            DateTime currentDate = startDate;
+
+            while (true)
+            {
+                currentDate = GetNextScheduleDate(currentDate, frequency, startDate);
+
+                if (currentDate > endDate)
+                    break;
+
+                events.Add((currentDate.Date, eventType));
+            }
+        }
+
+        private static DateTime GetNextScheduleDate(
+            DateTime currentDate,
+            string frequency,
+            DateTime originalStartDate)
+        {
+            if (string.IsNullOrWhiteSpace(frequency))
+            {
+                throw new InvalidOperationException("Frequency cannot be empty.");
+            }
+
+            bool isEom = originalStartDate.Day == DateTime.DaysInMonth(originalStartDate.Year, originalStartDate.Month);
+
+            DateTime nextDate = frequency.Trim().ToUpperInvariant().Replace("-", "_") switch
+            {
+                "MONTHLY" => currentDate.AddMonths(1),
+                "QUARTERLY" => currentDate.AddMonths(3),
+                "HALF_YEARLY" => currentDate.AddMonths(6),
+                "ANNUALLY" => currentDate.AddYears(1),
+                "AT_MATURITY" => throw new InvalidOperationException("AT_MATURITY cannot be used to generate periodic dates."),
+                "NOT APPLICABLE" => throw new InvalidOperationException("NOT APPLICABLE cannot be used to generate periodic dates."),
+                _ => throw new InvalidOperationException($"Unsupported frequency '{frequency}'.")
+            };
+
+            if (isEom)
+            {
+                nextDate = new DateTime(nextDate.Year, nextDate.Month, DateTime.DaysInMonth(nextDate.Year, nextDate.Month));
+            }
+
+            return nextDate;
         }
 
         private List<FDCashFlow> GenerateCashFlows(
@@ -94,6 +289,7 @@ namespace FinTrustFDManager.BAL.Services
             FDInterest interest)
         {
             var cashFlows = new List<FDCashFlow>();
+            var now = DateTime.UtcNow;
 
             cashFlows.Add(new FDCashFlow
             {
@@ -111,154 +307,185 @@ namespace FinTrustFDManager.BAL.Services
                 CurrencyCode = fd.CurrencyCode ?? "INR",
                 Status = "PENDING",
                 ReferenceNo = fd.FdReferenceNo ?? "",
-                CreatedDate = DateTime.UtcNow
+                CreatedDate = now
             });
 
-            decimal openingBalance = fd.PrincipalAmount;
-            DateTime previousDate = fd.StartDate;
-            DateTime uncompoundedStartDate = fd.StartDate;
-            decimal uncompoundedInterestSum = 0;
+            decimal balance = fd.PrincipalAmount;
+            decimal accruedInterest = 0;
+            DateTime lastCalculationDate = fd.StartDate;
 
-            // Generate dates for both interest payout and compounding
+            bool isCompounding = interest.IsCompounding;
+            bool isAtMaturity = string.Equals(interest.InterestFrequency, "AT_MATURITY", StringComparison.OrdinalIgnoreCase);
+
             var events = new List<(DateTime Date, string Type)>();
 
-            // Add Interest Payout Dates
-            if (!string.IsNullOrEmpty(interest.InterestFrequency) && interest.InterestFrequency.ToUpper() != "AT_MATURITY")
+            if (!isAtMaturity && !string.IsNullOrWhiteSpace(interest.InterestFrequency))
             {
-                DateTime d = GetNextDate(fd.StartDate, interest.InterestFrequency);
-                while (d <= fd.EndDate)
+                if (!isCompounding)
                 {
-                    events.Add((d, "Interest"));
-                    d = GetNextDate(d, interest.InterestFrequency);
+                    AddScheduleDates(events, fd.StartDate, fd.EndDate, interest.InterestFrequency, "Interest");
                 }
             }
 
-            // Add Compounding Dates
-            if (interest.IsCompounding && !string.IsNullOrEmpty(interest.CompoundingFrequency))
+            if (isCompounding && !string.IsNullOrWhiteSpace(interest.CompoundingFrequency))
             {
-                DateTime d = GetNextDate(fd.StartDate, interest.CompoundingFrequency);
-                while (d <= fd.EndDate)
-                {
-                    events.Add((d, "Compounding Interest"));
-                    d = GetNextDate(d, interest.CompoundingFrequency);
-                }
+                AddScheduleDates(events, fd.StartDate, fd.EndDate, interest.CompoundingFrequency, "Compounding");
             }
 
-            // Sort chronologically. If dates match, "Interest" comes before "Compounding Interest"
-            var sortedEvents = events.OrderBy(e => e.Date).ThenBy(e => e.Type == "Interest" ? 0 : 1).ToList();
+            var sortedDates = events.Select(e => e.Date).Distinct().OrderBy(d => d).ToList();
 
-            // Process each event chronologically
-            foreach (var ev in sortedEvents)
+            foreach (var date in sortedDates)
             {
-                DateTime eventDate = ev.Date;
-                string eventType = ev.Type;
-
-                if (eventType == "Interest")
+                int days = (date.Date - lastCalculationDate.Date).Days;
+                if (days > 0)
                 {
-                    int days = (eventDate.Date - previousDate.Date).Days;
-                    decimal dayCountBasis = GetDayCountBasis(interest.CalculationBasis);
+                    decimal finalInterest = FinTrustFDManager.BAL.Common.FinancialCalculator.CalculateInterest(
+                        balance, 
+                        interest.InterestRate, 
+                        days, 
+                        interest.CalculationBasis);
+                    
+                    accruedInterest += finalInterest;
+                }
 
-                    decimal calculatedInterest = openingBalance * (interest.InterestRate / 100m) * (days / dayCountBasis);
-                    decimal roundedInterest = Math.Round(calculatedInterest, 2, MidpointRounding.AwayFromZero);
+                bool isCompoundingEvent = events.Any(e => e.Date == date && e.Type == "Compounding");
+                bool isInterestPayout = events.Any(e => e.Date == date && e.Type == "Interest");
 
-                    uncompoundedInterestSum += roundedInterest;
-
+                if (isCompoundingEvent)
+                {
+                    decimal compoundedAmount = accruedInterest;
+                    balance += compoundedAmount;
+                    
                     cashFlows.Add(new FDCashFlow
                     {
                         FdId = fd.FdId,
-                        Event = eventType,
-                        StartDate = previousDate,
-                        EndDate = eventDate,
+                        Event = "Compounding Interest",
+                        StartDate = lastCalculationDate,
+                        EndDate = date,
                         Days = days,
                         InterestRate = interest.InterestRate,
-                        OpeningBalance = openingBalance,
-                        InterestAmount = roundedInterest,
-                        ClosingBalance = openingBalance, // Does not change principal
-                        CashFlowAmount = roundedInterest,
-                        Direction = "INFLOW",
-                        CurrencyCode = fd.CurrencyCode ?? "INR",
-                        Status = "PENDING",
-                        ReferenceNo = fd.FdReferenceNo ?? "",
-                        CreatedDate = DateTime.UtcNow
-                    });
-
-                    previousDate = eventDate;
-                }
-                else if (eventType == "Compounding Interest")
-                {
-                    int days = (eventDate.Date - previousDate.Date).Days;
-                    decimal roundedInterest = 0;
-
-                    if (days > 0)
-                    {
-                        decimal dayCountBasis = GetDayCountBasis(interest.CalculationBasis);
-                        decimal calculatedInterest = openingBalance * (interest.InterestRate / 100m) * (days / dayCountBasis);
-                        roundedInterest = Math.Round(calculatedInterest, 2, MidpointRounding.AwayFromZero);
-                        uncompoundedInterestSum += roundedInterest;
-                    }
-
-                    decimal compoundedAmount = uncompoundedInterestSum;
-                    uncompoundedInterestSum = 0; // Reset sum
-                    decimal closingBalance = openingBalance + compoundedAmount;
-
-                    cashFlows.Add(new FDCashFlow
-                    {
-                        FdId = fd.FdId,
-                        Event = eventType,
-                        StartDate = uncompoundedStartDate,
-                        EndDate = eventDate,
-                        Days = (eventDate.Date - uncompoundedStartDate.Date).Days,
-                        InterestRate = interest.InterestRate,
-                        OpeningBalance = openingBalance,
+                        OpeningBalance = balance - compoundedAmount,
                         InterestAmount = compoundedAmount,
-                        ClosingBalance = closingBalance,
+                        ClosingBalance = balance,
                         CashFlowAmount = compoundedAmount,
                         Direction = "INFLOW",
                         CurrencyCode = fd.CurrencyCode ?? "INR",
                         Status = "PENDING",
                         ReferenceNo = fd.FdReferenceNo ?? "",
-                        CreatedDate = DateTime.UtcNow
+                        CreatedDate = now
                     });
+                    
+                    accruedInterest = 0;
+                }
+                else if (isInterestPayout)
+                {
+                    decimal payoutAmount = accruedInterest;
+                    if (payoutAmount > 0)
+                    {
+                        cashFlows.Add(new FDCashFlow
+                        {
+                            FdId = fd.FdId,
+                            Event = "Interest",
+                            StartDate = lastCalculationDate,
+                            EndDate = date,
+                            Days = days,
+                            InterestRate = interest.InterestRate,
+                            OpeningBalance = balance,
+                            InterestAmount = payoutAmount,
+                            ClosingBalance = balance,
+                            CashFlowAmount = payoutAmount,
+                            Direction = "INFLOW",
+                            CurrencyCode = fd.CurrencyCode ?? "INR",
+                            Status = "PENDING",
+                            ReferenceNo = fd.FdReferenceNo ?? "",
+                            CreatedDate = now
+                        });
+                        
+                        accruedInterest = 0;
+                    }
+                }
 
-                    openingBalance = closingBalance;
-                    previousDate = eventDate;
-                    uncompoundedStartDate = eventDate;
+                lastCalculationDate = date;
+            }
+
+
+            if (lastCalculationDate < fd.EndDate)
+            {
+                int remainingDays = (fd.EndDate.Date - lastCalculationDate.Date).Days;
+                if (remainingDays > 0)
+                {
+                    decimal finalInterest = FinTrustFDManager.BAL.Common.FinancialCalculator.CalculateInterest(
+                        balance, 
+                        interest.InterestRate, 
+                        remainingDays, 
+                        interest.CalculationBasis);
+
+                    accruedInterest += finalInterest;
+
+                    // Accrued interest is accumulated. We will emit it right before Maturity.
                 }
             }
 
-            // Broken period logic
-            if (previousDate < fd.EndDate)
+            // -----------------------------------------------------------------
+            // Emit final interest/compounding cashflow if any accrued interest remains
+            // -----------------------------------------------------------------
+            if (accruedInterest > 0)
             {
-                int remainingDays = (fd.EndDate.Date - previousDate.Date).Days;
-                if (remainingDays > 0)
+                int days = (fd.EndDate.Date - lastCalculationDate.Date).Days;
+                
+                if (isCompounding)
                 {
-                    decimal dayCountBasis = GetDayCountBasis(interest.CalculationBasis);
-                    decimal brokenPeriodInterest = openingBalance * (interest.InterestRate / 100m) * (remainingDays / dayCountBasis);
-                    decimal finalInterest = Math.Round(brokenPeriodInterest, 2, MidpointRounding.AwayFromZero);
-                    uncompoundedInterestSum += finalInterest;
-
                     cashFlows.Add(new FDCashFlow
                     {
                         FdId = fd.FdId,
-                        Event = "Interest",
-                        StartDate = previousDate,
+                        Event = "Compounding Interest",
+                        StartDate = lastCalculationDate,
                         EndDate = fd.EndDate,
-                        Days = remainingDays,
+                        Days = days,
                         InterestRate = interest.InterestRate,
-                        OpeningBalance = openingBalance,
-                        InterestAmount = finalInterest,
-                        ClosingBalance = openingBalance,
-                        CashFlowAmount = finalInterest,
+                        OpeningBalance = balance,
+                        InterestAmount = accruedInterest,
+                        ClosingBalance = balance + accruedInterest,
+                        CashFlowAmount = accruedInterest,
                         Direction = "INFLOW",
                         CurrencyCode = fd.CurrencyCode ?? "INR",
                         Status = "PENDING",
                         ReferenceNo = fd.FdReferenceNo ?? "",
-                        CreatedDate = DateTime.UtcNow
+                        CreatedDate = now
+                    });
+                    
+                    balance += accruedInterest;
+                }
+                else
+                {
+                    cashFlows.Add(new FDCashFlow
+                    {
+                        FdId = fd.FdId,
+                        Event = "Interest",
+                        StartDate = lastCalculationDate,
+                        EndDate = fd.EndDate,
+                        Days = days,
+                        InterestRate = interest.InterestRate,
+                        OpeningBalance = balance,
+                        InterestAmount = accruedInterest,
+                        ClosingBalance = balance,
+                        CashFlowAmount = accruedInterest,
+                        Direction = "INFLOW",
+                        CurrencyCode = fd.CurrencyCode ?? "INR",
+                        Status = "PENDING",
+                        ReferenceNo = fd.FdReferenceNo ?? "",
+                        CreatedDate = now
                     });
                 }
+                accruedInterest = 0;
             }
 
+            decimal maturityBalance = balance;
+
+            // -----------------------------------------------------------------
             // Maturity
+            // -----------------------------------------------------------------
+
             cashFlows.Add(new FDCashFlow
             {
                 FdId = fd.FdId,
@@ -267,71 +494,18 @@ namespace FinTrustFDManager.BAL.Services
                 EndDate = fd.EndDate,
                 Days = 0,
                 InterestRate = interest.InterestRate,
-                OpeningBalance = openingBalance + uncompoundedInterestSum,
+                OpeningBalance = maturityBalance,
                 InterestAmount = 0,
                 ClosingBalance = 0,
-                CashFlowAmount = openingBalance + uncompoundedInterestSum,
+                CashFlowAmount = maturityBalance,
                 Direction = "INFLOW",
                 CurrencyCode = fd.CurrencyCode ?? "INR",
                 Status = "PENDING",
                 ReferenceNo = fd.FdReferenceNo ?? "",
-                CreatedDate = DateTime.UtcNow
+                CreatedDate = now
             });
 
             return cashFlows;
-        }
-
-        public async Task<FDInterest?> UpdateAsync(
-            long id,
-            FDInterest model)
-        {
-            if (!model.IsCompounding)
-            {
-                model.CompoundingFrequency = "Not Applicable";
-            }
-
-            model.FdInterestId = id;
-
-            var updatedInterest = await _interestRepository.UpdateAsync(model);
-
-            if (updatedInterest != null)
-            {
-                var fd = await _fdRepository.GetByIdAsync(updatedInterest.FdId);
-                if (fd != null)
-                {
-                    // Get existing cashflows
-                    var existingCashFlows = await _cashFlowRepository.GetByFdIdAsync(fd.FdId);
-
-                    // Delete existing cashflows
-                    foreach (var cf in existingCashFlows)
-                    {
-                        await _cashFlowRepository.DeleteAsync(cf.CashFlowId);
-                    }
-
-                    // Generate and save new cashflows
-                    var newCashFlows = GenerateCashFlows(fd, updatedInterest);
-                    await _cashFlowRepository.AddRangeAsync(newCashFlows);
-                }
-            }
-
-            return updatedInterest;
-        }
-
-        public async Task<bool> DeleteAsync(long id)
-        {
-            return await _interestRepository.DeleteAsync(id);
-        }
-
-        private static DateTime GetNextDate(DateTime currentDate, string frequency)
-        {
-            return (frequency?.ToUpper() ?? "") switch
-            {
-                "MONTHLY" => currentDate.AddMonths(1),
-                "QUARTERLY" => currentDate.AddMonths(3),
-                "HALF_YEARLY" => currentDate.AddMonths(6),
-                "ANNUALLY" => currentDate.AddYears(1),
-                _ => currentDate.AddMonths(3)
-            };
         }
     }
 }

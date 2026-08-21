@@ -26,12 +26,12 @@ namespace FinTrustFDManager.API.Controllers
         }
 
         // GET: api/FDCashFlow/1
-        [HttpGet("{id}")]
+        [HttpGet("{id:long}")]
         public async Task<IActionResult> GetById(long id)
         {
-            var result = await _service.GetByIdAsync(id);
+            var data = await _service.GetByIdAsync(id);
 
-            if (result == null)
+            if (data == null)
             {
                 return NotFound(new
                 {
@@ -39,15 +39,24 @@ namespace FinTrustFDManager.API.Controllers
                 });
             }
 
-            return Ok(result);
+            return Ok(data);
         }
 
         // GET: api/FDCashFlow/fd/1
         [HttpGet("fd/{fdId:long}")]
         public async Task<IActionResult> GetByFdId(long fdId)
         {
-            var result = await _service.GetByFdIdAsync(fdId);
-            return Ok(result ?? new List<FDCashFlowDto>());
+            var data = await _service.GetByFdIdAsync(fdId);
+
+            if (data == null || !data.Any())
+            {
+                return NotFound(new
+                {
+                    message = $"FD Cash Flow not found for FD ID {fdId}."
+                });
+            }
+
+            return Ok(data);
         }
 
         // POST: api/FDCashFlow
