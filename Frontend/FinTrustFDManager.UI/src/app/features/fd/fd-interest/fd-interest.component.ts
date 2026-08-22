@@ -1,6 +1,6 @@
 import { Component, Input, OnInit, OnChanges, SimpleChanges, Output, EventEmitter } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { FormBuilder, FormGroup, ReactiveFormsModule } from '@angular/forms';
+import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { FDInterestService, FDInterest } from '../../../core/services/fd-interest.service';
 
 @Component({
@@ -31,15 +31,15 @@ export class FdInterestComponent implements OnInit, OnChanges {
     this.interestForm = this.fb.group({
       fdInterestId: [0],
       fdId: [this.fdId],
-      interestRateType: ['FIXED'],
-      interestRate: [0],
+      interestRateType: ['FIXED', Validators.required],
+      interestRate: [0, [Validators.required, Validators.min(0.01)]],
       benchmarkName: [''],
       benchmarkRate: [0],
       margin: [0],
-      interestFrequency: [''],
+      interestFrequency: ['', Validators.required],
       compoundingFrequency: [''],
       isCompounding: [false],
-      calculationBasis: ['ACTUAL_365'],
+      calculationBasis: ['ACTUAL_365', Validators.required],
       paymentConvention: ['']
     });
   }
@@ -58,7 +58,7 @@ export class FdInterestComponent implements OnInit, OnChanges {
       isCompounding: interest.isCompounding || false,
       calculationBasis: interest.calculationBasis,
       paymentConvention: interest.paymentConvention
-    });
+    }, { emitEvent: true });
     this.toggleCompoundingFrequency(interest.isCompounding || false);
   }
 
@@ -95,22 +95,26 @@ export class FdInterestComponent implements OnInit, OnChanges {
 
   toggleCompoundingFrequency(isCompounding: boolean): void {
     const compoundingControl = this.interestForm.get('compoundingFrequency');
+    if (!compoundingControl) return;
+
     if (isCompounding) {
-      compoundingControl?.enable();
-      if (!compoundingControl?.value) {
+      compoundingControl.enable();
+      compoundingControl.setValidators([Validators.required]);
+      if (!compoundingControl.value || compoundingControl.value === 'NOT_APPLICABLE') {
         const intFreq = this.interestForm.get('interestFrequency')?.value;
-        if (intFreq) {
-          compoundingControl?.setValue(intFreq);
+        if (intFreq && intFreq !== 'AT_MATURITY') {
+          compoundingControl.setValue(intFreq);
         } else {
-          // Find Quarterly or default to the first one available
           const defaultFreq = this.interestFrequencies.find(f => f.frequencyName?.toUpperCase() === 'QUARTERLY');
-          compoundingControl?.setValue(defaultFreq ? defaultFreq.frequencyName : (this.interestFrequencies.length ? this.interestFrequencies[0].frequencyName : ''));
+          compoundingControl.setValue(defaultFreq ? defaultFreq.frequencyName : (this.interestFrequencies.length ? this.interestFrequencies[0].frequencyName : ''));
         }
       }
     } else {
-      compoundingControl?.disable();
-      compoundingControl?.setValue('');
+      compoundingControl.clearValidators();
+      compoundingControl.disable();
+      compoundingControl.setValue('NOT_APPLICABLE');
     }
+    compoundingControl.updateValueAndValidity();
   }
 
   edit(): void {

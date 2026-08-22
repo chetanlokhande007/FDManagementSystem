@@ -171,16 +171,31 @@ namespace FinTrustFDManager.BAL.Services
             }
         }
 
+        public static string NormalizeFrequency(string? frequency)
+        {
+            if (string.IsNullOrWhiteSpace(frequency)) return string.Empty;
+
+            var value = frequency.Trim().ToUpperInvariant().Replace("-", "_").Replace(" ", "_");
+
+            if (value is "YEARLY" or "ANNUAL") return "ANNUALLY";
+            if (value is "AT MATURITY") return "AT_MATURITY";
+            if (value is "NOT APPLICABLE") return "NOT_APPLICABLE";
+            if (value is "HALF YEARLY") return "HALF_YEARLY";
+
+            return value;
+        }
+
         private static void ValidateInterestConfiguration(FDInterest model)
         {
+            model.InterestFrequency = NormalizeFrequency(model.InterestFrequency);
+            model.CompoundingFrequency = NormalizeFrequency(model.CompoundingFrequency);
+
             ValidateInterestFrequency(model.InterestFrequency);
 
             if (model.IsCompounding)
             {
                 if (string.IsNullOrWhiteSpace(model.CompoundingFrequency) ||
-                    model.CompoundingFrequency.Equals(
-                        "Not Applicable",
-                        StringComparison.OrdinalIgnoreCase))
+                    model.CompoundingFrequency == "NOT_APPLICABLE")
                 {
                     throw new InvalidOperationException(
                         "Compounding Frequency is required when compounding is enabled.");
@@ -190,19 +205,17 @@ namespace FinTrustFDManager.BAL.Services
             }
             else
             {
-                model.CompoundingFrequency = "Not Applicable";
+                model.CompoundingFrequency = "NOT_APPLICABLE";
             }
         }
 
-        private static void ValidateInterestFrequency(string? frequency)
+        private static void ValidateInterestFrequency(string frequency)
         {
             if (string.IsNullOrWhiteSpace(frequency))
                 throw new InvalidOperationException(
                     "Interest Frequency is required.");
 
-            var value = frequency.Trim().ToUpperInvariant().Replace("-", "_");
-
-            if (value is not
+            if (frequency is not
                 ("MONTHLY" or
                  "QUARTERLY" or
                  "HALF_YEARLY" or
@@ -214,15 +227,13 @@ namespace FinTrustFDManager.BAL.Services
             }
         }
 
-        private static void ValidateCompoundingFrequency(string? frequency)
+        private static void ValidateCompoundingFrequency(string frequency)
         {
             if (string.IsNullOrWhiteSpace(frequency))
                 throw new InvalidOperationException(
                     "Compounding Frequency is required.");
 
-            var value = frequency.Trim().ToUpperInvariant().Replace("-", "_");
-
-            if (value is not
+            if (frequency is not
                 ("MONTHLY" or
                  "QUARTERLY" or
                  "HALF_YEARLY" or
@@ -265,14 +276,14 @@ namespace FinTrustFDManager.BAL.Services
 
             bool isEom = originalStartDate.Day == DateTime.DaysInMonth(originalStartDate.Year, originalStartDate.Month);
 
-            DateTime nextDate = frequency.Trim().ToUpperInvariant().Replace("-", "_") switch
+            DateTime nextDate = frequency switch
             {
                 "MONTHLY" => currentDate.AddMonths(1),
                 "QUARTERLY" => currentDate.AddMonths(3),
                 "HALF_YEARLY" => currentDate.AddMonths(6),
                 "ANNUALLY" => currentDate.AddYears(1),
                 "AT_MATURITY" => throw new InvalidOperationException("AT_MATURITY cannot be used to generate periodic dates."),
-                "NOT APPLICABLE" => throw new InvalidOperationException("NOT APPLICABLE cannot be used to generate periodic dates."),
+                "NOT_APPLICABLE" => throw new InvalidOperationException("NOT_APPLICABLE cannot be used to generate periodic dates."),
                 _ => throw new InvalidOperationException($"Unsupported frequency '{frequency}'.")
             };
 

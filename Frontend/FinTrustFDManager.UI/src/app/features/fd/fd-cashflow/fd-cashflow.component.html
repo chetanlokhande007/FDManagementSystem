@@ -36,7 +36,18 @@
       </div>
     </div>
 
-    <div *ngIf="cashFlows && cashFlows.length > 0; else noData">
+    <!-- LOADING STATE -->
+    <div *ngIf="isLoading" style="text-align: center; margin-top: 40px; color: #6b7280;">
+      <p>Loading cash flows...</p>
+    </div>
+
+    <!-- ERROR STATE -->
+    <div *ngIf="errorMessage" style="text-align: center; margin-top: 40px; color: #dc2626;">
+      <p>{{ errorMessage }}</p>
+    </div>
+
+    <!-- SUCCESS WITH DATA -->
+    <div *ngIf="!isLoading && !errorMessage && cashFlows && cashFlows.length > 0">
       <table>
         <thead>
           <tr>
@@ -65,8 +76,7 @@
                 {{ cf.startDate | date:'dd-MMM-yyyy' }}
               </ng-container>
               <ng-template #blankDate>
-                <span *ngIf="cf.event === 'FD Created' || cf.event === 'Maturity'">{{ cf.startDate | date:'dd-MMM-yyyy'
-                  }}</span>
+                <span *ngIf="cf.event === 'FD Created' || cf.event === 'Maturity'">{{ cf.startDate | date:'dd-MMM-yyyy' }}</span>
               </ng-template>
             </td>
             <td>
@@ -74,8 +84,7 @@
                 {{ cf.endDate | date:'dd-MMM-yyyy' }}
               </ng-container>
               <ng-template #blankDateEnd>
-                <span *ngIf="cf.event === 'FD Created' || cf.event === 'Maturity'">{{ cf.endDate | date:'dd-MMM-yyyy'
-                  }}</span>
+                <span *ngIf="cf.event === 'FD Created' || cf.event === 'Maturity'">{{ cf.endDate | date:'dd-MMM-yyyy' }}</span>
               </ng-template>
             </td>
             <td style="text-align: right;">
@@ -94,14 +103,14 @@
       <div class="totals-section">
         <div class="totals-group">
           <p><strong>Total Interest:</strong> {{ totalInterest | currency:'INR':'symbol':'1.2-2' }}</p>
-          <p style="margin-bottom: 0;"><strong>Maturity Amount:</strong> {{ maturityAmount |
-            currency:'INR':'symbol':'1.2-2' }}</p>
+          <p style="margin-bottom: 0;"><strong>Maturity Amount:</strong> {{ maturityAmount | currency:'INR':'symbol':'1.2-2' }}</p>
         </div>
       </div>
     </div>
 
-    <ng-template #noData>
-      <p style="text-align: center; color: #6b7280; margin-top: 40px;">No CashFlows found.</p>
-    </ng-template>
+    <!-- SUCCESS WITH NO DATA -->
+    <div *ngIf="!isLoading && !errorMessage && (!cashFlows || cashFlows.length === 0)" style="text-align: center; color: #6b7280; margin-top: 40px;">
+      <p>No CashFlows found.</p>
+    </div>
   </div>
 </div>

@@ -43,7 +43,7 @@ export interface DashboardSummaryDto {
   providedIn: 'root',
 })
 export class DashboardService {
-  private apiUrl = 'https://localhost:7196/api/Dashboard'; // Default HTTPS port for .NET 8 API in VS, adjust if needed
+  private apiUrl = 'http://localhost:5075/api/Dashboard'; // Default HTTPS port for .NET 8 API in VS, adjust if needed
 
   constructor(private http: HttpClient) {}
 

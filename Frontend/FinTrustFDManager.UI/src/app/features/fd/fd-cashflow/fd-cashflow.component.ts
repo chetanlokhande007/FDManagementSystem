@@ -6,15 +6,11 @@ import {
   OnInit,
   OnChanges,
   SimpleChanges,
-  ChangeDetectionStrategy
+  ChangeDetectionStrategy,
+  ChangeDetectorRef
 } from '@angular/core';
-import {
-  FormBuilder,
-  FormGroup,
-  ReactiveFormsModule
-} from '@angular/forms';
 import { CommonModule } from '@angular/common';
-import { Router } from '@angular/router';
+import { ReactiveFormsModule } from '@angular/forms';
 import {
   FDCashFlowService, FDCashFlow
 } from '../../../core/services/fd-cash-flow.service';
@@ -30,23 +26,58 @@ import {
   styleUrls: ['./fd-cashflow.component.css'],
   changeDetection: ChangeDetectionStrategy.OnPush
 })
-export class FdCashflowComponent implements OnChanges {
+export class FdCashflowComponent implements OnInit, OnChanges {
 
   @Input() fdId!: number;
   @Input() fdData: any = null;
   @Input() interestData: any = null;
-  @Input() cashFlows: FDCashFlow[] = [];
+  @Output() cashFlowSaved = new EventEmitter<void>();
 
+  cashFlows: FDCashFlow[] = [];
+  enrichedCashFlows: FDCashFlow[] = [];
   totalInterest = 0;
   maturityAmount = 0;
-  enrichedCashFlows: FDCashFlow[] = [];
+  isLoading = false;
+  errorMessage = '';
 
-  constructor() { }
+  constructor(
+    private cashFlowService: FDCashFlowService,
+    private cdr: ChangeDetectorRef
+  ) { }
+
+  ngOnInit(): void {
+    this.loadCashFlows();
+  }
 
   ngOnChanges(changes: SimpleChanges): void {
-    if (changes['cashFlows']) {
-      this.calculateCashFlowSummary();
+    if (changes['fdId'] && !changes['fdId'].isFirstChange()) {
+      this.loadCashFlows();
     }
+  }
+
+  private loadCashFlows(): void {
+    if (!this.fdId) return;
+
+    this.isLoading = true;
+    this.errorMessage = '';
+    this.cashFlows = [];
+    this.cdr.markForCheck();
+
+    this.cashFlowService.getByFdId(this.fdId).subscribe({
+      next: (response) => {
+        this.cashFlows = response ?? [];
+        this.calculateCashFlowSummary();
+        this.isLoading = false;
+        this.cdr.markForCheck();
+      },
+      error: (err) => {
+        console.error('Error loading cash flows', err);
+        this.errorMessage = 'Unable to load cash flows.';
+        this.cashFlows = [];
+        this.isLoading = false;
+        this.cdr.markForCheck();
+      }
+    });
   }
 
   private calculateCashFlowSummary(): void {

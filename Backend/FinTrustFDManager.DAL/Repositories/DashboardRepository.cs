@@ -21,151 +21,195 @@ namespace FinTrustFDManager.DAL.Repositories
         public async Task<DashboardSummaryDto> GetSummaryAsync()
         {
             var summary = new DashboardSummaryDto();
-            var currentDate = DateTime.UtcNow;
+            var today = DateTime.Today; // Use local midnight date for business dates
 
+            // ---------------------------------------------------------
             // 1. Total Active FDs and Principal
-            var activeFds = await _context.FDIdentifications
-                .Where(x => x.Status == "Active")
-                .AsNoTracking()
-                .ToListAsync();
+            // ---------------------------------------------------------
+            var activeFdsQuery = _context.FDIdentifications
+                .Where(x => x.Status == "Active");
 
-            summary.ActiveFDCount = activeFds.Count;
-            summary.TotalPrincipal = activeFds.Sum(x => x.PrincipalAmount);
+            summary.ActiveFDCount = await activeFdsQuery.CountAsync();
+            summary.TotalPrincipal = await activeFdsQuery.SumAsync(x => (decimal?)x.PrincipalAmount) ?? 0m;
 
-            // 2. Total Accrued Interest 
-            // We sum the InterestAmount for CashFlows of Active FDs up to the current date
-            // The user explicitly stated: Accrued interest should not be double-counted as cash movement.
-            // We just need the accrued amount.
+            // ---------------------------------------------------------
+            // 2. Total Accrued Interest
+            // ---------------------------------------------------------
+            // Exclude "Compounding Interest" events to prevent double counting.
+            // We join with active FDs to ensure we only sum accrued interest for currently active investments.
             var accruedInterest = await _context.FDCashFlows
-                .Include(c => c.FdId) // To filter by Active FDs
-                .Where(c => c.Event == "Interest" || c.Event == "Compounding Interest") // Interest events
-                .Join(_context.FDIdentifications.Where(fd => fd.Status == "Active"),
+                .Where(c => c.Event == "Interest" && c.EndDate <= today)
+                .Join(activeFdsQuery,
                       cf => cf.FdId,
                       fd => fd.FdId,
                       (cf, fd) => cf)
-                .Where(c => c.EndDate <= currentDate)
-                .SumAsync(c => c.InterestAmount);
+                .SumAsync(c => (decimal?)c.InterestAmount) ?? 0m;
 
             summary.TotalAccruedInterest = accruedInterest;
 
+            // ---------------------------------------------------------
             // 3. Maturing This Month
-            var startOfMonth = new DateTime(currentDate.Year, currentDate.Month, 1);
-            var endOfMonth = startOfMonth.AddMonths(1).AddDays(-1);
+            // ---------------------------------------------------------
+            var startOfMonth = new DateTime(today.Year, today.Month, 1);
+            var startOfNextMonth = startOfMonth.AddMonths(1);
 
-            var maturingThisMonthFds = activeFds
-                .Where(x => x.EndDate >= startOfMonth && x.EndDate <= endOfMonth)
-                .ToList();
-
-            summary.MaturingThisMonthCount = maturingThisMonthFds.Count;
-            
-            // To get Maturity Amount, we need to look at Maturity cashflows
-            var maturingFdIds = maturingThisMonthFds.Select(x => x.FdId).ToList();
-            var maturityFlows = await _context.FDCashFlows
-                .Where(c => maturingFdIds.Contains(c.FdId) && c.Event == "Maturity")
+            var maturingThisMonthFds = await activeFdsQuery
+                .Where(x => x.EndDate >= startOfMonth && x.EndDate < startOfNextMonth)
                 .AsNoTracking()
                 .ToListAsync();
-                
-            summary.MaturingThisMonthValue = maturityFlows.Sum(x => x.CashFlowAmount);
 
+            summary.MaturingThisMonthCount = maturingThisMonthFds.Count;
+
+            if (maturingThisMonthFds.Any())
+            {
+                var maturingFdIds = maturingThisMonthFds.Select(x => x.FdId).ToList();
+
+                var maturityFlows = await _context.FDCashFlows
+                    .Where(c => c.Event == "Maturity" && maturingFdIds.Contains(c.FdId))
+                    .AsNoTracking()
+                    .ToListAsync();
+
+                // Sum actual maturity flow if generated, otherwise fallback to PrincipalAmount
+                summary.MaturingThisMonthValue = maturingThisMonthFds.Sum(fd =>
+                {
+                    var flow = maturityFlows.FirstOrDefault(f => f.FdId == fd.FdId);
+                    return flow != null ? flow.CashFlowAmount : fd.PrincipalAmount;
+                });
+            }
+
+            // ---------------------------------------------------------
             // 4. FD Growth Data (Last 6 Months)
+            // ---------------------------------------------------------
             var last6Months = Enumerable.Range(0, 6)
-                .Select(i => new DateTime(currentDate.Year, currentDate.Month, 1).AddMonths(-5 + i))
+                .Select(i => new DateTime(today.Year, today.Month, 1).AddMonths(-5 + i))
                 .ToList();
 
             foreach (var month in last6Months)
             {
                 var monthStart = month;
-                var monthEnd = month.AddMonths(1).AddDays(-1);
+                var nextMonthStart = month.AddMonths(1);
 
-                var createdInMonth = activeFds
-                    .Where(x => x.CreatedDate >= monthStart && x.CreatedDate <= monthEnd)
-                    .ToList();
+                // Note: We deliberately do NOT filter by 'Active' status here.
+                // We want historical volume created in that month.
+                var createdCount = await _context.FDIdentifications
+                    .Where(x => x.CreatedDate >= monthStart && x.CreatedDate < nextMonthStart)
+                    .CountAsync();
+
+                var createdValue = await _context.FDIdentifications
+                    .Where(x => x.CreatedDate >= monthStart && x.CreatedDate < nextMonthStart)
+                    .SumAsync(x => (decimal?)x.PrincipalAmount) ?? 0m;
 
                 summary.FDGrowthData.Add(new ChartDataDto
                 {
                     Label = month.ToString("MMM yyyy"),
-                    Count = createdInMonth.Count,
-                    Value = createdInMonth.Sum(x => x.PrincipalAmount)
+                    Count = createdCount,
+                    Value = createdValue
                 });
             }
 
+            // ---------------------------------------------------------
             // 5. Portfolio Distribution Data (Group by Bank/Entity)
-            var portfolio = await _context.FDIdentifications
-                .Where(x => x.Status == "Active")
+            // ---------------------------------------------------------
+            var portfolio = await activeFdsQuery
                 .GroupBy(x => x.EntityId)
-                .Select(g => new { EntityId = g.Key, Count = g.Count(), TotalPrincipal = g.Sum(x => x.PrincipalAmount) })
+                .Select(g => new
+                {
+                    EntityId = g.Key,
+                    Count = g.Count(),
+                    TotalPrincipal = g.Sum(x => x.PrincipalAmount)
+                })
                 .ToListAsync();
 
-            // Fetch entity names
-            var entityIds = portfolio.Select(p => (int)p.EntityId).ToList();
-            var entities = await _context.Entities.Where(e => entityIds.Contains(e.EntityId)).ToDictionaryAsync(e => e.EntityId, e => e.EntityName);
-
-            foreach (var item in portfolio)
+            if (portfolio.Any())
             {
-                summary.PortfolioDistributionData.Add(new ChartDataDto
+                // EntityId in FDIdentification is long, but Entity.EntityId is int. Safe cast to int.
+                var entityIds = portfolio.Select(p => (int)p.EntityId).ToList();
+                var entities = await _context.Entities
+                    .Where(e => entityIds.Contains(e.EntityId))
+                    .ToDictionaryAsync(e => e.EntityId, e => e.EntityName);
+
+                foreach (var item in portfolio)
                 {
-                    Label = entities.ContainsKey((int)item.EntityId) ? entities[(int)item.EntityId] : "Unknown",
-                    Count = item.Count,
-                    Value = item.TotalPrincipal
-                });
+                    summary.PortfolioDistributionData.Add(new ChartDataDto
+                    {
+                        Label = entities.TryGetValue((int)item.EntityId, out var name) ? name : "Unknown",
+                        Count = item.Count,
+                        Value = item.TotalPrincipal
+                    });
+                }
             }
 
+            // ---------------------------------------------------------
             // 6. Upcoming Maturities (Next 30 Days)
-            var next30Days = currentDate.AddDays(30);
-            var upcomingMaturities = await _context.FDIdentifications
-                .Where(x => x.Status == "Active" && x.EndDate >= currentDate && x.EndDate <= next30Days)
+            // ---------------------------------------------------------
+            var limit30Days = today.AddDays(31); // Exclusive upper bound for 30 days
+            var upcomingMaturities = await activeFdsQuery
+                .Where(x => x.EndDate >= today && x.EndDate < limit30Days)
                 .OrderBy(x => x.EndDate)
                 .Take(5)
                 .AsNoTracking()
                 .ToListAsync();
 
-            var upcomingFdIds = upcomingMaturities.Select(x => x.FdId).ToList();
-            var upcomingMaturityFlows = await _context.FDCashFlows
-                .Where(c => upcomingFdIds.Contains(c.FdId) && c.Event == "Maturity")
-                .ToDictionaryAsync(c => c.FdId, c => c.CashFlowAmount);
-
-            // Fetch banks for these upcoming FDs
-            var upcomingEntityIds = upcomingMaturities.Select(x => (int)x.EntityId).Distinct().ToList();
-            var upcomingEntities = await _context.Entities.Where(e => upcomingEntityIds.Contains(e.EntityId)).ToDictionaryAsync(e => e.EntityId, e => e.EntityName);
-
-            foreach (var fd in upcomingMaturities)
+            if (upcomingMaturities.Any())
             {
-                summary.UpcomingMaturities.Add(new FDUpcomingMaturityDto
+                var upcomingFdIds = upcomingMaturities.Select(x => x.FdId).ToList();
+                
+                var upcomingMaturityFlows = await _context.FDCashFlows
+                    .Where(c => c.Event == "Maturity" && upcomingFdIds.Contains(c.FdId))
+                    .ToDictionaryAsync(c => c.FdId, c => c.CashFlowAmount);
+
+                var upcomingEntityIds = upcomingMaturities.Select(x => (int)x.EntityId).Distinct().ToList();
+                var upcomingEntities = await _context.Entities
+                    .Where(e => upcomingEntityIds.Contains(e.EntityId))
+                    .ToDictionaryAsync(e => e.EntityId, e => e.EntityName);
+
+                foreach (var fd in upcomingMaturities)
                 {
-                    FdId = fd.FdId,
-                    FdReferenceNo = fd.FdReferenceNo,
-                    BankName = upcomingEntities.ContainsKey((int)fd.EntityId) ? upcomingEntities[(int)fd.EntityId] : "Unknown",
-                    PrincipalAmount = fd.PrincipalAmount,
-                    MaturityDate = fd.EndDate,
-                    MaturityAmount = upcomingMaturityFlows.ContainsKey(fd.FdId) ? upcomingMaturityFlows[fd.FdId] : fd.PrincipalAmount,
-                    Status = GetMaturityStatus(fd.EndDate, currentDate)
-                });
+                    summary.UpcomingMaturities.Add(new FDUpcomingMaturityDto
+                    {
+                        FdId = fd.FdId,
+                        FdReferenceNo = fd.FdReferenceNo ?? "N/A",
+                        BankName = upcomingEntities.TryGetValue((int)fd.EntityId, out var name) ? name : "Unknown",
+                        PrincipalAmount = fd.PrincipalAmount,
+                        MaturityDate = fd.EndDate,
+                        // Safely fallback to Principal if Maturity flow is not generated yet
+                        MaturityAmount = upcomingMaturityFlows.TryGetValue(fd.FdId, out var amount) ? amount : fd.PrincipalAmount,
+                        Status = GetMaturityStatus(fd.EndDate, today)
+                    });
+                }
             }
 
+            // ---------------------------------------------------------
             // 7. Recently Added FDs
+            // ---------------------------------------------------------
             var recentFds = await _context.FDIdentifications
                 .OrderByDescending(x => x.CreatedDate)
                 .Take(5)
                 .AsNoTracking()
                 .ToListAsync();
 
-            var recentFdIds = recentFds.Select(x => x.FdId).ToList();
-            var recentInterests = await _context.FDInterests
-                .Where(i => recentFdIds.Contains(i.FdId))
-                .ToDictionaryAsync(i => i.FdId, i => i);
-
-            foreach (var fd in recentFds)
+            if (recentFds.Any())
             {
-                var interest = recentInterests.ContainsKey(fd.FdId) ? recentInterests[fd.FdId] : null;
-                summary.RecentlyAddedFDs.Add(new FDRecentDto
+                var recentFdIds = recentFds.Select(x => x.FdId).ToList();
+                
+                var recentInterests = await _context.FDInterests
+                    .Where(i => recentFdIds.Contains(i.FdId))
+                    .ToDictionaryAsync(i => i.FdId, i => i);
+
+                foreach (var fd in recentFds)
                 {
-                    FdId = fd.FdId,
-                    FdReferenceNo = fd.FdReferenceNo,
-                    StartDate = fd.StartDate,
-                    PrincipalAmount = fd.PrincipalAmount,
-                    InterestRate = interest?.InterestRate ?? 0,
-                    InterestType = (interest?.IsCompounding ?? false) ? "Cumulative" : "Non-Cumulative"
-                });
+                    recentInterests.TryGetValue(fd.FdId, out var interest);
+                    
+                    summary.RecentlyAddedFDs.Add(new FDRecentDto
+                    {
+                        FdId = fd.FdId,
+                        FdReferenceNo = fd.FdReferenceNo ?? "N/A",
+                        StartDate = fd.StartDate,
+                        PrincipalAmount = fd.PrincipalAmount,
+                        InterestRate = interest?.InterestRate ?? 0,
+                        InterestType = (interest?.IsCompounding ?? false) ? "Cumulative" : "Non-Cumulative"
+                    });
+                }
             }
 
             return summary;
@@ -173,11 +217,12 @@ namespace FinTrustFDManager.DAL.Repositories
 
         private string GetMaturityStatus(DateTime endDate, DateTime currentDate)
         {
-            var days = (endDate - currentDate).TotalDays;
+            var days = (int)(endDate.Date - currentDate.Date).TotalDays;
+            
             if (days < 0) return "Matured";
-            if (days <= 7) return $"Due in {(int)days} Days";
-            if (days <= 15) return $"Due in {(int)days} Days";
-            return $"Due in {(int)days} Days";
+            if (days == 0) return "Due Today";
+            
+            return $"Due in {days} Days";
         }
     }
 }

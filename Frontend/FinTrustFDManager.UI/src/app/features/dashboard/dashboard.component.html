@@ -1,5 +1,9 @@
 <div class="dashboard-container">
   
+  <div class="dashboard-header">
+    <h2 class="page-title">Dashboard</h2>
+  </div>
+
   <div *ngIf="isLoading" class="loading-state">
     <div class="spinner-border text-primary" role="status">
       <span class="visually-hidden">Loading...</span>
@@ -17,7 +21,9 @@
     <!-- KPI Cards -->
     <div class="kpi-row">
       <div class="kpi-card bg-primary text-white">
-        <div class="kpi-icon"><i class="bi bi-wallet2"></i></div>
+        <div class="kpi-icon-container">
+          <i class="bi bi-wallet2 kpi-icon"></i>
+        </div>
         <div class="kpi-data">
           <h6>Total Active FDs</h6>
           <h2>{{ dashboard.activeFDCount }}</h2>
@@ -26,7 +32,9 @@
       </div>
       
       <div class="kpi-card bg-success text-white">
-        <div class="kpi-icon"><i class="bi bi-cash-coin"></i></div>
+        <div class="kpi-icon-container">
+          <i class="bi bi-cash-coin kpi-icon"></i>
+        </div>
         <div class="kpi-data">
           <h6>Total Principal Invested</h6>
           <h2>{{ dashboard.totalPrincipal | currency:'INR':'symbol':'1.0-2' }}</h2>
@@ -35,7 +43,9 @@
       </div>
       
       <div class="kpi-card bg-indigo text-white">
-        <div class="kpi-icon"><i class="bi bi-graph-up-arrow"></i></div>
+        <div class="kpi-icon-container">
+          <i class="bi bi-graph-up-arrow kpi-icon"></i>
+        </div>
         <div class="kpi-data">
           <h6>Total Accrued Interest</h6>
           <h2>{{ dashboard.totalAccruedInterest | currency:'INR':'symbol':'1.0-2' }}</h2>
@@ -44,7 +54,9 @@
       </div>
       
       <div class="kpi-card bg-warning text-white">
-        <div class="kpi-icon"><i class="bi bi-calendar-event"></i></div>
+        <div class="kpi-icon-container">
+          <i class="bi bi-calendar-event kpi-icon"></i>
+        </div>
         <div class="kpi-data">
           <h6>Maturing This Month</h6>
           <h2>{{ dashboard.maturingThisMonthCount }}</h2>
@@ -56,24 +68,52 @@
     <!-- Quick Actions -->
     <div class="quick-actions-card">
       <span class="action-label">Quick Actions</span>
-      <button class="btn btn-primary action-btn" routerLink="/fd/new"><i class="bi bi-plus-lg"></i> Create New FD</button>
-      <button class="btn btn-outline-primary action-btn" routerLink="/fd"><i class="bi bi-calendar-check"></i> View Upcoming Maturities</button>
-      <button class="btn btn-outline-primary action-btn" routerLink="/entities"><i class="bi bi-bank"></i> Manage Entities / Banks</button>
+      <button class="btn btn-primary action-btn solid" routerLink="/fd/new"><i class="bi bi-plus-lg"></i> Create New FD</button>
+      <button class="btn btn-outline-primary action-btn outline" routerLink="/fd"><i class="bi bi-calendar-check"></i> View Upcoming Maturities</button>
+      <button class="btn btn-outline-primary action-btn outline" routerLink="/entities"><i class="bi bi-bank"></i> Manage Entities / Banks</button>
     </div>
 
     <!-- Charts -->
     <div class="charts-row">
       <div class="chart-card flex-2">
         <h6 class="chart-title">FD Growth <span class="text-muted">(Last 6 Months)</span></h6>
-        <!-- We mock the chart using a simple bar visualization if no real chart library is configured, but the user's code had ng2-charts based on Chart.js. 
-             Since ng2-charts module is not in the imports, we'll keep the layout clean or use a generic placeholder -->
-        <div class="chart-container">
+        <div class="chart-container growth-container">
            <p *ngIf="dashboard.fdGrowthData.length === 0">No data available for growth chart.</p>
-           <!-- Add canvas for actual chart library later if needed -->
+           
+           <!-- Simulated Bar + Line Chart using CSS -->
            <div class="custom-bar-chart" *ngIf="dashboard.fdGrowthData.length > 0">
-             <div class="bar-col" *ngFor="let item of dashboard.fdGrowthData">
-               <div class="bar" [style.height.%]="(item.value / dashboard.totalPrincipal) * 100 * 2"></div>
-               <span class="bar-label">{{ item.label }}</span>
+             
+             <!-- Chart Legend -->
+             <div class="chart-legend-top">
+                <span class="legend-item"><span class="legend-color-box blue"></span> FD Value (in Cr)</span>
+                <span class="legend-item"><span class="legend-line blue-dark"></span> FD Count</span>
+             </div>
+
+             <!-- Chart Y Axis -->
+             <div class="y-axis-left">
+               <span>{{ getMaxValue() | currency:'INR':'':'1.0-0' }}</span>
+               <span>{{ getMaxValue() * 0.66 | currency:'INR':'':'1.0-0' }}</span>
+               <span>{{ getMaxValue() * 0.33 | currency:'INR':'':'1.0-0' }}</span>
+               <span>0</span>
+             </div>
+             
+             <div class="bars-area">
+               <div class="bar-col" *ngFor="let item of dashboard.fdGrowthData">
+                 <!-- Dynamic Bar Height -->
+                 <div class="bar" [style.height.%]="(item.value / (getMaxValue() || 1)) * 100 * 0.9"></div>
+                 
+                 <!-- Dynamic Line Dot -->
+                 <div class="line-dot" [style.bottom.%]="(item.count / (getMaxCount() || 1)) * 100 * 0.9"></div>
+                 
+                 <span class="bar-label">{{ item.label }}</span>
+               </div>
+             </div>
+
+             <div class="y-axis-right">
+               <span>{{ getMaxCount() }}</span>
+               <span>{{ Math.round(getMaxCount() * 0.66) }}</span>
+               <span>{{ Math.round(getMaxCount() * 0.33) }}</span>
+               <span>0</span>
              </div>
            </div>
         </div>
@@ -81,15 +121,29 @@
 
       <div class="chart-card flex-1">
         <h6 class="chart-title">Portfolio Distribution by Bank/Entity</h6>
-        <div class="chart-container align-center">
+        <div class="chart-container portfolio-container">
           <p *ngIf="dashboard.portfolioDistributionData.length === 0">No portfolio data available.</p>
-          <div class="custom-pie-chart" *ngIf="dashboard.portfolioDistributionData.length > 0">
-            <div class="legend-list">
-              <div class="legend-item" *ngFor="let item of dashboard.portfolioDistributionData">
-                <span class="legend-color"></span>
-                <span class="legend-text">{{ item.label }} - {{ (item.value / dashboard.totalPrincipal) | percent:'1.0-1' }}</span>
+          
+          <!-- Simulated CSS Pie Chart -->
+          <div class="custom-pie-chart-wrapper" *ngIf="dashboard.portfolioDistributionData.length > 0">
+            
+            <div class="pie-chart" [ngStyle]="{'background': getPieChartGradient()}">
+               <div class="pie-center">
+                  <span class="pie-title">Total</span>
+                  <span class="pie-value">{{ dashboard.totalPrincipal | currency:'INR':'symbol':'1.0-2' }}</span>
+               </div>
+            </div>
+
+            <div class="legend-list-right">
+              <div class="legend-item" *ngFor="let item of dashboard.portfolioDistributionData; let i = index">
+                <span class="legend-color dot" [ngClass]="getLegendColorClass(i)"></span>
+                <div class="legend-text-group">
+                  <span class="legend-text">{{ item.label }}</span>
+                  <span class="legend-value">{{ item.value | currency:'INR':'symbol':'1.0-2' }} ({{ (item.value / dashboard.totalPrincipal) | percent:'1.0-1' }})</span>
+                </div>
               </div>
             </div>
+
           </div>
         </div>
       </div>
@@ -106,7 +160,7 @@
         </div>
         
         <div class="table-responsive">
-          <table class="table">
+          <table class="table custom-table">
             <thead>
               <tr>
                 <th>FD Reference No</th>
@@ -123,19 +177,21 @@
                 <td colspan="7" class="text-center">No upcoming maturities.</td>
               </tr>
               <tr *ngFor="let fd of dashboard.upcomingMaturities">
-                <td>{{ fd.fdReferenceNo }}</td>
+                <td class="fw-medium text-dark">{{ fd.fdReferenceNo }}</td>
                 <td>{{ fd.bankName }}</td>
                 <td>{{ fd.principalAmount | currency:'INR':'':'1.0-2' }}</td>
                 <td class="text-danger fw-bold">{{ fd.maturityDate | date:'dd MMM yyyy' }}</td>
                 <td>{{ fd.maturityAmount | currency:'INR':'':'1.0-2' }}</td>
                 <td>
                   <span class="status-badge" 
-                        [class.danger]="isMaturityCritical(fd.status)" 
-                        [class.warning]="isMaturityNear(fd.status) && !isMaturityCritical(fd.status)">
+                        [class.danger]="fd.status === 'Matured' || fd.status === 'Due Today' || fd.status.includes(' 1 ') || fd.status.includes(' 2 ') || fd.status.includes(' 3 ')"
+                        [class.warning]="!fd.status.includes('Matured') && !fd.status.includes('Due Today') && !fd.status.includes(' 1 ') && !fd.status.includes(' 2 ') && !fd.status.includes(' 3 ') && (fd.status.includes(' 4 ') || fd.status.includes(' 5 ') || fd.status.includes(' 6 ') || fd.status.includes(' 7 ') || fd.status.includes(' 8 ') || fd.status.includes(' 9 ') || fd.status.includes(' 10 ') || fd.status.includes(' 11 ') || fd.status.includes(' 12 ') || fd.status.includes(' 13 ') || fd.status.includes(' 14 ') || fd.status.includes(' 15 '))"
+                        [class.success]="fd.status.includes(' 16 ') || fd.status.includes(' 17 ') || fd.status.includes(' 18 ') || fd.status.includes(' 19 ') || fd.status.includes(' 20 ') || fd.status.includes(' 21 ') || fd.status.includes(' 22 ') || fd.status.includes(' 23 ') || fd.status.includes(' 24 ') || fd.status.includes(' 25 ') || fd.status.includes(' 26 ') || fd.status.includes(' 27 ') || fd.status.includes(' 28 ') || fd.status.includes(' 29 ') || fd.status.includes(' 30 ')"
+                        >
                     {{ fd.status }}
                   </span>
                 </td>
-                <td><a [routerLink]="['/fd/detail', fd.fdId]" class="btn-view">View Details</a></td>
+                <td><a [routerLink]="['/fd-detail', fd.fdId]" class="btn-view-outline">View Details</a></td>
               </tr>
             </tbody>
           </table>
@@ -150,7 +206,7 @@
         </div>
         
         <div class="table-responsive">
-          <table class="table">
+          <table class="table custom-table">
             <thead>
               <tr>
                 <th>FD Reference No</th>
@@ -166,7 +222,7 @@
                 <td colspan="6" class="text-center">No recently added FDs.</td>
               </tr>
               <tr *ngFor="let fd of dashboard.recentlyAddedFDs">
-                <td>{{ fd.fdReferenceNo }}</td>
+                <td class="fw-medium text-dark">{{ fd.fdReferenceNo }}</td>
                 <td>{{ fd.startDate | date:'dd MMM yyyy' }}</td>
                 <td>{{ fd.principalAmount | currency:'INR':'':'1.0-2' }}</td>
                 <td>{{ fd.interestRate | number:'1.2-2' }}</td>
@@ -175,7 +231,7 @@
                     {{ fd.interestType }}
                   </span>
                 </td>
-                <td><a [routerLink]="['/fd/detail', fd.fdId]" class="btn-view">View Details</a></td>
+                <td><a [routerLink]="['/fd-detail', fd.fdId]" class="btn-view-outline">View Details</a></td>
               </tr>
             </tbody>
           </table>
