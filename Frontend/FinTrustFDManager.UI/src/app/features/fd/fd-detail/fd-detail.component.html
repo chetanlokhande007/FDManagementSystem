@@ -8,14 +8,8 @@
     <button class="back-btn" (click)="goBack()">Go Back</button>
   </div>
 
-  <!-- LOADING -->
-  <div *ngIf="loading" class="loading-container">
-    <div class="spinner"></div>
-    <p>Loading data, please wait...</p>
-  </div>
-
   <!-- CARD -->
-  <div *ngIf="!loading" class="fd-card">
+  <div class="fd-card">
 
     <!-- TABS -->
     <div class="tabs">
@@ -35,8 +29,22 @@
       </div>
     </div>
 
+    <!-- SKELETON LOADING -->
+    <div *ngIf="loading" class="tab-content skeleton-area">
+      <div class="skeleton-grid">
+        <div *ngFor="let s of [1,2,3,4,5,6,7,8]" class="skeleton-field">
+          <div class="skeleton-label"></div>
+          <div class="skeleton-input"></div>
+        </div>
+      </div>
+      <div class="skeleton-actions">
+        <div class="skeleton-btn"></div>
+        <div class="skeleton-btn"></div>
+      </div>
+    </div>
+
     <!-- GENERAL TAB FORM -->
-    <div *ngIf="activeTab === 'general'" class="tab-content">
+    <div *ngIf="!loading && activeTab === 'general'" class="tab-content">
 
       <!-- READ ONLY VIEW -->
       <div *ngIf="isGeneralReadOnly" class="read-only-view">
@@ -198,14 +206,34 @@
 
     <!-- INTEREST TAB -->
     <div *ngIf="activeTab === 'interest'">
-      <app-fd-interest *ngIf="fdId" [fdId]="fdId" [interestData]="interestData"
+      <app-fd-interest *ngIf="!loading && fdId" [fdId]="fdId" [interestData]="interestData"
         [interestFrequencies]="interestFrequencies" (interestSaved)="onInterestSaved($event)"></app-fd-interest>
+      <div *ngIf="loading" class="tab-content skeleton-area">
+        <div class="skeleton-grid">
+          <div *ngFor="let s of [1,2,3,4,5,6]" class="skeleton-field">
+            <div class="skeleton-label"></div>
+            <div class="skeleton-input"></div>
+          </div>
+        </div>
+      </div>
     </div>
 
     <!-- CASHFLOW TAB -->
     <div *ngIf="activeTab === 'cashflow'">
-      <app-fd-cashflow *ngIf="fdId" [fdId]="fdId" [fdData]="fixedDeposit" [interestData]="interestData"
-        (cashFlowSaved)="loadFDDetails(fdId, true, false).subscribe()"></app-fd-cashflow>
+      <app-fd-cashflow *ngIf="!loading && fdId" [fdId]="fdId" [fdData]="fixedDeposit" [interestData]="interestData"
+        [initialCashFlows]="cashFlows"
+        (cashFlowSaved)="loadFDDetails(fdId!, true, false).subscribe()"></app-fd-cashflow>
+      <div *ngIf="loading" class="tab-content skeleton-area">
+        <div class="skeleton-table">
+          <div *ngFor="let s of [1,2,3,4,5]" class="skeleton-table-row">
+            <div class="skeleton-cell" style="width:120px"></div>
+            <div class="skeleton-cell" style="width:100px"></div>
+            <div class="skeleton-cell" style="width:80px"></div>
+            <div class="skeleton-cell" style="width:100px"></div>
+            <div class="skeleton-cell" style="width:100px"></div>
+          </div>
+        </div>
+      </div>
     </div>
 
   </div>

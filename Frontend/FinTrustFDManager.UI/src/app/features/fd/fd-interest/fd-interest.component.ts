@@ -17,10 +17,18 @@ export class FdInterestComponent implements OnInit, OnChanges {
   @Input() interestFrequencies: any[] = [];
   @Output() interestSaved = new EventEmitter<any>();
 
+  /** Frequencies valid for compounding — excludes "At Maturity" */
+  get compoundingFrequencies(): any[] {
+    return this.interestFrequencies.filter(
+      f => f.frequencyName?.toUpperCase() !== 'AT MATURITY'
+    );
+  }
+
   interestForm!: FormGroup;
   isEdit = false;
   isReadOnly = false;
   isSaving = false;
+  errorMessage = '';
 
   constructor(
     private fb: FormBuilder,
@@ -127,25 +135,24 @@ export class FdInterestComponent implements OnInit, OnChanges {
     }
     
     this.isSaving = true;
+    this.errorMessage = '';
 
     const data: FDInterest = {
       ...this.interestForm.getRawValue(),
       fdId: this.fdId
     };
 
-    console.log('Sending FD Interest:', data);
-
     if (this.isEdit && data.fdInterestId) {
       this.fdInterestService
         .update(data.fdInterestId, data)
         .subscribe({
           next: (res: FDInterest) => {
-            console.log('Interest updated:', res);
             this.isSaving = false;
             this.interestSaved.emit(res);
           },
           error: (err) => {
             console.error('Error updating interest:', err);
+            this.errorMessage = err.error?.message || err.message || 'Failed to update interest configuration.';
             this.isSaving = false;
           }
         });
@@ -154,7 +161,6 @@ export class FdInterestComponent implements OnInit, OnChanges {
         .create(data)
         .subscribe({
           next: (res: FDInterest) => {
-            console.log('Interest created:', res);
             this.isEdit = true;
             this.isSaving = false;
             this.interestForm.patchValue({
@@ -164,6 +170,7 @@ export class FdInterestComponent implements OnInit, OnChanges {
           },
           error: (err) => {
             console.error('Error creating interest:', err);
+            this.errorMessage = err.error?.message || err.message || 'Failed to save interest configuration.';
             this.isSaving = false;
           }
         });

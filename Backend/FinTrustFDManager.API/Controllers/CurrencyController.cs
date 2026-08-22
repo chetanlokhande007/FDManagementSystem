@@ -7,7 +7,7 @@ namespace FinTrustFDManager.API.Controllers
 {
     [ApiController]
     [Route("api/[controller]")]
-    //[Authorize]
+    [Authorize]
     public class CurrencyController : ControllerBase
     {
         private readonly ICurrencyService _service;

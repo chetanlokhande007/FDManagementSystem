@@ -1,6 +1,7 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
+import { environment } from '../../../environments/environment';
 
 export interface CounterParty {
   counterPartyId: number;
@@ -15,7 +16,7 @@ export interface CounterParty {
 })
 export class CounterPartyService {
 
-  private apiUrl = 'http://localhost:5075/api/counterparties';
+  private apiUrl = `${environment.apiUrl}/CounterParty`;
 
   constructor(private http: HttpClient) {}
 

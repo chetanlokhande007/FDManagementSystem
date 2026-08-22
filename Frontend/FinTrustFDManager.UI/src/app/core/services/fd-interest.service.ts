@@ -1,6 +1,7 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
+import { environment } from '../../../environments/environment';
 
 export interface FDInterest {
   fdInterestId: number;
@@ -27,7 +28,7 @@ export interface FDInterest {
   providedIn: 'root'
 })
 export class FDInterestService {
-  private apiUrl = 'http://localhost:5075/api/FDInterest';
+  private apiUrl = `${environment.apiUrl}/FDInterest`;
 
   constructor(private http: HttpClient) { }
 

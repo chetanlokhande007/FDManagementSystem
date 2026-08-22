@@ -7,7 +7,7 @@ namespace FinTrustFDManager.API.Controllers
 {
     [ApiController]
     [Route("api/[controller]")]
-    //[Authorize]
+    [Authorize]
     public class DayCountConventionController : ControllerBase
     {
         private readonly IDayCountConventionService _service;

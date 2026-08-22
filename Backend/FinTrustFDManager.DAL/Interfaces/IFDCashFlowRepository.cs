@@ -19,5 +19,7 @@ namespace FinTrustFDManager.DAL.Interfaces
         Task UpdateRangeAsync(IEnumerable<FDCashFlow> cashFlows);
 
         Task<bool> DeleteAsync(long id);
+
+        Task DeleteRangeAsync(IEnumerable<FDCashFlow> cashFlows);
     }
 }

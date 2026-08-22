@@ -1,6 +1,7 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
+import { environment } from '../../../environments/environment';
 
 export interface InterestFrequency {
   interestFrequencyId: number;
@@ -15,8 +16,7 @@ export interface InterestFrequency {
 })
 export class InterestFrequencyService {
 
-  private apiUrl =
-    'http://localhost:5075/api/InterestFrequency';
+  private apiUrl = `${environment.apiUrl}/InterestFrequency`;
 
   constructor(private http: HttpClient) {}
 

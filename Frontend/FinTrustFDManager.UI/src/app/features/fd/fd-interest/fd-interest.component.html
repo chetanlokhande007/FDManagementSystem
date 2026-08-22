@@ -39,7 +39,7 @@
         <label>Compounding Frequency</label>
         <select formControlName="compoundingFrequency">
           <option value="">Select Frequency</option>
-          <option *ngFor="let freq of interestFrequencies" [value]="freq.frequencyName">
+          <option *ngFor="let freq of compoundingFrequencies" [value]="freq.frequencyName">
             {{ freq.frequencyName }}
           </option>
         </select>
@@ -61,6 +61,9 @@
         <input type="text" formControlName="paymentConvention">
       </div>
 
+    </div>
+    <div *ngIf="errorMessage" style="color: #dc2626; background-color: #fef2f2; border: 1px solid #fecaca; padding: 0.75rem; border-radius: 0.375rem; margin-bottom: 1rem; font-size: 0.875rem;">
+      {{ errorMessage }}
     </div>
     <div class="form-actions">
       <button type="submit" class="save-btn" [disabled]="isSaving">

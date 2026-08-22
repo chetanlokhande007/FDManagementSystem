@@ -193,13 +193,16 @@ export class FDDetailComponent implements OnInit {
       }),
       tap(() => this.loading = true),
       switchMap(id => {
-        return this.loadCoreData().pipe(
-          switchMap(() => {
-            if (this.isEdit && id) {
-              return this.loadFDDetails(id, true, false); // hideUI = false here so we don't mess up the loading flag
-            }
-            return of(null);
-          }),
+        // Run core data AND FD details in parallel — don't block FD details
+        // on core data. The CashFlow tab doesn't need core data at all.
+        const fdDetails$ = (this.isEdit && id)
+          ? this.loadFDDetails(id, true, false)
+          : of(null);
+
+        return forkJoin({
+          core: this.loadCoreData(),
+          details: fdDetails$
+        }).pipe(
           finalize(() => this.loading = false)
         );
       })

@@ -7,7 +7,7 @@ namespace FinTrustFDManager.API.Controllers
 {
     [ApiController]
     [Route("api/[controller]")]
-    //[Authorize]
+    [Authorize]
     public class InterestFrequencyController : ControllerBase
     {
         private readonly IInterestFrequencyService _service;

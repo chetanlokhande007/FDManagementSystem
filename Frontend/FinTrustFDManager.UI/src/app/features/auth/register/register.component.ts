@@ -2,7 +2,7 @@ import { Component, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Router, RouterModule } from '@angular/router';
-import { Auth, RegisterDto } from '../../../core/services/auth';
+import { AuthService, RegisterDto } from '../../../services/auth.service';
 
 @Component({
   selector: 'app-register',
@@ -13,7 +13,7 @@ import { Auth, RegisterDto } from '../../../core/services/auth';
 })
 export class RegisterComponent {
   private fb = inject(FormBuilder);
-  private authService = inject(Auth);
+  private authService = inject(AuthService);
   private router = inject(Router);
 
   registerForm: FormGroup;

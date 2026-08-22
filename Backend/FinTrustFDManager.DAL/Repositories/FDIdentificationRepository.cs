@@ -1,7 +1,11 @@
 using FinTrustFDManager.DAL.Data;
 using FinTrustFDManager.DAL.Interfaces;
+using FinTrustFDManager.Model.DTOs.Investment;
 using FinTrustFDManager.Model.Entities.Investment;
 using Microsoft.EntityFrameworkCore;
+using System.Collections.Generic;
+using System.Linq;
+using System.Threading.Tasks;
 
 namespace FinTrustFDManager.DAL.Repositories
 {
@@ -99,6 +103,82 @@ namespace FinTrustFDManager.DAL.Repositories
             await _context.SaveChangesAsync();
 
             return true;
+        }
+
+        public async Task<IEnumerable<FDLandingDto>> GetLandingDataAsync()
+        {
+            // ── Query 1: FD + Interest (LEFT JOIN, 1 SQL) ──
+            var fdWithInterest = await (
+                from fd in _context.FDIdentifications.AsNoTracking()
+                join intEntry in _context.FDInterests
+                    on fd.FdId equals intEntry.FdId
+                    into interestGroup
+                from i in interestGroup.DefaultIfEmpty()
+                select new
+                {
+                    fd.FdId,
+                    fd.FdReferenceNo,
+                    fd.EntityId,
+                    fd.CounterpartyId,
+                    fd.CurrencyCode,
+                    fd.PrincipalAmount,
+                    fd.StartDate,
+                    fd.EndDate,
+                    fd.SettlementDate,
+                    fd.Status,
+                    InterestRate = i != null ? i.InterestRate : 0m,
+                    InterestRateType = i != null ? i.InterestRateType : string.Empty,
+                    InterestFrequency = i != null ? i.InterestFrequency : string.Empty,
+                    IsCompounding = i != null && i.IsCompounding,
+                    CompoundingFrequency = i != null && i.IsCompounding
+                        ? (i.CompoundingFrequency ?? "Not Applicable")
+                        : "Not Applicable",
+                    CalculationBasis = i != null ? i.CalculationBasis : string.Empty
+                }
+            ).ToListAsync();
+
+            // ── Query 2: Cash flow aggregates (GROUP BY, 1 SQL) ──
+            var cashFlowAggregates = await _context.FDCashFlows
+                .AsNoTracking()
+                .Where(cf => cf.Event != "FD Created"
+                          && cf.Event != "Maturity"
+                          && cf.Event != "Compounding Interest")
+                .GroupBy(cf => cf.FdId)
+                .Select(g => new
+                {
+                    FdId = g.Key,
+                    TotalInterest = g.Sum(cf => cf.InterestAmount)
+                })
+                .ToDictionaryAsync(x => x.FdId, x => x.TotalInterest);
+
+            // ── Assemble DTOs in memory ──
+            return fdWithInterest.Select(fd =>
+            {
+                cashFlowAggregates.TryGetValue(fd.FdId, out var grossInterest);
+                return new FDLandingDto
+                {
+                    FdId = fd.FdId,
+                    FdReferenceNo = fd.FdReferenceNo,
+                    EntityId = fd.EntityId,
+                    CounterpartyId = fd.CounterpartyId,
+                    CurrencyCode = fd.CurrencyCode,
+                    PrincipalAmount = fd.PrincipalAmount,
+                    StartDate = fd.StartDate,
+                    EndDate = fd.EndDate,
+                    SettlementDate = fd.SettlementDate,
+                    Status = fd.Status,
+                    InterestRate = fd.InterestRate,
+                    InterestRateType = fd.InterestRateType,
+                    InterestFrequency = fd.InterestFrequency,
+                    CompoundingFrequency = fd.CompoundingFrequency,
+                    CalculationBasis = fd.CalculationBasis,
+                    TotalPrincipal = fd.PrincipalAmount,
+                    TotalGrossInterest = grossInterest,
+                    TotalTds = 0,
+                    TotalNetInterest = grossInterest,
+                    TotalAmount = fd.PrincipalAmount + grossInterest
+                };
+            }).ToList();
         }
     }
 }

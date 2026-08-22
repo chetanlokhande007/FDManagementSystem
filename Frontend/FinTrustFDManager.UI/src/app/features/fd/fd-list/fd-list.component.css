@@ -172,9 +172,35 @@
   padding: 30px;
   color: #6b7280;
   margin-bottom: 15px;
-  color: #173f7a;
   font-size: 16px;
 }
+
+/* =========================================================
+   SKELETON LOADING
+   ========================================================= */
+@keyframes shimmer {
+  0% { background-position: -400px 0; }
+  100% { background-position: 400px 0; }
+}
+
+.skeleton-row td {
+  padding: 10px 12px;
+}
+
+.skeleton-cell {
+  display: inline-block;
+  height: 14px;
+  border-radius: 4px;
+  background: linear-gradient(90deg, #e2e8f0 25%, #f1f5f9 50%, #e2e8f0 75%);
+  background-size: 800px 100%;
+  animation: shimmer 1.5s infinite linear;
+}
+
+.skeleton-cell.w-short   { width: 40px; }
+.skeleton-cell.w-medium  { width: 80px; }
+.skeleton-cell.w-long    { width: 120px; }
+.skeleton-cell.w-amount  { width: 100px; }
+.skeleton-cell.w-status  { width: 70px; height: 20px; border-radius: 12px; }
 
 .fast-view-grid {
   display: grid;

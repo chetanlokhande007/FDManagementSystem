@@ -27,6 +27,9 @@ namespace FinTrustFDManager.BAL.Common
             // Auth Service
             services.AddScoped<IAuthService, AuthService>();
 
+            // Dashboard Service
+            services.AddScoped<IDashboardService, DashboardService>();
+
             return services;
         }
 

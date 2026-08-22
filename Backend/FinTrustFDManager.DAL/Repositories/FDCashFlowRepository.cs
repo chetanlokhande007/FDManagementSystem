@@ -32,6 +32,7 @@ namespace FinTrustFDManager.DAL.Repositories
         public async Task<IEnumerable<FDCashFlow>> GetByFdIdAsync(long fdId)
         {
             return await _context.FDCashFlows
+                .AsNoTracking()
                 .Where(x => x.FdId == fdId)
                 .ToListAsync();
         }
@@ -105,6 +106,12 @@ namespace FinTrustFDManager.DAL.Repositories
             await _context.SaveChangesAsync();
 
             return true;
+        }
+
+        public async Task DeleteRangeAsync(IEnumerable<FDCashFlow> cashFlows)
+        {
+            _context.FDCashFlows.RemoveRange(cashFlows);
+            await _context.SaveChangesAsync();
         }
     }
 }

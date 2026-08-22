@@ -83,21 +83,35 @@
       </thead>
 
 
-      <tbody>
+      <tbody>        <!-- SKELETON LOADING -->
 
-        <!-- LOADING -->
+        <ng-container *ngIf="loading && fdList.length === 0">
 
-        <tr *ngIf="loading">
+          <tr *ngFor="let s of [1,2,3,4,5]" class="skeleton-row">
 
-          <td
-            colspan="10"
-            class="loading">
+            <td><span class="skeleton-cell w-short"></span></td>
 
-            Loading FD data...
+            <td><span class="skeleton-cell w-medium"></span></td>
 
-          </td>
+            <td><span class="skeleton-cell w-medium"></span></td>
 
-        </tr>
+            <td><span class="skeleton-cell w-short"></span></td>
+
+            <td><span class="skeleton-cell w-amount"></span></td>
+
+            <td><span class="skeleton-cell w-short"></span></td>
+
+            <td><span class="skeleton-cell w-long"></span></td>
+
+            <td><span class="skeleton-cell w-long"></span></td>
+
+            <td><span class="skeleton-cell w-status"></span></td>
+
+            <td><span class="skeleton-cell w-amount"></span></td>
+
+          </tr>
+
+        </ng-container>
 
 
         <!-- FD DATA -->

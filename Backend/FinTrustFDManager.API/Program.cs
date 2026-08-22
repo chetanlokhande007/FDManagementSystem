@@ -9,9 +9,6 @@ using System.Text;
 using FinTrustFDManager.BAL.Interfaces;
 using FinTrustFDManager.BAL.Services;
 
-// Enable legacy timestamp behavior for PostgreSQL (fixes DateTime UTC issues)
-AppContext.SetSwitch("Npgsql.EnableLegacyTimestampBehavior", true);
-
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
@@ -21,37 +18,30 @@ builder.Services.AddDbContext<ApplicationDbContext>(options =>
 
 builder.Services.AddControllers();
 builder.Services.AddMemoryCache();
-builder.Services.AddScoped<IFDIdentificationRepository,
-    FDIdentificationRepository>();
 
-builder.Services.AddScoped<IFDIdentificationService,
-    FDIdentificationService>();
-builder.Services.AddBAL();
-
-// Master Data Repositories
+// ── Repositories ──
+builder.Services.AddScoped<IFDIdentificationRepository, FDIdentificationRepository>();
+builder.Services.AddScoped<IFDInterestRepository, FDInterestRepository>();
+builder.Services.AddScoped<IFDCashFlowRepository, FDCashFlowRepository>();
 builder.Services.AddScoped<IEntityRepository, EntityRepository>();
 builder.Services.AddScoped<ICurrencyRepository, CurrencyRepository>();
 builder.Services.AddScoped<ICountryRepository, CountryRepository>();
 builder.Services.AddScoped<ICounterPartyRepository, CounterPartyRepository>();
 builder.Services.AddScoped<IBankRepository, BankRepository>();
-builder.Services.AddScoped<IFDInterestRepository, FDInterestRepository>();
-builder.Services.AddScoped<IFDInterestService, FDInterestService>();
-
-// Core Data Repositories
 builder.Services.AddScoped<IInterestFrequencyRepository, InterestFrequencyRepository>();
 builder.Services.AddScoped<IDayCountConventionRepository, DayCountConventionRepository>();
 builder.Services.AddScoped<IInvestmentRepository, InvestmentRepository>();
 builder.Services.AddScoped<ICashFlowRepository, CashFlowRepository>();
 builder.Services.AddScoped<IInvestmentApprovalRepository, InvestmentApprovalRepository>();
 builder.Services.AddScoped<IAuthRepository, AuthRepository>();
+builder.Services.AddScoped<IDashboardRepository, DashboardRepository>();
 
-builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddScoped<IFDInterestRepository, FDInterestRepository>();
+// ── Services ──
+builder.Services.AddScoped<IFDIdentificationService, FDIdentificationService>();
 builder.Services.AddScoped<IFDInterestService, FDInterestService>();
-
-builder.Services.AddScoped<IFDCashFlowRepository, FDCashFlowRepository>();
 builder.Services.AddScoped<IFDCashFlowService, FDCashFlowService>();
 builder.Services.AddScoped<IUnitOfWork, UnitOfWork>();
+builder.Services.AddBAL();
 
 
 // =====================================================

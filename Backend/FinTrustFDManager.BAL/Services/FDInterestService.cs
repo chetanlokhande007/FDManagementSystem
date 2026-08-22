@@ -117,11 +117,11 @@ namespace FinTrustFDManager.BAL.Services
 
                 if (updatedInterest != null)
                 {
-                    var existingCashFlows = await _cashFlowRepository.GetByFdIdAsync(fd.FdId);
+                    var existingCashFlows = (await _cashFlowRepository.GetByFdIdAsync(fd.FdId)).ToList();
 
-                    foreach (var cf in existingCashFlows)
+                    if (existingCashFlows.Count > 0)
                     {
-                        await _cashFlowRepository.DeleteAsync(cf.CashFlowId);
+                        await _cashFlowRepository.DeleteRangeAsync(existingCashFlows);
                     }
 
                     var newCashFlows = GenerateCashFlows(fd, updatedInterest);
@@ -151,11 +151,11 @@ namespace FinTrustFDManager.BAL.Services
 
             try
             {
-                var existingCashFlows = await _cashFlowRepository.GetByFdIdAsync(existingInterest.FdId);
+                var existingCashFlows = (await _cashFlowRepository.GetByFdIdAsync(existingInterest.FdId)).ToList();
 
-                foreach (var cf in existingCashFlows)
+                if (existingCashFlows.Count > 0)
                 {
-                    await _cashFlowRepository.DeleteAsync(cf.CashFlowId);
+                    await _cashFlowRepository.DeleteRangeAsync(existingCashFlows);
                 }
 
                 var result = await _interestRepository.DeleteAsync(id);
@@ -222,6 +222,14 @@ namespace FinTrustFDManager.BAL.Services
 
             var value = frequency.Trim().ToUpperInvariant().Replace("-", "_");
 
+            // "At Maturity" is only valid for InterestFrequency, not CompoundingFrequency
+            if (value == "AT_MATURITY")
+            {
+                throw new InvalidOperationException(
+                    $"'{frequency}' is not a valid Compounding Frequency. Compounding requires a periodic frequency (Monthly, Quarterly, Half-Yearly, or Annually).\n" +
+                    $"'At Maturity' is only valid as an Interest Frequency.");
+            }
+
             if (value is not
                 ("MONTHLY" or
                  "QUARTERLY" or
@@ -240,77 +248,45 @@ namespace FinTrustFDManager.BAL.Services
             string frequency,
             string eventType)
         {
-            DateTime currentDate = startDate;
-
-            while (true)
+            int monthsToAdd = frequency.ToUpperInvariant() switch
             {
-                currentDate = GetNextScheduleDate(currentDate, frequency, startDate);
+                "MONTHLY" => 1,
+                "QUARTERLY" => 3,
+                "HALF_YEARLY" => 6,
+                "ANNUALLY" => 12,
+                _ => throw new InvalidOperationException($"Unsupported frequency '{frequency}'.")
+            };
 
-                if (currentDate > endDate)
-                    break;
+            // Anchor: the first schedule date is startDate + monthsToAdd
+            DateTime nextDate = AddPeriodWithEomHandling(startDate, monthsToAdd);
 
-                events.Add((currentDate.Date, eventType));
+            while (nextDate <= endDate)
+            {
+                events.Add((nextDate.Date, eventType));
+                nextDate = AddPeriodWithEomHandling(nextDate, monthsToAdd);
             }
         }
 
-        private static DateTime GetNextScheduleDate(
-            DateTime currentDate,
-            string frequency,
-            DateTime originalStartDate)
+        /// <summary>
+        /// Adds a number of months to a date, preserving end-of-month semantics.
+        /// If the source day is the last day of its month (e.g. 31 Jan, 28 Feb in non-leap),
+        /// the result is the last day of the target month.
+        /// Otherwise the same day-of-month is used, clamped to the target month's length.
+        /// </summary>
+        private static DateTime AddPeriodWithEomHandling(DateTime date, int months)
         {
-            if (string.IsNullOrWhiteSpace(frequency))
-                throw new InvalidOperationException("Frequency cannot be empty.");
+            bool isLastDayOfMonth = date.Day == DateTime.DaysInMonth(date.Year, date.Month);
 
-            frequency = frequency.ToUpperInvariant();
-            DateTime targetMonthDate = currentDate;
+            DateTime result = date.AddMonths(months);
 
-            if (frequency == "MONTHLY")
+            if (isLastDayOfMonth)
             {
-                bool isEom = currentDate.Day == DateTime.DaysInMonth(currentDate.Year, currentDate.Month);
-                targetMonthDate = isEom ? currentDate.AddMonths(1) : currentDate;
-            }
-            else if (frequency == "QUARTERLY")
-            {
-                int currentQuarter = (currentDate.Month - 1) / 3 + 1;
-                int targetMonth = currentQuarter * 3;
-                targetMonthDate = new DateTime(currentDate.Year, targetMonth, 1);
-                
-                bool isQuarterEnd = currentDate.Month == targetMonth && currentDate.Day == DateTime.DaysInMonth(currentDate.Year, targetMonth);
-                if (isQuarterEnd)
-                {
-                    targetMonthDate = targetMonthDate.AddMonths(3);
-                }
-            }
-            else if (frequency == "HALF_YEARLY")
-            {
-                int currentHalf = (currentDate.Month - 1) / 6 + 1;
-                int targetMonth = currentHalf * 6;
-                targetMonthDate = new DateTime(currentDate.Year, targetMonth, 1);
-                
-                bool isHalfEnd = currentDate.Month == targetMonth && currentDate.Day == DateTime.DaysInMonth(currentDate.Year, targetMonth);
-                if (isHalfEnd)
-                {
-                    targetMonthDate = targetMonthDate.AddMonths(6);
-                }
-            }
-            else if (frequency == "ANNUALLY")
-            {
-                int targetMonth = 12;
-                targetMonthDate = new DateTime(currentDate.Year, targetMonth, 1);
-                
-                bool isYearEnd = currentDate.Month == targetMonth && currentDate.Day == DateTime.DaysInMonth(currentDate.Year, targetMonth);
-                if (isYearEnd)
-                {
-                    targetMonthDate = targetMonthDate.AddYears(1);
-                }
-            }
-            else
-            {
-                throw new InvalidOperationException($"Unsupported periodic frequency '{frequency}'.");
+                // Snap to end of the target month
+                int daysInTarget = DateTime.DaysInMonth(result.Year, result.Month);
+                result = new DateTime(result.Year, result.Month, daysInTarget);
             }
 
-            int daysInTargetMonth = DateTime.DaysInMonth(targetMonthDate.Year, targetMonthDate.Month);
-            return new DateTime(targetMonthDate.Year, targetMonthDate.Month, daysInTargetMonth);
+            return result;
         }
 
         private List<FDCashFlow> GenerateCashFlows(
@@ -368,7 +344,9 @@ namespace FinTrustFDManager.BAL.Services
                 decimal periodInterest = 0;
                 int days = 0;
 
-                if (isInterestDate)
+                // Calculate interest for ANY event date (Interest or Compounding).
+                // This handles AT_MATURITY + compounding where only Compounding events exist.
+                if (isInterestDate || isCompoundingDate)
                 {
                     days = (date.Date - lastCalculationDate.Date).Days;
                     if (days > 0)
@@ -385,7 +363,7 @@ namespace FinTrustFDManager.BAL.Services
 
                 if (periodInterest == 0 && accruedInterest == 0)
                 {
-                    if (isInterestDate) lastCalculationDate = date;
+                    if (isInterestDate || isCompoundingDate) lastCalculationDate = date;
                     continue;
                 }
 
@@ -409,6 +387,13 @@ namespace FinTrustFDManager.BAL.Services
                         ReferenceNo = fd.FdReferenceNo ?? "",
                         CreatedDate = now
                     });
+
+                    // For non-compounding: interest is paid out each period, reset accrued.
+                    // For compounding: keep accumulating until the compounding event.
+                    if (!isCompounding)
+                    {
+                        accruedInterest = 0;
+                    }
                 }
 
                 if (isCompoundingDate)
@@ -444,28 +429,24 @@ namespace FinTrustFDManager.BAL.Services
                 }
             }
 
-
-            decimal maturityPeriodInterest = 0;
+            // -----------------------------------------------------------------
+            // Partial period: interest from last schedule date to maturity
+            // -----------------------------------------------------------------
             if (lastCalculationDate < fd.EndDate)
             {
                 int days = (fd.EndDate.Date - lastCalculationDate.Date).Days;
                 
-                if (days == 1 && lastCalculationDate.AddDays(1) == fd.EndDate.Date)
+                if (days > 0)
                 {
-                    // Skip 1-day interest for settlement day to satisfy "no interest after 31-Dec-2026"
-                }
-                else if (days > 0)
-                {
-                    maturityPeriodInterest = FinTrustFDManager.BAL.Common.FinancialCalculator.CalculateInterest(
+                    decimal partialInterest = FinTrustFDManager.BAL.Common.FinancialCalculator.CalculateInterest(
                         balance, 
                         interest.InterestRate, 
                         days, 
                         interest.CalculationBasis);
                     
-                    accruedInterest += maturityPeriodInterest;
-
                     if (isCompounding)
                     {
+                        // Compound the partial period interest into balance before maturity
                         cashFlows.Add(new FDCashFlow
                         {
                             FdId = fd.FdId,
@@ -475,9 +456,9 @@ namespace FinTrustFDManager.BAL.Services
                             Days = days,
                             InterestRate = interest.InterestRate,
                             OpeningBalance = balance,
-                            InterestAmount = maturityPeriodInterest,
-                            ClosingBalance = balance + accruedInterest,
-                            CashFlowAmount = maturityPeriodInterest,
+                            InterestAmount = Math.Round(partialInterest, 2),
+                            ClosingBalance = balance + Math.Round(partialInterest, 2),
+                            CashFlowAmount = 0,
                             Direction = "INFLOW",
                             CurrencyCode = fd.CurrencyCode ?? "INR",
                             Status = "PENDING",
@@ -485,10 +466,11 @@ namespace FinTrustFDManager.BAL.Services
                             CreatedDate = now
                         });
                         
-                        balance += accruedInterest;
+                        balance += Math.Round(partialInterest, 2);
                     }
                     else
                     {
+                        // Non-compounding: interest is paid out at maturity
                         cashFlows.Add(new FDCashFlow
                         {
                             FdId = fd.FdId,
@@ -498,9 +480,9 @@ namespace FinTrustFDManager.BAL.Services
                             Days = days,
                             InterestRate = interest.InterestRate,
                             OpeningBalance = balance,
-                            InterestAmount = maturityPeriodInterest,
+                            InterestAmount = Math.Round(partialInterest, 2),
                             ClosingBalance = balance,
-                            CashFlowAmount = accruedInterest,
+                            CashFlowAmount = Math.Round(partialInterest, 2),
                             Direction = "INFLOW",
                             CurrencyCode = fd.CurrencyCode ?? "INR",
                             Status = "PENDING",
@@ -509,7 +491,6 @@ namespace FinTrustFDManager.BAL.Services
                         });
                     }
                 }
-                accruedInterest = 0;
             }
 
             decimal maturityBalance = balance;
@@ -536,6 +517,14 @@ namespace FinTrustFDManager.BAL.Services
                 ReferenceNo = fd.FdReferenceNo ?? "",
                 CreatedDate = now
             });
+
+            // Ensure all DateTime fields are UTC for PostgreSQL timestamp with time zone
+            foreach (var cf in cashFlows)
+            {
+                cf.StartDate = DateTime.SpecifyKind(cf.StartDate.Date, DateTimeKind.Utc);
+                cf.EndDate = DateTime.SpecifyKind(cf.EndDate.Date, DateTimeKind.Utc);
+                cf.CreatedDate = DateTime.UtcNow;
+            }
 
             return cashFlows;
         }

@@ -1,3 +1,4 @@
+using FinTrustFDManager.Model.DTOs.Investment;
 using FinTrustFDManager.Model.Entities.Investment;
 using System;
 using System.Collections.Generic;
@@ -19,5 +20,12 @@ namespace FinTrustFDManager.DAL.Interfaces
         Task<FDIdentification?> GetLastAsync();
         Task<bool> DeleteAsync(long id);
         Task<bool> ChangeStatusAsync(long id, string status);
+
+        /// <summary>
+        /// Returns FD landing data in a single optimized query
+        /// (joins FDIdentification + FDInterest + aggregated FDCashFlow).
+        /// Replaces the N+1 query pattern.
+        /// </summary>
+        Task<IEnumerable<FDLandingDto>> GetLandingDataAsync();
     }
 }

@@ -1,6 +1,7 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
+import { environment } from '../../../environments/environment';
 
 export interface DayCountConvention {
   dayCountConventionId: number;
@@ -15,8 +16,7 @@ export interface DayCountConvention {
 })
 export class DayCountConventionService {
 
-  private apiUrl =
-    'http://localhost:5075/api/DayCountConvention';
+  private apiUrl = `${environment.apiUrl}/DayCountConvention`;
 
   constructor(private http: HttpClient) {}
 

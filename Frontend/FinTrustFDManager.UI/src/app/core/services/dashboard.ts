@@ -1,6 +1,7 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
+import { environment } from '../../../environments/environment';
 
 export interface ChartDataDto {
   label: string;
@@ -43,7 +44,7 @@ export interface DashboardSummaryDto {
   providedIn: 'root',
 })
 export class DashboardService {
-  private apiUrl = 'http://localhost:5075/api/Dashboard'; // Default HTTPS port for .NET 8 API in VS, adjust if needed
+  private apiUrl = `${environment.apiUrl}/Dashboard`;
 
   constructor(private http: HttpClient) {}
 

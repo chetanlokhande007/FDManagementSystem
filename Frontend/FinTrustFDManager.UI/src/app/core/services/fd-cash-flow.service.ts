@@ -1,6 +1,7 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
+import { environment } from '../../../environments/environment';
 
 export interface FDCashFlow {
   cashFlowId: number;
@@ -25,7 +26,7 @@ export interface FDCashFlow {
   providedIn: 'root'
 })
 export class FDCashFlowService {
-  private apiUrl = 'http://localhost:5075/api/FDCashFlow';
+  private apiUrl = `${environment.apiUrl}/FDCashFlow`;
 
   constructor(private http: HttpClient) {}
 

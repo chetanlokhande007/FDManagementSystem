@@ -75,6 +75,12 @@ namespace FinTrustFDManager.BAL.Services
 
             model.CreatedDate = DateTime.UtcNow;
 
+            // Ensure DateTime fields are UTC for PostgreSQL timestamp with time zone
+            model.StartDate = DateTime.SpecifyKind(model.StartDate, DateTimeKind.Utc);
+            model.EndDate = DateTime.SpecifyKind(model.EndDate, DateTimeKind.Utc);
+            if (model.SettlementDate.HasValue)
+                model.SettlementDate = DateTime.SpecifyKind(model.SettlementDate.Value, DateTimeKind.Utc);
+
             return await _repository.AddAsync(model);
         }
 
@@ -88,6 +94,13 @@ namespace FinTrustFDManager.BAL.Services
         {
             model.FdId = id;
 
+            // Ensure DateTime fields are UTC for PostgreSQL timestamp with time zone
+            model.StartDate = DateTime.SpecifyKind(model.StartDate, DateTimeKind.Utc);
+            model.EndDate = DateTime.SpecifyKind(model.EndDate, DateTimeKind.Utc);
+            if (model.SettlementDate.HasValue)
+                model.SettlementDate = DateTime.SpecifyKind(model.SettlementDate.Value, DateTimeKind.Utc);
+            model.ModifiedDate = DateTime.UtcNow;
+
             return await _repository.UpdateAsync(model);
         }
 
@@ -97,12 +110,15 @@ namespace FinTrustFDManager.BAL.Services
 
         public async Task<bool> DeleteAsync(long id)
         {
-            var cashFlows = await _cashFlowRepository.GetByFdIdAsync(id);
-            foreach (var cf in cashFlows)
+            // Delete cash flows in bulk (cascade would handle this, but we do it explicitly
+            // to ensure application-level consistency)
+            var cashFlows = (await _cashFlowRepository.GetByFdIdAsync(id)).ToList();
+            if (cashFlows.Count > 0)
             {
-                await _cashFlowRepository.DeleteAsync(cf.CashFlowId);
+                await _cashFlowRepository.DeleteRangeAsync(cashFlows);
             }
 
+            // Delete interest
             var interest = await _interestRepository.GetByFdIdAsync(id);
             if (interest != null)
             {
@@ -119,67 +135,9 @@ namespace FinTrustFDManager.BAL.Services
         public async Task<IEnumerable<FDLandingDto>>
             GetLandingDataAsync()
         {
-            var fdList = await _repository.GetAllAsync();
-
-            var result = new List<FDLandingDto>();
-
-            foreach (var fd in fdList)
-            {
-                var interest =
-                    await _interestRepository.GetByFdIdAsync(fd.FdId);
-
-                var cashFlows =
-                    await _cashFlowRepository.GetByFdIdAsync(fd.FdId);
-
-                var data = new FDLandingDto
-                {
-                    // FD Identification
-                    FdId = fd.FdId,
-                    FdReferenceNo = fd.FdReferenceNo,
-                    EntityId = fd.EntityId,
-                    CounterpartyId = fd.CounterpartyId,
-                    CurrencyCode = fd.CurrencyCode,
-                    PrincipalAmount = fd.PrincipalAmount,
-                    StartDate = fd.StartDate,
-                    EndDate = fd.EndDate,
-                    SettlementDate = fd.SettlementDate,
-                    Status = fd.Status,
-
-                    // Interest
-                    InterestRate = interest?.InterestRate ?? 0,
-                    InterestRateType =
-                        interest?.InterestRateType ?? string.Empty,
-
-                    InterestFrequency =
-                        interest?.InterestFrequency ?? string.Empty,
-
-                    CompoundingFrequency =
-                        (interest != null && interest.IsCompounding) ? (interest.CompoundingFrequency ?? "Not Applicable") : "Not Applicable",
-
-                    CalculationBasis =
-                        interest?.CalculationBasis ?? string.Empty,
-
-                    // Cash Flow
-                    TotalPrincipal =
-                        fd.PrincipalAmount,
-
-                    TotalGrossInterest =
-                        cashFlows?.Where(x => x.Event != "FD Created" && x.Event != "Maturity" && x.Event != "Compounding Interest").Sum(x => x.InterestAmount) ?? 0,
-
-                    TotalTds =
-                        0, // TDS removed from Cash Flow
-
-                    TotalNetInterest =
-                        cashFlows?.Where(x => x.Event != "FD Created" && x.Event != "Maturity" && x.Event != "Compounding Interest").Sum(x => x.InterestAmount) ?? 0,
-
-                    TotalAmount =
-                        (fd.PrincipalAmount) + (cashFlows?.Where(x => x.Event != "FD Created" && x.Event != "Maturity" && x.Event != "Compounding Interest").Sum(x => x.InterestAmount) ?? 0)
-                };
-
-                result.Add(data);
-            }
-
-            return result;
+            // Uses a single optimized query (2 SQL statements) instead of
+            // the previous N+1 pattern (1 + 2N SQL statements).
+            return await _repository.GetLandingDataAsync();
         }
 
         public async Task<bool> ChangeStatusAsync(long id, string status)

@@ -1,6 +1,7 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
+import { environment } from '../../../environments/environment';
 
 export interface EntityDto {
   entityId: number;
@@ -27,7 +28,7 @@ export interface Entity {
 })
 export class EntityService {
 
-  private apiUrl = 'http://localhost:5075/api/Entity';
+  private apiUrl = `${environment.apiUrl}/Entity`;
 
   constructor(private http: HttpClient) {}
 

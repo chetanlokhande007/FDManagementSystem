@@ -7,7 +7,7 @@ namespace FinTrustFDManager.API.Controllers
 {
     [ApiController]
     [Route("api/[controller]")]
-    //[Authorize]
+    [Authorize]
     public class InvestmentApprovalController : ControllerBase
     {
         private readonly IInvestmentApprovalService _service;

@@ -31,6 +31,7 @@ export class FdCashflowComponent implements OnInit, OnChanges {
   @Input() fdId!: number;
   @Input() fdData: any = null;
   @Input() interestData: any = null;
+  @Input() initialCashFlows: FDCashFlow[] = [];
   @Output() cashFlowSaved = new EventEmitter<void>();
 
   cashFlows: FDCashFlow[] = [];
@@ -46,10 +47,20 @@ export class FdCashflowComponent implements OnInit, OnChanges {
   ) { }
 
   ngOnInit(): void {
-    this.loadCashFlows();
+    // Use pre-loaded cash flows from parent if available (avoids duplicate API call)
+    if (this.initialCashFlows && this.initialCashFlows.length > 0) {
+      this.cashFlows = this.initialCashFlows;
+      this.calculateCashFlowSummary();
+    } else {
+      this.loadCashFlows();
+    }
   }
 
   ngOnChanges(changes: SimpleChanges): void {
+    if (changes['initialCashFlows'] && !changes['initialCashFlows'].isFirstChange()) {
+      this.cashFlows = changes['initialCashFlows'].currentValue ?? [];
+      this.calculateCashFlowSummary();
+    }
     if (changes['fdId'] && !changes['fdId'].isFirstChange()) {
       this.loadCashFlows();
     }
