@@ -165,49 +165,48 @@ export class FDDetailComponent implements OnInit {
 
   ngOnInit(): void {
     this.route.paramMap.pipe(
-      switchMap(params => {
-        const id = params.get('id');
+      tap(params => {
         const tab = this.route.snapshot.queryParamMap.get('tab');
-
         if (tab) {
           sessionStorage.setItem('FD_REQUESTED_TAB', tab);
           if (tab === 'general') {
             this.activeTab = tab;
           }
         }
-
-        if (id) {
-          const newFdId = Number(id);
-
-          // If navigating to a different FD, clear the old FD cache to force a fresh API load
-          if (this.fdId !== null && this.fdId !== newFdId) {
-            sessionStorage.removeItem(`FINTRUST_FD_DETAIL_CACHE_${newFdId}`);
-          }
-
+      }),
+      map(params => Number(params.get('id'))),
+      tap(newFdId => {
+        if (newFdId && this.fdId !== null && this.fdId !== newFdId) {
+          sessionStorage.removeItem(`FINTRUST_FD_DETAIL_CACHE_${newFdId}`);
+        }
+        
+        if (newFdId) {
           this.fdId = newFdId;
           this.isEdit = true;
+          const tab = this.route.snapshot.queryParamMap.get('tab');
           this.isGeneralReadOnly = (tab === 'interest' || tab === 'cashflow');
         } else {
           this.fdId = null;
           this.isEdit = false;
           this.isGeneralReadOnly = false;
         }
-
-        const fdIdSnapshot = this.fdId;
-        const isEditSnapshot = this.isEdit;
-
+      }),
+      tap(() => this.loading = true),
+      switchMap(id => {
         return this.loadCoreData().pipe(
           switchMap(() => {
-            if (isEditSnapshot && fdIdSnapshot) {
-              return this.loadFDDetails(fdIdSnapshot, true);
+            if (this.isEdit && id) {
+              return this.loadFDDetails(id, true, false); // hideUI = false here so we don't mess up the loading flag
             }
             return of(null);
-          })
+          }),
+          finalize(() => this.loading = false)
         );
       })
     ).subscribe({
       error: (error) => {
         console.error('Error in route pipeline:', error);
+        this.loading = false;
       }
     });
   }

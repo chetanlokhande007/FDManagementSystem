@@ -162,7 +162,6 @@ namespace FinTrustFDManager.BAL.Services
 
             editedCashFlow.EndDate = dto.EndDate;
             
-            decimal dayCountBasis = interest.CalculationBasis == "ACTUAL_360" ? 360m : 365m;
             bool isCompounding = interest.IsCompounding;
 
             // Recalculate subsequent cash flows
