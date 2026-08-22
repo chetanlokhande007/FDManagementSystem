@@ -52,7 +52,7 @@
           </tr>
         </thead>
         <tbody>
-          <tr *ngFor="let cf of enrichedCashFlows">
+          <tr *ngFor="let cf of enrichedCashFlows; trackBy: trackByCashFlowId">
             <td style="text-align: center;">
               <span *ngIf="cf.event === 'FD Created'" style="font-weight: 500; color: #475569;">FD Created</span>
               <span *ngIf="cf.event === 'Maturity'" style="font-weight: 500; color: #15803d;">Maturity</span>

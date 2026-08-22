@@ -1,3 +1,187 @@
-<div class="dashboard">
-  <!-- Dashboard content removed as requested -->
+<div class="dashboard-container">
+  
+  <div *ngIf="isLoading" class="loading-state">
+    <div class="spinner-border text-primary" role="status">
+      <span class="visually-hidden">Loading...</span>
+    </div>
+    <p>Loading Dashboard...</p>
+  </div>
+
+  <div *ngIf="hasError" class="error-state">
+    <p class="text-danger">Unable to load dashboard data.</p>
+    <button class="btn btn-primary" (click)="loadDashboardData()">Retry</button>
+  </div>
+
+  <div *ngIf="!isLoading && !hasError && dashboard" class="dashboard-content">
+    
+    <!-- KPI Cards -->
+    <div class="kpi-row">
+      <div class="kpi-card bg-primary text-white">
+        <div class="kpi-icon"><i class="bi bi-wallet2"></i></div>
+        <div class="kpi-data">
+          <h6>Total Active FDs</h6>
+          <h2>{{ dashboard.activeFDCount }}</h2>
+          <small>All currently running FDs</small>
+        </div>
+      </div>
+      
+      <div class="kpi-card bg-success text-white">
+        <div class="kpi-icon"><i class="bi bi-cash-coin"></i></div>
+        <div class="kpi-data">
+          <h6>Total Principal Invested</h6>
+          <h2>{{ dashboard.totalPrincipal | currency:'INR':'symbol':'1.0-2' }}</h2>
+          <small>Sum of principal for all active FDs</small>
+        </div>
+      </div>
+      
+      <div class="kpi-card bg-indigo text-white">
+        <div class="kpi-icon"><i class="bi bi-graph-up-arrow"></i></div>
+        <div class="kpi-data">
+          <h6>Total Accrued Interest</h6>
+          <h2>{{ dashboard.totalAccruedInterest | currency:'INR':'symbol':'1.0-2' }}</h2>
+          <small>Estimated interest accrued to date</small>
+        </div>
+      </div>
+      
+      <div class="kpi-card bg-warning text-white">
+        <div class="kpi-icon"><i class="bi bi-calendar-event"></i></div>
+        <div class="kpi-data">
+          <h6>Maturing This Month</h6>
+          <h2>{{ dashboard.maturingThisMonthCount }}</h2>
+          <small>Total Value: {{ dashboard.maturingThisMonthValue | currency:'INR':'symbol':'1.0-2' }}</small>
+        </div>
+      </div>
+    </div>
+
+    <!-- Quick Actions -->
+    <div class="quick-actions-card">
+      <span class="action-label">Quick Actions</span>
+      <button class="btn btn-primary action-btn" routerLink="/fd/new"><i class="bi bi-plus-lg"></i> Create New FD</button>
+      <button class="btn btn-outline-primary action-btn" routerLink="/fd"><i class="bi bi-calendar-check"></i> View Upcoming Maturities</button>
+      <button class="btn btn-outline-primary action-btn" routerLink="/entities"><i class="bi bi-bank"></i> Manage Entities / Banks</button>
+    </div>
+
+    <!-- Charts -->
+    <div class="charts-row">
+      <div class="chart-card flex-2">
+        <h6 class="chart-title">FD Growth <span class="text-muted">(Last 6 Months)</span></h6>
+        <!-- We mock the chart using a simple bar visualization if no real chart library is configured, but the user's code had ng2-charts based on Chart.js. 
+             Since ng2-charts module is not in the imports, we'll keep the layout clean or use a generic placeholder -->
+        <div class="chart-container">
+           <p *ngIf="dashboard.fdGrowthData.length === 0">No data available for growth chart.</p>
+           <!-- Add canvas for actual chart library later if needed -->
+           <div class="custom-bar-chart" *ngIf="dashboard.fdGrowthData.length > 0">
+             <div class="bar-col" *ngFor="let item of dashboard.fdGrowthData">
+               <div class="bar" [style.height.%]="(item.value / dashboard.totalPrincipal) * 100 * 2"></div>
+               <span class="bar-label">{{ item.label }}</span>
+             </div>
+           </div>
+        </div>
+      </div>
+
+      <div class="chart-card flex-1">
+        <h6 class="chart-title">Portfolio Distribution by Bank/Entity</h6>
+        <div class="chart-container align-center">
+          <p *ngIf="dashboard.portfolioDistributionData.length === 0">No portfolio data available.</p>
+          <div class="custom-pie-chart" *ngIf="dashboard.portfolioDistributionData.length > 0">
+            <div class="legend-list">
+              <div class="legend-item" *ngFor="let item of dashboard.portfolioDistributionData">
+                <span class="legend-color"></span>
+                <span class="legend-text">{{ item.label }} - {{ (item.value / dashboard.totalPrincipal) | percent:'1.0-1' }}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Tables -->
+    <div class="tables-row">
+      
+      <!-- Upcoming Maturities -->
+      <div class="table-card">
+        <div class="table-header">
+          <h6>Upcoming Maturities <span class="text-muted">(Next 30 Days)</span></h6>
+          <a routerLink="/fd" class="view-all">View All</a>
+        </div>
+        
+        <div class="table-responsive">
+          <table class="table">
+            <thead>
+              <tr>
+                <th>FD Reference No</th>
+                <th>Bank/Entity</th>
+                <th>Principal (₹)</th>
+                <th>Maturity Date</th>
+                <th>Maturity Amount (₹)</th>
+                <th>Status</th>
+                <th>Action</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngIf="dashboard.upcomingMaturities.length === 0">
+                <td colspan="7" class="text-center">No upcoming maturities.</td>
+              </tr>
+              <tr *ngFor="let fd of dashboard.upcomingMaturities">
+                <td>{{ fd.fdReferenceNo }}</td>
+                <td>{{ fd.bankName }}</td>
+                <td>{{ fd.principalAmount | currency:'INR':'':'1.0-2' }}</td>
+                <td class="text-danger fw-bold">{{ fd.maturityDate | date:'dd MMM yyyy' }}</td>
+                <td>{{ fd.maturityAmount | currency:'INR':'':'1.0-2' }}</td>
+                <td>
+                  <span class="status-badge" 
+                        [class.danger]="isMaturityCritical(fd.status)" 
+                        [class.warning]="isMaturityNear(fd.status) && !isMaturityCritical(fd.status)">
+                    {{ fd.status }}
+                  </span>
+                </td>
+                <td><a [routerLink]="['/fd/detail', fd.fdId]" class="btn-view">View Details</a></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Recently Added FDs -->
+      <div class="table-card">
+        <div class="table-header">
+          <h6>Recently Added FDs</h6>
+          <a routerLink="/fd" class="view-all">View All</a>
+        </div>
+        
+        <div class="table-responsive">
+          <table class="table">
+            <thead>
+              <tr>
+                <th>FD Reference No</th>
+                <th>Start Date</th>
+                <th>Principal (₹)</th>
+                <th>Interest Rate (%)</th>
+                <th>Interest Type</th>
+                <th>Action</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngIf="dashboard.recentlyAddedFDs.length === 0">
+                <td colspan="6" class="text-center">No recently added FDs.</td>
+              </tr>
+              <tr *ngFor="let fd of dashboard.recentlyAddedFDs">
+                <td>{{ fd.fdReferenceNo }}</td>
+                <td>{{ fd.startDate | date:'dd MMM yyyy' }}</td>
+                <td>{{ fd.principalAmount | currency:'INR':'':'1.0-2' }}</td>
+                <td>{{ fd.interestRate | number:'1.2-2' }}</td>
+                <td>
+                  <span class="type-badge" [class.cumulative]="fd.interestType === 'Cumulative'" [class.non-cumulative]="fd.interestType === 'Non-Cumulative'">
+                    {{ fd.interestType }}
+                  </span>
+                </td>
+                <td><a [routerLink]="['/fd/detail', fd.fdId]" class="btn-view">View Details</a></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+      
+    </div>
+  </div>
 </div>

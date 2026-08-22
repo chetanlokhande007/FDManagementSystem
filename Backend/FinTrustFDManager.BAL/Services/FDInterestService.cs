@@ -321,10 +321,7 @@ namespace FinTrustFDManager.BAL.Services
 
             if (!isAtMaturity && !string.IsNullOrWhiteSpace(interest.InterestFrequency))
             {
-                if (!isCompounding)
-                {
-                    AddScheduleDates(events, fd.StartDate, fd.EndDate, interest.InterestFrequency, "Interest");
-                }
+                AddScheduleDates(events, fd.StartDate, fd.EndDate, interest.InterestFrequency, "Interest");
             }
 
             if (isCompounding && !string.IsNullOrWhiteSpace(interest.CompoundingFrequency))
@@ -336,38 +333,71 @@ namespace FinTrustFDManager.BAL.Services
 
             foreach (var date in sortedDates)
             {
-                int days = (date.Date - lastCalculationDate.Date).Days;
-                if (days > 0)
+                bool isCompoundingDate = events.Any(e => e.Date == date && e.Type == "Compounding") && isCompounding;
+                bool isInterestDate = events.Any(e => e.Date == date && e.Type == "Interest");
+
+                decimal periodInterest = 0;
+                int days = 0;
+
+                if (isInterestDate)
                 {
-                    decimal finalInterest = FinTrustFDManager.BAL.Common.FinancialCalculator.CalculateInterest(
-                        balance, 
-                        interest.InterestRate, 
-                        days, 
-                        interest.CalculationBasis);
-                    
-                    accruedInterest += finalInterest;
+                    days = (date.Date - lastCalculationDate.Date).Days;
+                    if (days > 0)
+                    {
+                        periodInterest = FinTrustFDManager.BAL.Common.FinancialCalculator.CalculateInterest(
+                            balance, 
+                            interest.InterestRate, 
+                            days, 
+                            interest.CalculationBasis);
+                        
+                        accruedInterest += periodInterest;
+                    }
                 }
 
-                bool isCompoundingEvent = events.Any(e => e.Date == date && e.Type == "Compounding");
-                bool isInterestPayout = events.Any(e => e.Date == date && e.Type == "Interest");
+                if (periodInterest == 0 && accruedInterest == 0)
+                {
+                    if (isInterestDate) lastCalculationDate = date;
+                    continue;
+                }
 
-                if (isCompoundingEvent)
+                if (isInterestDate)
+                {
+                    cashFlows.Add(new FDCashFlow
+                    {
+                        FdId = fd.FdId,
+                        Event = "Interest",
+                        StartDate = lastCalculationDate,
+                        EndDate = date,
+                        Days = days,
+                        InterestRate = interest.InterestRate,
+                        OpeningBalance = balance,
+                        InterestAmount = periodInterest,
+                        ClosingBalance = balance,
+                        CashFlowAmount = isCompounding ? 0 : periodInterest,
+                        Direction = "INFLOW",
+                        CurrencyCode = fd.CurrencyCode ?? "INR",
+                        Status = "PENDING",
+                        ReferenceNo = fd.FdReferenceNo ?? "",
+                        CreatedDate = now
+                    });
+                }
+
+                if (isCompoundingDate)
                 {
                     decimal compoundedAmount = accruedInterest;
-                    balance += compoundedAmount;
                     
                     cashFlows.Add(new FDCashFlow
                     {
                         FdId = fd.FdId,
                         Event = "Compounding Interest",
-                        StartDate = lastCalculationDate,
+                        StartDate = date,
                         EndDate = date,
-                        Days = days,
+                        Days = 0,
                         InterestRate = interest.InterestRate,
-                        OpeningBalance = balance - compoundedAmount,
+                        OpeningBalance = balance,
                         InterestAmount = compoundedAmount,
-                        ClosingBalance = balance,
-                        CashFlowAmount = compoundedAmount,
+                        ClosingBalance = balance + compoundedAmount,
+                        CashFlowAmount = 0,
                         Direction = "INFLOW",
                         CurrencyCode = fd.CurrencyCode ?? "INR",
                         Status = "PENDING",
@@ -375,54 +405,30 @@ namespace FinTrustFDManager.BAL.Services
                         CreatedDate = now
                     });
                     
+                    balance += compoundedAmount;
                     accruedInterest = 0;
                 }
-                else if (isInterestPayout)
-                {
-                    decimal payoutAmount = accruedInterest;
-                    if (payoutAmount > 0)
-                    {
-                        cashFlows.Add(new FDCashFlow
-                        {
-                            FdId = fd.FdId,
-                            Event = "Interest",
-                            StartDate = lastCalculationDate,
-                            EndDate = date,
-                            Days = days,
-                            InterestRate = interest.InterestRate,
-                            OpeningBalance = balance,
-                            InterestAmount = payoutAmount,
-                            ClosingBalance = balance,
-                            CashFlowAmount = payoutAmount,
-                            Direction = "INFLOW",
-                            CurrencyCode = fd.CurrencyCode ?? "INR",
-                            Status = "PENDING",
-                            ReferenceNo = fd.FdReferenceNo ?? "",
-                            CreatedDate = now
-                        });
-                        
-                        accruedInterest = 0;
-                    }
-                }
 
-                lastCalculationDate = date;
+                if (isInterestDate)
+                {
+                    lastCalculationDate = date;
+                }
             }
 
 
+            decimal maturityPeriodInterest = 0;
             if (lastCalculationDate < fd.EndDate)
             {
                 int remainingDays = (fd.EndDate.Date - lastCalculationDate.Date).Days;
                 if (remainingDays > 0)
                 {
-                    decimal finalInterest = FinTrustFDManager.BAL.Common.FinancialCalculator.CalculateInterest(
+                    maturityPeriodInterest = FinTrustFDManager.BAL.Common.FinancialCalculator.CalculateInterest(
                         balance, 
                         interest.InterestRate, 
                         remainingDays, 
                         interest.CalculationBasis);
 
-                    accruedInterest += finalInterest;
-
-                    // Accrued interest is accumulated. We will emit it right before Maturity.
+                    accruedInterest += maturityPeriodInterest;
                 }
             }
 
@@ -433,30 +439,7 @@ namespace FinTrustFDManager.BAL.Services
             {
                 int days = (fd.EndDate.Date - lastCalculationDate.Date).Days;
                 
-                if (isCompounding)
-                {
-                    cashFlows.Add(new FDCashFlow
-                    {
-                        FdId = fd.FdId,
-                        Event = "Compounding Interest",
-                        StartDate = lastCalculationDate,
-                        EndDate = fd.EndDate,
-                        Days = days,
-                        InterestRate = interest.InterestRate,
-                        OpeningBalance = balance,
-                        InterestAmount = accruedInterest,
-                        ClosingBalance = balance + accruedInterest,
-                        CashFlowAmount = accruedInterest,
-                        Direction = "INFLOW",
-                        CurrencyCode = fd.CurrencyCode ?? "INR",
-                        Status = "PENDING",
-                        ReferenceNo = fd.FdReferenceNo ?? "",
-                        CreatedDate = now
-                    });
-                    
-                    balance += accruedInterest;
-                }
-                else
+                if (days > 0)
                 {
                     cashFlows.Add(new FDCashFlow
                     {
@@ -467,9 +450,9 @@ namespace FinTrustFDManager.BAL.Services
                         Days = days,
                         InterestRate = interest.InterestRate,
                         OpeningBalance = balance,
-                        InterestAmount = accruedInterest,
+                        InterestAmount = maturityPeriodInterest,
                         ClosingBalance = balance,
-                        CashFlowAmount = accruedInterest,
+                        CashFlowAmount = isCompounding ? 0 : maturityPeriodInterest,
                         Direction = "INFLOW",
                         CurrencyCode = fd.CurrencyCode ?? "INR",
                         Status = "PENDING",
@@ -477,6 +460,31 @@ namespace FinTrustFDManager.BAL.Services
                         CreatedDate = now
                     });
                 }
+
+                if (isCompounding)
+                {
+                    cashFlows.Add(new FDCashFlow
+                    {
+                        FdId = fd.FdId,
+                        Event = "Compounding Interest",
+                        StartDate = fd.EndDate,
+                        EndDate = fd.EndDate,
+                        Days = 0,
+                        InterestRate = interest.InterestRate,
+                        OpeningBalance = balance,
+                        InterestAmount = accruedInterest,
+                        ClosingBalance = balance + accruedInterest,
+                        CashFlowAmount = 0,
+                        Direction = "INFLOW",
+                        CurrencyCode = fd.CurrencyCode ?? "INR",
+                        Status = "PENDING",
+                        ReferenceNo = fd.FdReferenceNo ?? "",
+                        CreatedDate = now
+                    });
+                    
+                    balance += accruedInterest;
+                }
+                
                 accruedInterest = 0;
             }
 

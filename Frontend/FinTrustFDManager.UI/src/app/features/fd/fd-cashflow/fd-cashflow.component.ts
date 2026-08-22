@@ -3,7 +3,10 @@ import {
   Input,
   Output,
   EventEmitter,
-  OnInit
+  OnInit,
+  OnChanges,
+  SimpleChanges,
+  ChangeDetectionStrategy
 } from '@angular/core';
 import {
   FormBuilder,
@@ -24,29 +27,41 @@ import {
     ReactiveFormsModule
   ],
   templateUrl: './fd-cashflow.component.html',
-  styleUrls: ['./fd-cashflow.component.css']
+  styleUrls: ['./fd-cashflow.component.css'],
+  changeDetection: ChangeDetectionStrategy.OnPush
 })
-export class FdCashflowComponent {
+export class FdCashflowComponent implements OnChanges {
 
   @Input() fdId!: number;
   @Input() fdData: any = null;
   @Input() interestData: any = null;
   @Input() cashFlows: FDCashFlow[] = [];
 
-  constructor() {}
+  totalInterest = 0;
+  maturityAmount = 0;
+  enrichedCashFlows: FDCashFlow[] = [];
 
-  get enrichedCashFlows() {
-    return this.cashFlows;
+  constructor() { }
+
+  ngOnChanges(changes: SimpleChanges): void {
+    if (changes['cashFlows']) {
+      this.calculateCashFlowSummary();
+    }
   }
 
-  get totalInterest(): number {
-    return this.cashFlows
-      .filter(cf => cf.event !== 'FD Created' && cf.event !== 'Maturity' && cf.event !== 'Compounding Interest')
-      .reduce((sum, cf) => sum + cf.interestAmount, 0);
+  private calculateCashFlowSummary(): void {
+    this.enrichedCashFlows = this.cashFlows || [];
+    
+    this.totalInterest = this.enrichedCashFlows.reduce(
+      (sum, cf) => sum + (cf.interestAmount || 0),
+      0
+    );
+
+    const maturityFlow = this.enrichedCashFlows.find(cf => cf.event === 'Maturity');
+    this.maturityAmount = maturityFlow ? maturityFlow.cashFlowAmount : 0;
   }
 
-  get maturityAmount(): number {
-    const maturityFlow = this.cashFlows.find(cf => cf.event === 'Maturity');
-    return maturityFlow ? maturityFlow.cashFlowAmount : 0;
+  trackByCashFlowId(index: number, cashFlow: FDCashFlow): number {
+    return cashFlow.cashFlowId;
   }
 }

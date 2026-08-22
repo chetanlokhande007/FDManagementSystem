@@ -20,6 +20,7 @@ export class FdInterestComponent implements OnInit, OnChanges {
   interestForm!: FormGroup;
   isEdit = false;
   isReadOnly = false;
+  isSaving = false;
 
   constructor(
     private fb: FormBuilder,
@@ -117,9 +118,11 @@ export class FdInterestComponent implements OnInit, OnChanges {
   }
 
   saveInterest(): void {
-    if (this.interestForm.invalid) {
+    if (this.interestForm.invalid || this.isSaving) {
       return;
     }
+    
+    this.isSaving = true;
 
     const data: FDInterest = {
       ...this.interestForm.getRawValue(),
@@ -134,10 +137,12 @@ export class FdInterestComponent implements OnInit, OnChanges {
         .subscribe({
           next: (res: FDInterest) => {
             console.log('Interest updated:', res);
+            this.isSaving = false;
             this.interestSaved.emit(res);
           },
           error: (err) => {
             console.error('Error updating interest:', err);
+            this.isSaving = false;
           }
         });
     } else {
@@ -147,6 +152,7 @@ export class FdInterestComponent implements OnInit, OnChanges {
           next: (res: FDInterest) => {
             console.log('Interest created:', res);
             this.isEdit = true;
+            this.isSaving = false;
             this.interestForm.patchValue({
               fdInterestId: res.fdInterestId
             });
@@ -154,6 +160,7 @@ export class FdInterestComponent implements OnInit, OnChanges {
           },
           error: (err) => {
             console.error('Error creating interest:', err);
+            this.isSaving = false;
           }
         });
     }

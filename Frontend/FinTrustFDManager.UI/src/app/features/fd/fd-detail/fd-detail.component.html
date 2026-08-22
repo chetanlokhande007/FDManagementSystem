@@ -205,7 +205,7 @@
     <!-- CASHFLOW TAB -->
     <div *ngIf="activeTab === 'cashflow'">
       <app-fd-cashflow *ngIf="fdId" [fdId]="fdId" [fdData]="fixedDeposit" [interestData]="interestData"
-        [cashFlows]="cashFlows" (cashFlowSaved)="loadFDDetails()"></app-fd-cashflow>
+        [cashFlows]="cashFlows" (cashFlowSaved)="loadFDDetails(fdId, true, false).subscribe()"></app-fd-cashflow>
     </div>
 
   </div>

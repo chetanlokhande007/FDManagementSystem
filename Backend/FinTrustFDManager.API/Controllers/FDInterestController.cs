@@ -40,7 +40,7 @@ namespace FinTrustFDManager.API.Controllers
             var data = await _service.GetByFdIdAsync(fdId);
 
             if (data == null)
-                return NotFound();
+                return NoContent();
 
             return Ok(data);
         }

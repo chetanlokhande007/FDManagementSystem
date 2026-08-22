@@ -53,6 +53,8 @@ builder.Services.AddScoped<IFDCashFlowRepository, FDCashFlowRepository>();
 builder.Services.AddScoped<IFDCashFlowService, FDCashFlowService>();
 builder.Services.AddScoped<IUnitOfWork, UnitOfWork>();
 
+builder.Services.AddScoped<IDashboardRepository, DashboardRepository>();
+builder.Services.AddScoped<IDashboardService, DashboardService>();
 
 // =====================================================
 // CORS - ANGULAR FRONTEND
