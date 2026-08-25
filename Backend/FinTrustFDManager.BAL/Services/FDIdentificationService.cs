@@ -14,15 +14,18 @@ namespace FinTrustFDManager.BAL.Services
         private readonly IFDIdentificationRepository _repository;
         private readonly IFDInterestRepository _interestRepository;
         private readonly IFDCashFlowRepository _cashFlowRepository;
+        private readonly IFDInterestService _interestService;
 
         public FDIdentificationService(
             IFDIdentificationRepository repository,
             IFDInterestRepository interestRepository,
-            IFDCashFlowRepository cashFlowRepository)
+            IFDCashFlowRepository cashFlowRepository,
+            IFDInterestService interestService)
         {
             _repository = repository;
             _interestRepository = interestRepository;
             _cashFlowRepository = cashFlowRepository;
+            _interestService = interestService;
         }
 
         // ==============================
@@ -101,7 +104,14 @@ namespace FinTrustFDManager.BAL.Services
                 model.SettlementDate = DateTime.SpecifyKind(model.SettlementDate.Value, DateTimeKind.Utc);
             model.ModifiedDate = DateTime.UtcNow;
 
-            return await _repository.UpdateAsync(model);
+            var result = await _repository.UpdateAsync(model);
+
+            if (result != null)
+            {
+                await _interestService.RegenerateCashFlowsAsync(result.FdId);
+            }
+
+            return result;
         }
 
         // ==============================

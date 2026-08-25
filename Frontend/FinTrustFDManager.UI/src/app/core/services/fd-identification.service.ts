@@ -7,30 +7,26 @@ import { environment } from '../../../environments/environment';
 export interface FDLanding {
   fdId: number;
   fdReferenceNo?: string;
-  entityName?: string;
-  counterpartyName?: string;
-  transactionCurrency?: string;
-  transactionAmount?: number;
-  startDate?: string;
-  endDate?: string;
-  status?: string;
-  customerName?: string;
-
   entityId?: number;
+  entityName?: string;
   counterpartyId?: number;
-  counterpartyType?: string;
+  counterPartyName?: string;
   currencyCode?: string;
   principalAmount?: number;
+  startDate?: string;
+  endDate?: string;
   settlementDate?: string;
-  bankAccountId?: number;
-  remarks?: string;
+  status?: string;
   interestRate?: number;
-  totalAmount?: number;
   interestRateType?: string;
+  interestFrequency?: string;
   compoundingFrequency?: string;
   calculationBasis?: string;
+  totalPrincipal?: number;
   totalGrossInterest?: number;
+  totalTds?: number;
   totalNetInterest?: number;
+  totalAmount?: number;
 }
 
 @Injectable({

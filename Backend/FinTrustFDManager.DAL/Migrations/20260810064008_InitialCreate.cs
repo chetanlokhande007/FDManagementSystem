@@ -362,7 +362,7 @@ namespace FinTrustFDManager.DAL.Migrations
                     { 1, "Monthly", true },
                     { 2, "Quarterly", true },
                     { 3, "Half-Yearly", true },
-                    { 4, "Yearly", true },
+                    { 4, "Annually", true },
                     { 5, "At Maturity", true }
                 });
 

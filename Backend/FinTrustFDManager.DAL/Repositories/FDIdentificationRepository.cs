@@ -107,9 +107,13 @@ namespace FinTrustFDManager.DAL.Repositories
 
         public async Task<IEnumerable<FDLandingDto>> GetLandingDataAsync()
         {
-            // ── Query 1: FD + Interest (LEFT JOIN, 1 SQL) ──
+            // ── Query 1: FD + Interest + Entity + Counterparty (LEFT JOINs, 1 SQL) ──
             var fdWithInterest = await (
                 from fd in _context.FDIdentifications.AsNoTracking()
+                join ent in _context.Entities on fd.EntityId equals ent.EntityId into entGroup
+                from e in entGroup.DefaultIfEmpty()
+                join cp in _context.CounterParties on fd.CounterpartyId equals cp.CounterPartyId into cpGroup
+                from c in cpGroup.DefaultIfEmpty()
                 join intEntry in _context.FDInterests
                     on fd.FdId equals intEntry.FdId
                     into interestGroup
@@ -119,7 +123,9 @@ namespace FinTrustFDManager.DAL.Repositories
                     fd.FdId,
                     fd.FdReferenceNo,
                     fd.EntityId,
+                    EntityName = e != null ? e.EntityName : string.Empty,
                     fd.CounterpartyId,
+                    CounterPartyName = c != null ? c.CounterPartyName : string.Empty,
                     fd.CurrencyCode,
                     fd.PrincipalAmount,
                     fd.StartDate,
@@ -140,27 +146,28 @@ namespace FinTrustFDManager.DAL.Repositories
             // ── Query 2: Cash flow aggregates (GROUP BY, 1 SQL) ──
             var cashFlowAggregates = await _context.FDCashFlows
                 .AsNoTracking()
-                .Where(cf => cf.Event != "FD Created"
-                          && cf.Event != "Maturity"
-                          && cf.Event != "Compounding Interest")
+                .Where(cf => cf.Direction == "INFLOW")
                 .GroupBy(cf => cf.FdId)
                 .Select(g => new
                 {
                     FdId = g.Key,
-                    TotalInterest = g.Sum(cf => cf.InterestAmount)
+                    TotalInflows = g.Sum(cf => cf.CashFlowAmount)
                 })
-                .ToDictionaryAsync(x => x.FdId, x => x.TotalInterest);
+                .ToDictionaryAsync(x => x.FdId, x => x.TotalInflows);
 
             // ── Assemble DTOs in memory ──
             return fdWithInterest.Select(fd =>
             {
-                cashFlowAggregates.TryGetValue(fd.FdId, out var grossInterest);
+                cashFlowAggregates.TryGetValue(fd.FdId, out var totalInflows);
+                var grossInterest = totalInflows - fd.PrincipalAmount;
                 return new FDLandingDto
                 {
                     FdId = fd.FdId,
                     FdReferenceNo = fd.FdReferenceNo,
                     EntityId = fd.EntityId,
+                    EntityName = fd.EntityName,
                     CounterpartyId = fd.CounterpartyId,
+                    CounterPartyName = fd.CounterPartyName,
                     CurrencyCode = fd.CurrencyCode,
                     PrincipalAmount = fd.PrincipalAmount,
                     StartDate = fd.StartDate,

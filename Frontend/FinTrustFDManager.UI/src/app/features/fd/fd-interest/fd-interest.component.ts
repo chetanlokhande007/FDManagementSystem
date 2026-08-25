@@ -129,6 +129,13 @@ export class FdInterestComponent implements OnInit, OnChanges {
     this.isReadOnly = false;
   }
 
+  cancelEdit(): void {
+    this.isReadOnly = true;
+    if (this.interestData) {
+      this.populateForm(this.interestData);
+    }
+  }
+
   saveInterest(): void {
     if (this.interestForm.invalid || this.isSaving) {
       return;

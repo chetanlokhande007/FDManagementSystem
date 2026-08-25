@@ -51,6 +51,10 @@
           </th>
 
           <th>
+            Counterparty
+          </th>
+
+          <th>
             Currency
           </th>
 
@@ -140,7 +144,10 @@
             </td>
 
             <!-- ENTITY -->
-            <td>{{ fd.entityId }}</td>
+            <td>{{ fd.entityName || fd.entityId }}</td>
+
+            <!-- COUNTERPARTY -->
+            <td>{{ fd.counterPartyName || fd.counterpartyId }}</td>
 
             <!-- CURRENCY -->
             <td>{{ fd.currencyCode }}</td>
@@ -149,7 +156,7 @@
             <td class="amount">{{ fd.principalAmount | currency:'INR':'symbol':'1.0-0' }}</td>
 
             <!-- INTEREST -->
-            <td>{{ fd.interestRate }}%</td>
+            <td>{{ fd.interestRate ? (fd.interestRate | number:'1.2-2') + '%' : '—' }}</td>
 
             <!-- START DATE -->
             <td>{{ fd.startDate | date:'dd-MMM-yyyy' }}</td>
@@ -174,7 +181,7 @@
 
           <!-- FAST VIEW ROW -->
           <tr *ngIf="expandedFdId === fd.fdId" class="fast-view-row">
-            <td colspan="10">
+            <td colspan="11">
               <div class="fast-view-container">
                 <h4>Quick Preview - {{ fd.fdReferenceNo }}</h4>
                 <div class="fast-view-grid">
@@ -200,7 +207,7 @@
           ">
 
           <td
-            colspan="10"
+            colspan="11"
             class="no-data">
 
             No Fixed Deposits found.

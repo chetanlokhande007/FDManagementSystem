@@ -584,5 +584,954 @@ namespace FinTrustFDManager.BAL.Tests
             // because the partial period (last quarter → maturity) is captured as a
             // Compounding Interest event, not an Interest event. This is correct behavior.
         }
+
+        // ═══════════════════════════════════════════════════════════════
+        //  TEST 15: Compounding frequency MORE frequent than interest
+        //  (e.g., Monthly compounding + Quarterly interest)
+        //  This was the critical lastCalculationDate bug.
+        // ═══════════════════════════════════════════════════════════════
+
+        [Fact]
+        public async Task CompoundInterest_MonthlyCompounding_QuarterlyInterest_BalanceGrows()
+        {
+            // 100,000 at 12% — Quarterly interest events, Monthly compounding
+            var fd = CreateFd(1, 100_000m,
+                new DateTime(2025, 1, 1),
+                new DateTime(2025, 12, 31));
+            var interest = CreateInterest(1, 12m,
+                "QUARTERLY", "MONTHLY", true, "ACTUAL_365");
+
+            var cf = await GenerateCashFlowsThroughService(fd, interest);
+
+            // Compounding events: 11 monthly + 1 partial
+            var compoundingEvents = cf.Where(c => c.Event == "Compounding Interest").ToList();
+            Assert.True(compoundingEvents.Count >= 10,
+                $"Should have ~11 monthly compounding events, got {compoundingEvents.Count}");
+
+            // Interest events: 3 quarterly (Apr 1, Jul 1, Oct 1)
+            var interestEvents = cf.Where(c => c.Event == "Interest").ToList();
+            Assert.Equal(3, interestEvents.Count);
+
+            // Balance should grow at each compounding event
+            decimal prevBalance = 100_000m;
+            foreach (var ce in compoundingEvents)
+            {
+                Assert.True(ce.ClosingBalance > ce.OpeningBalance,
+                    $"Closing ({ce.ClosingBalance}) should exceed Opening ({ce.OpeningBalance})");
+                Assert.Equal(prevBalance, ce.OpeningBalance);
+                prevBalance = ce.ClosingBalance;
+            }
+
+            // Maturity should equal final compounded balance
+            var maturity = cf.Last(c => c.Event == "Maturity");
+            Assert.Equal(compoundingEvents.Last().ClosingBalance, maturity.CashFlowAmount);
+
+            // Total interest = maturity - principal
+            decimal totalCompoundingInterest = compoundingEvents.Sum(c => c.InterestAmount);
+            Assert.Equal(maturity.CashFlowAmount - 100_000m, totalCompoundingInterest);
+
+            // Should exceed simple interest
+            Assert.True(maturity.CashFlowAmount > 111_967m,
+                $"Compounded maturity ({maturity.CashFlowAmount}) should exceed simple interest");
+        }
+
+        // ═══════════════════════════════════════════════════════════════
+        //  TEST 16: Half-Yearly compounding + Monthly interest
+        // ═══════════════════════════════════════════════════════════════
+
+        [Fact]
+        public async Task CompoundInterest_HalfYearlyCompounding_MonthlyInterest_BalanceGrows()
+        {
+            var fd = CreateFd(1, 100_000m,
+                new DateTime(2025, 1, 1),
+                new DateTime(2026, 1, 1));
+            var interest = CreateInterest(1, 10m,
+                "MONTHLY", "HALF_YEARLY", true, "ACTUAL_365");
+
+            var cf = await GenerateCashFlowsThroughService(fd, interest);
+
+            // Interest events: 12 monthly (all with CashFlowAmount = 0, accrued)
+            var interestEvents = cf.Where(c => c.Event == "Interest").ToList();
+            Assert.Equal(12, interestEvents.Count);
+            foreach (var ie in interestEvents)
+            {
+                Assert.Equal(0, ie.CashFlowAmount);
+            }
+
+            // Compounding events: 2 half-yearly + 1 partial
+            var compoundingEvents = cf.Where(c => c.Event == "Compounding Interest").ToList();
+            Assert.True(compoundingEvents.Count >= 2,
+                $"Should have at least 2 half-yearly compounding events, got {compoundingEvents.Count}");
+
+            // Balance chain must be consistent
+            decimal prevBalance = 100_000m;
+            foreach (var ce in compoundingEvents)
+            {
+                Assert.Equal(prevBalance, ce.OpeningBalance);
+                Assert.True(ce.ClosingBalance > ce.OpeningBalance);
+                prevBalance = ce.ClosingBalance;
+            }
+
+            var maturity = cf.Last(c => c.Event == "Maturity");
+            Assert.Equal(compoundingEvents.Last().ClosingBalance, maturity.CashFlowAmount);
+
+            // Total interest = maturity - principal
+            decimal totalCompoundingInterest = compoundingEvents.Sum(c => c.InterestAmount);
+            Assert.Equal(maturity.CashFlowAmount - 100_000m, totalCompoundingInterest);
+        }
+
+        // ═══════════════════════════════════════════════════════════════
+        //  TEST 17: Annually compounding + Monthly interest
+        // ═══════════════════════════════════════════════════════════════
+
+        [Fact]
+        public async Task CompoundInterest_AnnuallyCompounding_MonthlyInterest_CorrectDays()
+        {
+            var fd = CreateFd(1, 100_000m,
+                new DateTime(2025, 1, 1),
+                new DateTime(2026, 1, 1));
+            var interest = CreateInterest(1, 8m,
+                "MONTHLY", "ANNUALLY", true, "ACTUAL_365");
+
+            var cf = await GenerateCashFlowsThroughService(fd, interest);
+
+            // Interest events: 12 monthly
+            var interestEvents = cf.Where(c => c.Event == "Interest").ToList();
+            Assert.Equal(12, interestEvents.Count);
+
+            // Compounding events: 1 annual + 1 partial (if any days remain after Jan 1)
+            var compoundingEvents = cf.Where(c => c.Event == "Compounding Interest").ToList();
+            Assert.True(compoundingEvents.Count >= 1,
+                $"Should have at least 1 annual compounding event, got {compoundingEvents.Count}");
+
+            // All interest events should have CashFlowAmount = 0 (accrued, not paid)
+            foreach (var ie in interestEvents)
+            {
+                Assert.Equal(0, ie.CashFlowAmount);
+            }
+
+            // Balance must grow at compounding
+            decimal prevBalance = 100_000m;
+            foreach (var ce in compoundingEvents)
+            {
+                Assert.Equal(prevBalance, ce.OpeningBalance);
+                Assert.True(ce.ClosingBalance > ce.OpeningBalance);
+                prevBalance = ce.ClosingBalance;
+            }
+
+            var maturity = cf.Last(c => c.Event == "Maturity");
+            Assert.Equal(compoundingEvents.Last().ClosingBalance, maturity.CashFlowAmount);
+        }
+
+        // ═══════════════════════════════════════════════════════════════
+        //  TEST 18: Half-Yearly compounding + Quarterly interest
+        // ═══════════════════════════════════════════════════════════════
+
+        [Fact]
+        public async Task CompoundInterest_HalfYearlyCompounding_QuarterlyInterest_BalanceGrows()
+        {
+            var fd = CreateFd(1, 200_000m,
+                new DateTime(2025, 1, 1),
+                new DateTime(2026, 1, 1));
+            var interest = CreateInterest(1, 10m,
+                "QUARTERLY", "HALF_YEARLY", true, "ACTUAL_365");
+
+            var cf = await GenerateCashFlowsThroughService(fd, interest);
+
+            // Interest events: 4 quarterly
+            var interestEvents = cf.Where(c => c.Event == "Interest").ToList();
+            Assert.Equal(4, interestEvents.Count);
+
+            // Compounding events: 2 half-yearly + 1 partial
+            var compoundingEvents = cf.Where(c => c.Event == "Compounding Interest").ToList();
+            Assert.True(compoundingEvents.Count >= 2,
+                $"Should have at least 2 half-yearly compounding events, got {compoundingEvents.Count}");
+
+            // Balance chain
+            decimal prevBalance = 200_000m;
+            foreach (var ce in compoundingEvents)
+            {
+                Assert.Equal(prevBalance, ce.OpeningBalance);
+                Assert.True(ce.ClosingBalance > ce.OpeningBalance);
+                prevBalance = ce.ClosingBalance;
+            }
+
+            var maturity = cf.Last(c => c.Event == "Maturity");
+            Assert.Equal(compoundingEvents.Last().ClosingBalance, maturity.CashFlowAmount);
+
+            // Total interest = maturity - principal (no double-counting)
+            decimal totalCompoundingInterest = compoundingEvents.Sum(c => c.InterestAmount);
+            Assert.Equal(maturity.CashFlowAmount - 200_000m, totalCompoundingInterest);
+
+            // Should exceed simple interest
+            Assert.True(maturity.CashFlowAmount > 220_000m);
+        }
+
+        // ═══════════════════════════════════════════════════════════════
+        //  TEST 19: Annually compounding + Quarterly interest
+        // ═══════════════════════════════════════════════════════════════
+
+        [Fact]
+        public async Task CompoundInterest_AnnuallyCompounding_QuarterlyInterest_BalanceGrows()
+        {
+            var fd = CreateFd(1, 100_000m,
+                new DateTime(2025, 1, 1),
+                new DateTime(2026, 1, 1));
+            var interest = CreateInterest(1, 8m,
+                "QUARTERLY", "ANNUALLY", true, "ACTUAL_365");
+
+            var cf = await GenerateCashFlowsThroughService(fd, interest);
+
+            var interestEvents = cf.Where(c => c.Event == "Interest").ToList();
+            Assert.Equal(4, interestEvents.Count);
+
+            var compoundingEvents = cf.Where(c => c.Event == "Compounding Interest").ToList();
+            Assert.True(compoundingEvents.Count >= 1);
+
+            // Balance chain
+            decimal prevBalance = 100_000m;
+            foreach (var ce in compoundingEvents)
+            {
+                Assert.Equal(prevBalance, ce.OpeningBalance);
+                prevBalance = ce.ClosingBalance;
+            }
+
+            var maturity = cf.Last(c => c.Event == "Maturity");
+            Assert.Equal(compoundingEvents.Last().ClosingBalance, maturity.CashFlowAmount);
+
+            // Total interest = maturity - principal
+            decimal totalCompoundingInterest = compoundingEvents.Sum(c => c.InterestAmount);
+            Assert.Equal(maturity.CashFlowAmount - 100_000m, totalCompoundingInterest);
+        }
+
+        // ═══════════════════════════════════════════════════════════════
+        //  TEST 20: Annually compounding + Half-Yearly interest
+        // ═══════════════════════════════════════════════════════════════
+
+        [Fact]
+        public async Task CompoundInterest_AnnuallyCompounding_HalfYearlyInterest_BalanceGrows()
+        {
+            var fd = CreateFd(1, 100_000m,
+                new DateTime(2025, 1, 1),
+                new DateTime(2026, 1, 1));
+            var interest = CreateInterest(1, 8m,
+                "HALF_YEARLY", "ANNUALLY", true, "ACTUAL_365");
+
+            var cf = await GenerateCashFlowsThroughService(fd, interest);
+
+            var interestEvents = cf.Where(c => c.Event == "Interest").ToList();
+            Assert.Equal(2, interestEvents.Count);
+
+            var compoundingEvents = cf.Where(c => c.Event == "Compounding Interest").ToList();
+            Assert.True(compoundingEvents.Count >= 1);
+
+            decimal prevBalance = 100_000m;
+            foreach (var ce in compoundingEvents)
+            {
+                Assert.Equal(prevBalance, ce.OpeningBalance);
+                prevBalance = ce.ClosingBalance;
+            }
+
+            var maturity = cf.Last(c => c.Event == "Maturity");
+            Assert.Equal(compoundingEvents.Last().ClosingBalance, maturity.CashFlowAmount);
+
+            // Total interest = maturity - principal
+            decimal totalCompoundingInterest = compoundingEvents.Sum(c => c.InterestAmount);
+            Assert.Equal(maturity.CashFlowAmount - 100_000m, totalCompoundingInterest);
+        }
+
+        // ═══════════════════════════════════════════════════════════════
+        //  TEST 21: AT_MATURITY + Monthly compounding — no interest events
+        // ═══════════════════════════════════════════════════════════════
+
+        [Fact]
+        public async Task AT_MATURITY_MonthlyCompounding_NoInterestEvents_BalanceGrows()
+        {
+            var fd = CreateFd(1, 100_000m,
+                new DateTime(2025, 1, 1),
+                new DateTime(2025, 12, 31));
+            var interest = CreateInterest(1, 8m,
+                "AT_MATURITY", "MONTHLY", true, "ACTUAL_365");
+
+            var cf = await GenerateCashFlowsThroughService(fd, interest);
+
+            // No Interest events for AT_MATURITY
+            Assert.Empty(cf.Where(c => c.Event == "Interest"));
+
+            var compoundingEvents = cf.Where(c => c.Event == "Compounding Interest").ToList();
+            Assert.True(compoundingEvents.Count >= 10,
+                $"Should have ~11 monthly compounding events, got {compoundingEvents.Count}");
+
+            // Balance chain — each event's OpeningBalance = previous ClosingBalance
+            decimal prevBalance = 100_000m;
+            foreach (var ce in compoundingEvents)
+            {
+                Assert.Equal(prevBalance, ce.OpeningBalance);
+                Assert.True(ce.ClosingBalance > ce.OpeningBalance);
+                prevBalance = ce.ClosingBalance;
+            }
+
+            var maturity = cf.Last(c => c.Event == "Maturity");
+            Assert.Equal(compoundingEvents.Last().ClosingBalance, maturity.CashFlowAmount);
+
+            // Total interest = maturity - principal (no double-counting)
+            decimal totalCompoundingInterest = compoundingEvents.Sum(c => c.InterestAmount);
+            Assert.Equal(maturity.CashFlowAmount - 100_000m, totalCompoundingInterest);
+
+            // Should exceed simple interest (8000 for 1 year at 8%)
+            Assert.True(maturity.CashFlowAmount > 108_000m,
+                $"Compounded maturity ({maturity.CashFlowAmount}) should exceed simple (108000)");
+        }
+
+        // ═══════════════════════════════════════════════════════════════
+        //  TEST: Partial period accrued interest is not dropped
+        //  When Interest freq > Compounding freq, the last Interest event's
+        //  accrued interest MUST be compounded before the partial period.
+        // ═══════════════════════════════════════════════════════════════
+
+        [Fact]
+        public async Task PartialPeriod_AccruedInterest_CompoundedBeforeMaturity()
+        {
+            // Quarterly Interest + Half-Yearly Compounding
+            // Oct 1 is Interest-only (no compounding), so accruedInterest = 3199.47
+            // The partial period (Oct 1 → Dec 31) MUST compound this first.
+            var fd = CreateFd(1, 100_000m,
+                new DateTime(2025, 1, 1),
+                new DateTime(2025, 12, 31));
+            var interest = CreateInterest(1, 12m,
+                "QUARTERLY", "HALF_YEARLY", true, "ACTUAL_365");
+
+            var cf = await GenerateCashFlowsThroughService(fd, interest);
+
+            var compoundingEvents = cf.Where(c => c.Event == "Compounding Interest").ToList();
+            var maturity = cf.Last(c => c.Event == "Maturity");
+
+            // Manual calculation with correct logic:
+            // Q1 (Jan 1 → Apr 1, 90 days): 100000 * 0.12 * 90/365 = 2958.90
+            //   → compounded at Apr 1 (but Apr 1 is not a Compounding date for Half-YearLY)
+            //   Actually: Apr 1 is Interest only, Jul 1 is Both, Oct 1 is Interest only
+            //
+            // Apr 1 (Interest only): 100000 * 0.12 * 90/365 = 2958.90, accrued = 2958.90
+            // Jul 1 (Both): days=91, interest = 100000*0.12*91/365 = 2991.78
+            //   accrued = 2958.90 + 2991.78 = 5950.68 → compounded → balance = 105950.68
+            // Oct 1 (Interest only): days=92, interest = 105950.68*0.12*92/365 = 3199.47, accrued = 3199.47
+            // Partial: first compound accrued 3199.47 → balance = 109150.15
+            //   then interest = 109150.15*0.12*92/365 = 3299.70
+            //   → maturity = 112449.85
+            //
+            // WITHOUT the fix, maturity would be ~109150.15 (accrued dropped)
+
+            // The maturity MUST include the accrued interest from Oct 1
+            Assert.True(maturity.CashFlowAmount > 112_000m,
+                $"Maturity ({maturity.CashFlowAmount}) should be > 112000 because accrued " +
+                $"interest from last Interest event must be compounded before partial period. " +
+                $"If it's ~109150, the accrued interest was dropped.");
+
+            // Total interest = maturity - principal
+            decimal totalCompoundingInterest = compoundingEvents.Sum(c => c.InterestAmount);
+            Assert.Equal(maturity.CashFlowAmount - 100_000m, totalCompoundingInterest);
+        }
+
+        // ═══════════════════════════════════════════════════════════════
+        //  TEST: Partial period with AT_MATURITY + Quarterly compounding
+        //  No Interest events, only Compounding — accruedInterest should be 0
+        // ═══════════════════════════════════════════════════════════════
+
+        [Fact]
+        public async Task AT_MATURITY_QuarterlyCompounding_PartialPeriodCorrect()
+        {
+            var fd = CreateFd(1, 100_000m,
+                new DateTime(2025, 1, 1),
+                new DateTime(2025, 12, 31));
+            var interest = CreateInterest(1, 8m,
+                "AT_MATURITY", "QUARTERLY", true, "ACTUAL_365");
+
+            var cf = await GenerateCashFlowsThroughService(fd, interest);
+
+            // Compounding dates: Apr 1, Jul 1, Oct 1 (Jan 1+12mo is past end)
+            var compoundingEvents = cf.Where(c => c.Event == "Compounding Interest").ToList();
+            Assert.Equal(4, compoundingEvents.Count); // 3 quarterly + 1 partial
+
+            var maturity = cf.Last(c => c.Event == "Maturity");
+            // Compounded maturity should exceed simple interest (8000 for 1yr@8%)
+            Assert.True(maturity.CashFlowAmount > 108_000m,
+                $"Maturity ({maturity.CashFlowAmount}) should exceed simple interest");
+
+            // Balance chain
+            decimal prevBalance = 100_000m;
+            foreach (var ce in compoundingEvents)
+            {
+                Assert.Equal(prevBalance, ce.OpeningBalance);
+                prevBalance = ce.ClosingBalance;
+            }
+        }
+
+        // ═══════════════════════════════════════════════════════════════
+        //  TEST 22: Non-compounding — all frequencies should work
+        // ═══════════════════════════════════════════════════════════════
+
+        [Theory]
+        [InlineData("MONTHLY")]
+        [InlineData("QUARTERLY")]
+        [InlineData("HALF_YEARLY")]
+        [InlineData("ANNUALLY")]
+        public async Task NonCompounding_AllFrequencies_ProduceCorrectCashFlows(string frequency)
+        {
+            var fd = CreateFd(1, 100_000m,
+                new DateTime(2025, 1, 1),
+                new DateTime(2026, 1, 1));
+            var interest = CreateInterest(1, 8m,
+                frequency, "Not Applicable", false, "ACTUAL_365");
+
+            var cf = await GenerateCashFlowsThroughService(fd, interest);
+
+            // No compounding events
+            Assert.Empty(cf.Where(c => c.Event == "Compounding Interest"));
+
+            // All Interest events should have CashFlowAmount > 0 (paid out)
+            var interestEvents = cf.Where(c => c.Event == "Interest").ToList();
+            Assert.True(interestEvents.Count > 0, $"Frequency {frequency} should produce interest events");
+
+            foreach (var ie in interestEvents)
+            {
+                Assert.True(ie.CashFlowAmount > 0,
+                    $"{frequency}: Interest event should have CashFlowAmount > 0");
+                Assert.True(ie.OpeningBalance == ie.ClosingBalance,
+                    $"{frequency}: Balance should not change in non-compounding");
+            }
+
+            // Maturity should return principal
+            var maturity = cf.Last(c => c.Event == "Maturity");
+            Assert.Equal(100_000m, maturity.CashFlowAmount);
+        }
+
+        // ═══════════════════════════════════════════════════════════════
+        //  TEST 23: Same frequency interest + compounding — all combos
+        // ═══════════════════════════════════════════════════════════════
+
+        [Theory]
+        [InlineData("MONTHLY", "MONTHLY")]
+        [InlineData("QUARTERLY", "QUARTERLY")]
+        [InlineData("HALF_YEARLY", "HALF_YEARLY")]
+        [InlineData("ANNUALLY", "ANNUALLY")]
+        public async Task SameFrequency_InterestAndCompounding_BalanceGrows(string intFreq, string compFreq)
+        {
+            var fd = CreateFd(1, 100_000m,
+                new DateTime(2025, 1, 1),
+                new DateTime(2026, 1, 1));
+            var interest = CreateInterest(1, 8m,
+                intFreq, compFreq, true, "ACTUAL_365");
+
+            var cf = await GenerateCashFlowsThroughService(fd, interest);
+
+            var compoundingEvents = cf.Where(c => c.Event == "Compounding Interest").ToList();
+            Assert.True(compoundingEvents.Count >= 1,
+                $"{intFreq}/{compFreq}: Should have compounding events");
+
+            // Balance chain
+            decimal prevBalance = 100_000m;
+            foreach (var ce in compoundingEvents)
+            {
+                Assert.Equal(prevBalance, ce.OpeningBalance);
+                Assert.True(ce.ClosingBalance > ce.OpeningBalance);
+                prevBalance = ce.ClosingBalance;
+            }
+
+            var maturity = cf.Last(c => c.Event == "Maturity");
+            Assert.True(maturity.CashFlowAmount >= 108_000m,
+                $"{intFreq}/{compFreq}: Maturity ({maturity.CashFlowAmount}) should be at least simple interest (108000)");
+        }
+
+        // ═══════════════════════════════════════════════════════════════
+        //  TEST 24: MFD Interest = sum of all Compounding Interest amounts
+        //  (no double counting)
+        // ═══════════════════════════════════════════════════════════════
+
+        [Fact]
+        public async Task AT_MATURITY_MonthlyCompounding_TotalInterestCorrect_NoDoubleCount()
+        {
+            var fd = CreateFd(1, 100_000m,
+                new DateTime(2025, 1, 1),
+                new DateTime(2025, 12, 31));
+            var interest = CreateInterest(1, 8m,
+                "AT_MATURITY", "MONTHLY", true, "ACTUAL_365");
+
+            var cf = await GenerateCashFlowsThroughService(fd, interest);
+
+            var maturity = cf.Last(c => c.Event == "Maturity");
+            decimal totalCompoundingInterest = cf
+                .Where(c => c.Event == "Compounding Interest")
+                .Sum(c => c.InterestAmount);
+
+            decimal expectedTotalInterest = maturity.CashFlowAmount - 100_000m;
+
+            Assert.True(totalCompoundingInterest == expectedTotalInterest,
+                $"Compounding interest sum ({totalCompoundingInterest}) should equal " +
+                $"maturity - principal ({expectedTotalInterest}). Possible double-counting!");
+        }
+
+        // ═══════════════════════════════════════════════════════════════
+        //  TEST: FD-0094 — Monthly Interest + Quarterly Compounding
+        //  Compounding events must span the accumulation period
+        // ═══════════════════════════════════════════════════════════════
+
+        [Fact]
+        public async Task FD0094_MonthlyInterest_QuarterlyCompounding_CompoundingEventsSpanCorrectPeriod()
+        {
+            // FD-0094: ₹58,900 at 5%, Monthly Interest, Quarterly Compounding
+            // 22-Aug-2026 → 23-Nov-2027
+            var fd = CreateFd(1, 58_900m,
+                new DateTime(2026, 8, 22),
+                new DateTime(2027, 11, 23));
+            var interest = CreateInterest(1, 5m,
+                "MONTHLY", "QUARTERLY", true, "ACTUAL_365");
+
+            var cf = await GenerateCashFlowsThroughService(fd, interest);
+
+            // Should have: FD Created + 15 Interest events + 5 Compounding + Maturity
+            var interestEvents = cf.Where(c => c.Event == "Interest").ToList();
+            var compoundingEvents = cf.Where(c => c.Event == "Compounding Interest").ToList();
+            var maturity = cf.Last(c => c.Event == "Maturity");
+
+            // Quarterly from 22-Aug: 22-Nov-2026, 22-Feb-2027, 22-May-2027, 22-Aug-2027, 22-Nov-2027
+            // Plus partial period (22-Nov-2027 → 23-Nov-2027) = 6 total
+            Assert.Equal(6, compoundingEvents.Count);
+
+            // First compounding: 22-Aug-2026 → 22-Nov-2026 (92 days)
+            Assert.Equal(new DateTime(2026, 8, 22), compoundingEvents[0].StartDate);
+            Assert.Equal(new DateTime(2026, 11, 22), compoundingEvents[0].EndDate);
+            Assert.Equal(92, compoundingEvents[0].Days);
+
+            // Second compounding: 22-Nov-2026 → 22-Feb-2027 (92 days)
+            Assert.Equal(new DateTime(2026, 11, 22), compoundingEvents[1].StartDate);
+            Assert.Equal(new DateTime(2027, 2, 22), compoundingEvents[1].EndDate);
+            Assert.Equal(92, compoundingEvents[1].Days);
+
+            // Third compounding: 22-Feb-2027 → 22-May-2027 (89 days)
+            Assert.Equal(new DateTime(2027, 2, 22), compoundingEvents[2].StartDate);
+            Assert.Equal(new DateTime(2027, 5, 22), compoundingEvents[2].EndDate);
+            Assert.Equal(89, compoundingEvents[2].Days);
+
+            // Fourth compounding: 22-May-2027 → 22-Aug-2027 (92 days)
+            Assert.Equal(new DateTime(2027, 5, 22), compoundingEvents[3].StartDate);
+            Assert.Equal(new DateTime(2027, 8, 22), compoundingEvents[3].EndDate);
+            Assert.Equal(92, compoundingEvents[3].Days);
+
+            // Fifth compounding: 22-Aug-2027 → 22-Nov-2027 (92 days)
+            Assert.Equal(new DateTime(2027, 8, 22), compoundingEvents[4].StartDate);
+            Assert.Equal(new DateTime(2027, 11, 22), compoundingEvents[4].EndDate);
+            Assert.Equal(92, compoundingEvents[4].Days);
+
+            // Sixth compounding (partial): 22-Nov-2027 → 23-Nov-2027 (1 day)
+            Assert.Equal(new DateTime(2027, 11, 22), compoundingEvents[5].StartDate);
+            Assert.Equal(new DateTime(2027, 11, 23), compoundingEvents[5].EndDate);
+            Assert.Equal(1, compoundingEvents[5].Days);
+
+            // Balance chain: each compounding event's OpeningBalance = previous ClosingBalance
+            decimal prevBalance = 58_900m;
+            foreach (var ce in compoundingEvents)
+            {
+                Assert.Equal(prevBalance, ce.OpeningBalance);
+                Assert.True(ce.ClosingBalance > ce.OpeningBalance,
+                    $"Closing ({ce.ClosingBalance}) should exceed Opening ({ce.OpeningBalance})");
+                prevBalance = ce.ClosingBalance;
+            }
+
+            // Maturity equals final compounded balance
+            Assert.Equal(compoundingEvents.Last().ClosingBalance, maturity.CashFlowAmount);
+
+            // Total interest = maturity - principal (no double-counting)
+            decimal totalCompoundingInterest = compoundingEvents.Sum(c => c.InterestAmount);
+            Assert.Equal(maturity.CashFlowAmount - 58_900m, totalCompoundingInterest);
+
+            // First compounding interest should be ~₹742 (3 months of interest)
+            // 58900 * 0.05 * 91/365 ≈ 742 (roughly)
+            Assert.True(compoundingEvents[0].InterestAmount > 700m,
+                $"First compounding interest ({compoundingEvents[0].InterestAmount}) should be ~742");
+            Assert.True(compoundingEvents[0].InterestAmount < 800m,
+                $"First compounding interest ({compoundingEvents[0].InterestAmount}) should be ~742");
+        }
+
+        // ═══════════════════════════════════════════════════════════════
+        //  TEST 25: "Yearly" as Interest Frequency (alias for Annually)
+        //  This was the root cause of the 409 Conflict.
+        // ═══════════════════════════════════════════════════════════════
+
+        [Fact]
+        public async Task YearlyInterestFrequency_ProducesCorrectCashFlows()
+        {
+            var fd = CreateFd(1, 100_000m,
+                new DateTime(2025, 1, 1),
+                new DateTime(2026, 1, 1));
+            var interest = CreateInterest(1, 8m,
+                "Yearly", "Not Applicable", false, "ACTUAL_365");
+
+            var cf = await GenerateCashFlowsThroughService(fd, interest);
+
+            // No compounding events
+            Assert.Empty(cf.Where(c => c.Event == "Compounding Interest"));
+
+            // Yearly = Annually → 1 Interest event (Jan 1 → Jan 1 next year)
+            // Since Jan 1 + 12 months = Jan 1 which is not < EndDate (Jan 1),
+            // no schedule interest events. Partial period captures all.
+            var interestEvents = cf.Where(c => c.Event == "Interest").ToList();
+            Assert.True(interestEvents.Count >= 1,
+                $"Yearly frequency should produce at least 1 interest event, got {interestEvents.Count}");
+
+            // Maturity should return principal
+            var maturity = cf.Last(c => c.Event == "Maturity");
+            Assert.Equal(100_000m, maturity.CashFlowAmount);
+        }
+
+        // ═══════════════════════════════════════════════════════════════
+        //  TEST 26: "SemiAnnual" as Compounding Frequency (alias for Half-Yearly)
+        // ═══════════════════════════════════════════════════════════════
+
+        [Fact]
+        public async Task SemiAnnualCompoundingFrequency_ProducesCorrectCashFlows()
+        {
+            var fd = CreateFd(1, 100_000m,
+                new DateTime(2025, 1, 1),
+                new DateTime(2026, 1, 1));
+            var interest = CreateInterest(1, 10m,
+                "QUARTERLY", "SemiAnnual", true, "ACTUAL_365");
+
+            var cf = await GenerateCashFlowsThroughService(fd, interest);
+
+            // SemiAnnual = 6 months → 2 compounding events + 1 partial
+            var compoundingEvents = cf.Where(c => c.Event == "Compounding Interest").ToList();
+            Assert.True(compoundingEvents.Count >= 2,
+                $"SemiAnnual compounding should produce >= 2 events, got {compoundingEvents.Count}");
+
+            // Interest events: 4 quarterly
+            var interestEvents = cf.Where(c => c.Event == "Interest").ToList();
+            Assert.Equal(4, interestEvents.Count);
+
+            // Balance chain
+            decimal prevBalance = 100_000m;
+            foreach (var ce in compoundingEvents)
+            {
+                Assert.Equal(prevBalance, ce.OpeningBalance);
+                Assert.True(ce.ClosingBalance > ce.OpeningBalance);
+                prevBalance = ce.ClosingBalance;
+            }
+
+            var maturity = cf.Last(c => c.Event == "Maturity");
+            Assert.Equal(compoundingEvents.Last().ClosingBalance, maturity.CashFlowAmount);
+        }
+
+        // ═══════════════════════════════════════════════════════════════
+        //  TEST 27: CompoundingFrequency = null when IsCompounding = false
+        //  Should succeed without 409 Conflict.
+        // ═══════════════════════════════════════════════════════════════
+
+        [Fact]
+        public async Task CreateAsync_CompoundingDisabled_NullFrequency_Succeeds()
+        {
+            var fd = CreateFd(1, 100_000m,
+                new DateTime(2025, 1, 1),
+                new DateTime(2026, 1, 1));
+            var interest = CreateInterest(1, 8m,
+                "QUARTERLY", null, false, "ACTUAL_365");
+            interest.CompoundingFrequency = null;
+
+            var cf = await GenerateCashFlowsThroughService(fd, interest);
+
+            // Should succeed and produce non-compounding cash flows
+            Assert.Empty(cf.Where(c => c.Event == "Compounding Interest"));
+            var interestEvents = cf.Where(c => c.Event == "Interest").ToList();
+            Assert.True(interestEvents.Count > 0);
+
+            // All interest events should have CashFlowAmount > 0 (paid out)
+            foreach (var ie in interestEvents)
+            {
+                Assert.True(ie.CashFlowAmount > 0);
+            }
+        }
+
+        // ═══════════════════════════════════════════════════════════════
+        //  TEST 28: CompoundingFrequency = empty string when IsCompounding = false
+        //  Should succeed without 409 Conflict.
+        // ═══════════════════════════════════════════════════════════════
+
+        [Fact]
+        public async Task CreateAsync_CompoundingDisabled_EmptyFrequency_Succeeds()
+        {
+            var fd = CreateFd(1, 100_000m,
+                new DateTime(2025, 1, 1),
+                new DateTime(2026, 1, 1));
+            var interest = CreateInterest(1, 8m,
+                "MONTHLY", "", false, "ACTUAL_365");
+
+            var cf = await GenerateCashFlowsThroughService(fd, interest);
+
+            // Should succeed
+            Assert.Empty(cf.Where(c => c.Event == "Compounding Interest"));
+            var interestEvents = cf.Where(c => c.Event == "Interest").ToList();
+            Assert.Equal(12, interestEvents.Count);
+        }
+
+        // ═══════════════════════════════════════════════════════════════
+        //  TEST 29: CompoundingFrequency = "NOT_APPLICABLE" when IsCompounding = false
+        //  Frontend sends this value when checkbox is unchecked.
+        // ═══════════════════════════════════════════════════════════════
+
+        [Fact]
+        public async Task CreateAsync_CompoundingDisabled_NotApplicableFrequency_Succeeds()
+        {
+            var fd = CreateFd(1, 100_000m,
+                new DateTime(2025, 1, 1),
+                new DateTime(2026, 1, 1));
+            var interest = CreateInterest(1, 8m,
+                "MONTHLY", "NOT_APPLICABLE", false, "ACTUAL_365");
+
+            var cf = await GenerateCashFlowsThroughService(fd, interest);
+
+            Assert.Empty(cf.Where(c => c.Event == "Compounding Interest"));
+            var interestEvents = cf.Where(c => c.Event == "Interest").ToList();
+            Assert.Equal(12, interestEvents.Count);
+        }
+
+        // ═══════════════════════════════════════════════════════════════
+        //  TEST 30: UpdateAsync regenerates cash flows with new rate
+        // ═══════════════════════════════════════════════════════════════
+
+        [Fact]
+        public async Task UpdateAsync_ChangesRate_RegeneratesCashFlows()
+        {
+            var fd = CreateFd(1, 100_000m,
+                new DateTime(2025, 1, 1),
+                new DateTime(2026, 1, 1));
+            var originalInterest = CreateInterest(1, 8m,
+                "QUARTERLY", "QUARTERLY", true, "ACTUAL_365");
+            originalInterest.FdInterestId = 10;
+
+            // Setup: FD exists, interest exists
+            _fdRepo.Setup(r => r.GetByIdAsync(fd.FdId)).ReturnsAsync(fd);
+            _interestRepo.Setup(r => r.GetByIdAsync(originalInterest.FdInterestId))
+                .ReturnsAsync(originalInterest);
+
+            // Setup existing cash flows (old ones that should be deleted)
+            var oldCashFlows = new List<FDCashFlow>
+            {
+                new FDCashFlow { CashFlowId = 100, FdId = 1, Event = "FD Created", StartDate = fd.StartDate, EndDate = fd.StartDate, Days = 0, InterestRate = 8m, OpeningBalance = 0, InterestAmount = 0, ClosingBalance = 100_000m, CashFlowAmount = 100_000m, Direction = "OUTFLOW", CurrencyCode = "INR", Status = "PENDING" },
+                new FDCashFlow { CashFlowId = 101, FdId = 1, Event = "Interest", StartDate = fd.StartDate, EndDate = new DateTime(2025, 4, 1), Days = 90, InterestRate = 8m, OpeningBalance = 100_000m, InterestAmount = 1972.60m, ClosingBalance = 100_000m, CashFlowAmount = 0, Direction = "INFLOW", CurrencyCode = "INR", Status = "PENDING" }
+            };
+            _cashFlowRepo.Setup(r => r.GetByFdIdAsync(fd.FdId))
+                .ReturnsAsync(oldCashFlows);
+
+            List<FDCashFlow>? capturedCashFlows = null;
+            _cashFlowRepo.Setup(r => r.DeleteRangeAsync(It.IsAny<IEnumerable<FDCashFlow>>()))
+                .Returns(Task.CompletedTask);
+            _cashFlowRepo.Setup(r => r.AddRangeAsync(It.IsAny<IEnumerable<FDCashFlow>>()))
+                .Callback<IEnumerable<FDCashFlow>>(cf => capturedCashFlows = cf.ToList())
+                .Returns(Task.CompletedTask);
+
+            // Update: change rate from 8% to 12%
+            var updatedInterest = new FDInterest
+            {
+                FdInterestId = 10,
+                FdId = 1,
+                InterestRateType = "FIXED",
+                InterestRate = 12m,
+                InterestFrequency = "QUARTERLY",
+                CompoundingFrequency = "QUARTERLY",
+                IsCompounding = true,
+                CalculationBasis = "ACTUAL_365",
+                CreatedDate = DateTime.UtcNow
+            };
+
+            _interestRepo.Setup(r => r.UpdateAsync(It.IsAny<FDInterest>()))
+                .ReturnsAsync((FDInterest i) => i);
+
+            var result = await _service.UpdateAsync(originalInterest.FdInterestId, updatedInterest);
+
+            Assert.NotNull(result);
+            Assert.Equal(12m, result.InterestRate);
+
+            // Verify old cash flows were deleted
+            _cashFlowRepo.Verify(r => r.DeleteRangeAsync(oldCashFlows), Times.Once);
+
+            // Verify new cash flows were generated with the new rate
+            Assert.NotNull(capturedCashFlows);
+            Assert.True(capturedCashFlows.Count > 0);
+
+            // New cash flows should use 12% rate
+            var newInterestEvents = capturedCashFlows.Where(c => c.Event == "Interest").ToList();
+            foreach (var ie in newInterestEvents)
+            {
+                Assert.Equal(12m, ie.InterestRate);
+            }
+        }
+
+        // ═══════════════════════════════════════════════════════════════
+        //  TEST 31: UpdateAsync with Yearly frequency (no 409 Conflict)
+        // ═══════════════════════════════════════════════════════════════
+
+        [Fact]
+        public async Task UpdateAsync_YearlyFrequency_SucceedsNoConflict()
+        {
+            var fd = CreateFd(1, 100_000m,
+                new DateTime(2025, 1, 1),
+                new DateTime(2026, 1, 1));
+            var existingInterest = CreateInterest(1, 8m,
+                "QUARTERLY", "QUARTERLY", true, "ACTUAL_365");
+            existingInterest.FdInterestId = 10;
+
+            _fdRepo.Setup(r => r.GetByIdAsync(fd.FdId)).ReturnsAsync(fd);
+            _interestRepo.Setup(r => r.GetByIdAsync(existingInterest.FdInterestId))
+                .ReturnsAsync(existingInterest);
+            _cashFlowRepo.Setup(r => r.GetByFdIdAsync(fd.FdId))
+                .ReturnsAsync(new List<FDCashFlow>());
+
+            List<FDCashFlow>? capturedCashFlows = null;
+            _cashFlowRepo.Setup(r => r.DeleteRangeAsync(It.IsAny<IEnumerable<FDCashFlow>>()))
+                .Returns(Task.CompletedTask);
+            _cashFlowRepo.Setup(r => r.AddRangeAsync(It.IsAny<IEnumerable<FDCashFlow>>()))
+                .Callback<IEnumerable<FDCashFlow>>(cf => capturedCashFlows = cf.ToList())
+                .Returns(Task.CompletedTask);
+
+            var updatedInterest = new FDInterest
+            {
+                FdInterestId = 10,
+                FdId = 1,
+                InterestRateType = "FIXED",
+                InterestRate = 8m,
+                InterestFrequency = "Yearly",
+                CompoundingFrequency = "Not Applicable",
+                IsCompounding = false,
+                CalculationBasis = "ACTUAL_365",
+                CreatedDate = DateTime.UtcNow
+            };
+
+            _interestRepo.Setup(r => r.UpdateAsync(It.IsAny<FDInterest>()))
+                .ReturnsAsync((FDInterest i) => i);
+
+            // Should NOT throw InvalidOperationException (which would cause 409)
+            var result = await _service.UpdateAsync(existingInterest.FdInterestId, updatedInterest);
+
+            Assert.NotNull(result);
+            Assert.Equal("Yearly", result.InterestFrequency);
+            Assert.NotNull(capturedCashFlows);
+        }
+
+        // ═══════════════════════════════════════════════════════════════
+        //  TEST 32: Repeated regeneration produces same count (no duplicates)
+        // ═══════════════════════════════════════════════════════════════
+
+        [Fact]
+        public async Task RepeatedCreateAsync_ProducesSameCashFlowCount()
+        {
+            var fd = CreateFd(1, 100_000m,
+                new DateTime(2025, 1, 1),
+                new DateTime(2025, 12, 31));
+            var interest = CreateInterest(1, 8m,
+                "QUARTERLY", "QUARTERLY", true, "ACTUAL_365");
+
+            // First generation
+            var cf1 = await GenerateCashFlowsThroughService(fd, interest);
+
+            // Reset mocks for second generation
+            _fdRepo.Reset();
+            _interestRepo.Reset();
+            _cashFlowRepo.Reset();
+
+            // Second generation (simulating re-creation after delete)
+            var cf2 = await GenerateCashFlowsThroughService(fd, interest);
+
+            // Should produce same number of cash flows
+            Assert.Equal(cf1.Count, cf2.Count);
+
+            // Cash flow amounts should be identical
+            for (int i = 0; i < cf1.Count; i++)
+            {
+                Assert.Equal(cf1[i].Event, cf2[i].Event);
+                Assert.Equal(cf1[i].InterestAmount, cf2[i].InterestAmount);
+                Assert.Equal(cf1[i].CashFlowAmount, cf2[i].CashFlowAmount);
+                Assert.Equal(cf1[i].OpeningBalance, cf2[i].OpeningBalance);
+                Assert.Equal(cf1[i].ClosingBalance, cf2[i].ClosingBalance);
+            }
+        }
+
+        // ═══════════════════════════════════════════════════════════════
+        //  TEST 33: RegenerateCashFlowsAsync deletes old and creates new
+        // ═══════════════════════════════════════════════════════════════
+
+        [Fact]
+        public async Task RegenerateCashFlowsAsync_DeletesOldAndCreatesNew()
+        {
+            var fd = CreateFd(1, 100_000m,
+                new DateTime(2025, 1, 1),
+                new DateTime(2025, 12, 31));
+            var interest = CreateInterest(1, 8m,
+                "QUARTERLY", "QUARTERLY", true, "ACTUAL_365");
+
+            _fdRepo.Setup(r => r.GetByIdAsync(fd.FdId)).ReturnsAsync(fd);
+            _interestRepo.Setup(r => r.GetByFdIdAsync(fd.FdId)).ReturnsAsync(interest);
+
+            var existingCashFlows = new List<FDCashFlow>
+            {
+                new FDCashFlow { CashFlowId = 1, FdId = 1 },
+                new FDCashFlow { CashFlowId = 2, FdId = 1 }
+            };
+            _cashFlowRepo.Setup(r => r.GetByFdIdAsync(fd.FdId))
+                .ReturnsAsync(existingCashFlows);
+
+            bool deleteCalled = false;
+            List<FDCashFlow>? capturedNew = null;
+
+            _cashFlowRepo.Setup(r => r.DeleteRangeAsync(It.IsAny<IEnumerable<FDCashFlow>>()))
+                .Callback<IEnumerable<FDCashFlow>>(cf =>
+                {
+                    deleteCalled = true;
+                    Assert.Equal(2, cf.Count());
+                })
+                .Returns(Task.CompletedTask);
+            _cashFlowRepo.Setup(r => r.AddRangeAsync(It.IsAny<IEnumerable<FDCashFlow>>()))
+                .Callback<IEnumerable<FDCashFlow>>(cf => capturedNew = cf.ToList())
+                .Returns(Task.CompletedTask);
+
+            var result = await _service.RegenerateCashFlowsAsync(fd.FdId);
+
+            Assert.True(result);
+            Assert.True(deleteCalled, "DeleteRangeAsync should have been called");
+            Assert.NotNull(capturedNew);
+            Assert.True(capturedNew.Count > 0, "New cash flows should have been generated");
+        }
+
+        // ═══════════════════════════════════════════════════════════════
+        //  TEST 34: RegenerateCashFlowsAsync returns false when no interest
+        // ═══════════════════════════════════════════════════════════════
+
+        [Fact]
+        public async Task RegenerateCashFlowsAsync_NoInterest_ReturnsFalse()
+        {
+            var fd = CreateFd(1, 100_000m,
+                new DateTime(2025, 1, 1),
+                new DateTime(2025, 12, 31));
+
+            _fdRepo.Setup(r => r.GetByIdAsync(fd.FdId)).ReturnsAsync(fd);
+            _interestRepo.Setup(r => r.GetByFdIdAsync(fd.FdId))
+                .ReturnsAsync((FDInterest?)null);
+
+            var result = await _service.RegenerateCashFlowsAsync(fd.FdId);
+
+            Assert.False(result);
+        }
+
+        // ═══════════════════════════════════════════════════════════════
+        //  TEST 35: RegenerateCashFlowsAsync returns false when no FD
+        // ═══════════════════════════════════════════════════════════════
+
+        [Fact]
+        public async Task RegenerateCashFlowsAsync_NoFd_ReturnsFalse()
+        {
+            _fdRepo.Setup(r => r.GetByIdAsync(999))
+                .ReturnsAsync((FDIdentification?)null);
+
+            var result = await _service.RegenerateCashFlowsAsync(999);
+
+            Assert.False(result);
+        }
     }
 }

@@ -9,7 +9,9 @@ namespace FinTrustFDManager.Model.DTOs.Investment
         public long FdId { get; set; }
         public string FdReferenceNo { get; set; } = string.Empty;
         public long EntityId { get; set; }
+        public string EntityName { get; set; } = string.Empty;
         public long CounterpartyId { get; set; }
+        public string CounterPartyName { get; set; } = string.Empty;
         public string CurrencyCode { get; set; } = string.Empty;
         public decimal PrincipalAmount { get; set; }
         public DateTime StartDate { get; set; }

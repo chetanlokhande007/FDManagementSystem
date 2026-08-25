@@ -1,11 +1,13 @@
 using FinTrustFDManager.BAL.Interfaces;
 using FinTrustFDManager.Model.DTOs.Entity;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace FinTrustFDManager.API.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
+    [Authorize]
     public class EntityController : ControllerBase
     {
         private readonly IEntityService _entityService;

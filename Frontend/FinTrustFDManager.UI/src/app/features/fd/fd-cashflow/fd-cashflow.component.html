@@ -13,7 +13,7 @@
       </div>
       <div class="summary-item">
         <span class="summary-label">Principal</span>
-        <span class="summary-value">{{ fdData.principalAmount | currency:'INR':'symbol':'1.2-2' }}</span>
+        <span class="summary-value">{{ fdData.principalAmount | currency:'₹':'symbol':'1.2-2' }}</span>
       </div>
       <div class="summary-item">
         <span class="summary-label">Interest Rate</span>
@@ -67,34 +67,17 @@
             <td style="text-align: center;">
               <span *ngIf="cf.event === 'FD Created'" style="font-weight: 500; color: #475569;">FD Created</span>
               <span *ngIf="cf.event === 'Maturity'" style="font-weight: 500; color: #15803d;">Maturity</span>
-              <div *ngIf="cf.event !== 'FD Created' && cf.event !== 'Maturity'">
-                {{ cf.event }}
-              </div>
+              <span *ngIf="cf.event === 'Interest'" style="font-weight: 500; color: #2563eb;">Interest</span>
+              <span *ngIf="cf.event === 'Compounding Interest'" style="font-weight: 500; color: #1f2937;">Compounding Interest</span>
             </td>
-            <td>
-              <ng-container *ngIf="cf.event !== 'FD Created' && cf.event !== 'Maturity'; else blankDate">
-                {{ cf.startDate | date:'dd-MMM-yyyy' }}
-              </ng-container>
-              <ng-template #blankDate>
-                <span *ngIf="cf.event === 'FD Created' || cf.event === 'Maturity'">{{ cf.startDate | date:'dd-MMM-yyyy' }}</span>
-              </ng-template>
-            </td>
-            <td>
-              <ng-container *ngIf="cf.event !== 'FD Created' && cf.event !== 'Maturity'; else blankDateEnd">
-                {{ cf.endDate | date:'dd-MMM-yyyy' }}
-              </ng-container>
-              <ng-template #blankDateEnd>
-                <span *ngIf="cf.event === 'FD Created' || cf.event === 'Maturity'">{{ cf.endDate | date:'dd-MMM-yyyy' }}</span>
-              </ng-template>
-            </td>
-            <td style="text-align: right;">
-              <span>{{ cf.days }}</span>
-            </td>
+            <td>{{ cf.startDate | date:'dd-MMM-yyyy' }}</td>
+            <td>{{ cf.endDate | date:'dd-MMM-yyyy' }}</td>
+            <td style="text-align: right;">{{ cf.days }}</td>
             <td style="text-align: right;">{{ cf.interestRate | number:'1.2-2' }}%</td>
-            <td style="text-align: right;">{{ cf.openingBalance | currency:'INR':'symbol':'1.2-2' }}</td>
-            <td style="text-align: right;">{{ cf.interestAmount | currency:'INR':'symbol':'1.2-2' }}</td>
-            <td style="text-align: right;">{{ cf.closingBalance | currency:'INR':'symbol':'1.2-2' }}</td>
-            <td style="text-align: right;">{{ cf.cashFlowAmount | currency:'INR':'symbol':'1.2-2' }}</td>
+            <td style="text-align: right;">{{ cf.openingBalance | currency:'₹':'symbol':'1.2-2' }}</td>
+            <td style="text-align: right;">{{ cf.interestAmount | currency:'₹':'symbol':'1.2-2' }}</td>
+            <td style="text-align: right;">{{ cf.closingBalance | currency:'₹':'symbol':'1.2-2' }}</td>
+            <td style="text-align: right;">{{ cf.cashFlowAmount | currency:'₹':'symbol':'1.2-2' }}</td>
           </tr>
         </tbody>
       </table>
@@ -102,8 +85,8 @@
       <!-- FOOTER TOTALS -->
       <div class="totals-section">
         <div class="totals-group">
-          <p><strong>Total Interest:</strong> {{ totalInterest | currency:'INR':'symbol':'1.2-2' }}</p>
-          <p style="margin-bottom: 0;"><strong>Maturity Amount:</strong> {{ maturityAmount | currency:'INR':'symbol':'1.2-2' }}</p>
+          <p><strong>Total Interest:</strong> {{ totalInterest | currency:'₹':'symbol':'1.2-2' }}</p>
+          <p style="margin-bottom: 0;"><strong>Maturity Amount:</strong> {{ maturityAmount | currency:'₹':'symbol':'1.2-2' }}</p>
         </div>
       </div>
     </div>

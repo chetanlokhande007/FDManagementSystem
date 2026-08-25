@@ -1,11 +1,13 @@
 using FinTrustFDManager.BAL.DTOs;
 using FinTrustFDManager.BAL.Interfaces;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace FinTrustFDManager.API.Controllers
 {
     [ApiController]
     [Route("api/[controller]")]
+    [Authorize]
     public class FDCashFlowController : ControllerBase
     {
         private readonly IFDCashFlowService _service;
@@ -48,12 +50,9 @@ namespace FinTrustFDManager.API.Controllers
         {
             var data = await _service.GetByFdIdAsync(fdId);
 
-            if (data == null || !data.Any())
+            if (data == null)
             {
-                return NotFound(new
-                {
-                    message = $"FD Cash Flow not found for FD ID {fdId}."
-                });
+                data = new List<FDCashFlowDto>();
             }
 
             return Ok(data);
@@ -78,6 +77,9 @@ namespace FinTrustFDManager.API.Controllers
             long id,
             [FromBody] FDCashFlowDto dto)
         {
+            if (id != dto.CashFlowId)
+                return BadRequest(new { message = "Route ID does not match CashFlow ID." });
+
             var result =
                 await _service.UpdateAsync(id, dto);
 

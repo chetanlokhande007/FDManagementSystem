@@ -4,10 +4,8 @@ import { Observable } from 'rxjs';
 import { environment } from '../../../environments/environment';
 
 export interface InterestFrequency {
-  interestFrequencyId: number;
-  frequencyCode?: string;
+  id: number;
   frequencyName?: string;
-  description?: string;
   isActive?: boolean;
 }
 

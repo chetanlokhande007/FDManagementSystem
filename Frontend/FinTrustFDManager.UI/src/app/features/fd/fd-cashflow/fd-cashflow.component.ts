@@ -41,6 +41,10 @@ export class FdCashflowComponent implements OnInit, OnChanges {
   isLoading = false;
   errorMessage = '';
 
+  get currencyCode(): string {
+    return this.fdData?.currencyCode || 'INR';
+  }
+
   constructor(
     private cashFlowService: FDCashFlowService,
     private cdr: ChangeDetectorRef
@@ -93,11 +97,15 @@ export class FdCashflowComponent implements OnInit, OnChanges {
 
   private calculateCashFlowSummary(): void {
     this.enrichedCashFlows = this.cashFlows || [];
-    
-    this.totalInterest = this.enrichedCashFlows.reduce(
-      (sum, cf) => sum + (cf.interestAmount || 0),
-      0
-    );
+
+    const principalFlow = this.enrichedCashFlows.find(cf => cf.event === 'FD Created');
+    const principal = principalFlow ? principalFlow.cashFlowAmount : 0;
+
+    const totalInflows = this.enrichedCashFlows
+      .filter(cf => cf.direction === 'INFLOW')
+      .reduce((sum, cf) => sum + (cf.cashFlowAmount || 0), 0);
+
+    this.totalInterest = totalInflows - principal;
 
     const maturityFlow = this.enrichedCashFlows.find(cf => cf.event === 'Maturity');
     this.maturityAmount = maturityFlow ? maturityFlow.cashFlowAmount : 0;

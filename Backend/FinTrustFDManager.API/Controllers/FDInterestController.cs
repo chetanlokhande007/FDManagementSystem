@@ -1,11 +1,13 @@
 using FinTrustFDManager.BAL.Interfaces;
 using FinTrustFDManager.Model.Entities.Investment;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace FinTrustFDManager.API.Controllers
 {
     [ApiController]
     [Route("api/[controller]")]
+    [Authorize]
     public class FDInterestController : ControllerBase
     {
         private readonly IFDInterestService _service;

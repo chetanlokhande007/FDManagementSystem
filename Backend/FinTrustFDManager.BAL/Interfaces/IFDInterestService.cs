@@ -20,5 +20,7 @@ namespace FinTrustFDManager.BAL.Interfaces
         Task<FDInterest?> UpdateAsync(long id, FDInterest model);
 
         Task<bool> DeleteAsync(long id);
+
+        Task<bool> RegenerateCashFlowsAsync(long fdId);
     }
 }

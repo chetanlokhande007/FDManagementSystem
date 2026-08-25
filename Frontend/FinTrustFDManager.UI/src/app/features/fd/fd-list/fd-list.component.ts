@@ -169,15 +169,11 @@ export class FDListComponent implements OnInit {
   }
 
   // ==============================
-  // OPEN FD (FAST VIEW)
+  // OPEN FD (FULL DETAIL)
   // ==============================
 
   openFD(fd: FDLanding): void {
-    if (this.expandedFdId === fd.fdId) {
-      this.expandedFdId = null;
-    } else {
-      this.expandedFdId = fd.fdId;
-    }
+    this.router.navigate(['/fd-detail', fd.fdId], { queryParams: { tab: 'general' } });
   }
 
   // ==============================
@@ -218,6 +214,8 @@ export class FDListComponent implements OnInit {
       .delete(fd.fdId)
       .subscribe({
         next: () => {
+          // Clear the FD detail cache for this FD
+          sessionStorage.removeItem(`FINTRUST_FD_DETAIL_CACHE_${fd.fdId}`);
           // Silent success. Refresh data in background just to be safe.
           this.fdService.getLandingData().subscribe(data => {
             sessionStorage.setItem('FINTRUST_FD_LANDING_CACHE', JSON.stringify(data));

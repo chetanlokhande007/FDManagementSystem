@@ -171,6 +171,69 @@ namespace FinTrustFDManager.BAL.Services
             }
         }
 
+        public async Task<bool> RegenerateCashFlowsAsync(long fdId)
+        {
+            var fd = await _fdRepository.GetByIdAsync(fdId);
+            if (fd == null) return false;
+
+            var interest = await _interestRepository.GetByFdIdAsync(fdId);
+            if (interest == null) return false;
+
+            await using var transaction = await _unitOfWork.BeginTransactionAsync();
+            try
+            {
+                var existingCashFlows = (await _cashFlowRepository.GetByFdIdAsync(fdId)).ToList();
+                if (existingCashFlows.Count > 0)
+                {
+                    await _cashFlowRepository.DeleteRangeAsync(existingCashFlows);
+                }
+
+                var newCashFlows = GenerateCashFlows(fd, interest);
+                await _cashFlowRepository.AddRangeAsync(newCashFlows);
+
+                await _unitOfWork.CommitTransactionAsync();
+                return true;
+            }
+            catch
+            {
+                await _unitOfWork.RollbackTransactionAsync();
+                throw;
+            }
+        }
+
+        // ═══════════════════════════════════════════════════════════════════
+        //  Frequency Normalization
+        //  Maps any accepted frequency string (any casing, hyphens, aliases)
+        //  to the number of months it represents.
+        //  Returns null for "AT_MATURITY" (not a periodic frequency).
+        // ═══════════════════════════════════════════════════════════════════
+
+        private static int? GetFrequencyMonths(string frequency)
+        {
+            var normalized = frequency.Trim().ToUpperInvariant()
+                .Replace("-", "_")
+                .Replace(" ", "_");
+
+            return normalized switch
+            {
+                "MONTHLY" or "MONTH" => 1,
+
+                "QUARTERLY" or "QUARTER" => 3,
+
+                "HALF_YEARLY" or "HALFYEARLY" or
+                "SEMI_ANNUAL" or "SEMIANNUAL" or
+                "SEMI_ANNUALLY" or "SEMIANNUALLY" or
+                "SEMI_ANNUALS" => 6,
+
+                "ANNUALLY" or "ANNUAL" or
+                "YEARLY" or "YEAR" => 12,
+
+                "AT_MATURITY" or "ATMATURITY" => null,
+
+                _ => (int?)null  // Unknown — caller decides how to handle
+            };
+        }
+
         private static void ValidateInterestConfiguration(FDInterest model)
         {
             ValidateInterestFrequency(model.InterestFrequency);
@@ -180,6 +243,9 @@ namespace FinTrustFDManager.BAL.Services
                 if (string.IsNullOrWhiteSpace(model.CompoundingFrequency) ||
                     model.CompoundingFrequency.Equals(
                         "Not Applicable",
+                        StringComparison.OrdinalIgnoreCase) ||
+                    model.CompoundingFrequency.Equals(
+                        "NOT_APPLICABLE",
                         StringComparison.OrdinalIgnoreCase))
                 {
                     throw new InvalidOperationException(
@@ -200,14 +266,14 @@ namespace FinTrustFDManager.BAL.Services
                 throw new InvalidOperationException(
                     "Interest Frequency is required.");
 
-            var value = frequency.Trim().ToUpperInvariant().Replace("-", "_");
+            var months = GetFrequencyMonths(frequency);
 
-            if (value is not
-                ("MONTHLY" or
-                 "QUARTERLY" or
-                 "HALF_YEARLY" or
-                 "ANNUALLY" or
-                 "AT_MATURITY"))
+            // "At Maturity" is a valid interest frequency but returns null months
+            // because it's not a periodic frequency. Check using normalized form.
+            var normalized = frequency.Trim().ToUpperInvariant()
+                .Replace("-", "_").Replace(" ", "_");
+
+            if (months == null && normalized != "AT_MATURITY")
             {
                 throw new InvalidOperationException(
                     $"Unsupported Interest Frequency '{frequency}'.");
@@ -220,24 +286,14 @@ namespace FinTrustFDManager.BAL.Services
                 throw new InvalidOperationException(
                     "Compounding Frequency is required.");
 
-            var value = frequency.Trim().ToUpperInvariant().Replace("-", "_");
+            var months = GetFrequencyMonths(frequency);
 
             // "At Maturity" is only valid for InterestFrequency, not CompoundingFrequency
-            if (value == "AT_MATURITY")
+            if (months == null)
             {
                 throw new InvalidOperationException(
                     $"'{frequency}' is not a valid Compounding Frequency. Compounding requires a periodic frequency (Monthly, Quarterly, Half-Yearly, or Annually).\n" +
                     $"'At Maturity' is only valid as an Interest Frequency.");
-            }
-
-            if (value is not
-                ("MONTHLY" or
-                 "QUARTERLY" or
-                 "HALF_YEARLY" or
-                 "ANNUALLY"))
-            {
-                throw new InvalidOperationException(
-                    $"Unsupported Compounding Frequency '{frequency}'.");
             }
         }
 
@@ -248,22 +304,20 @@ namespace FinTrustFDManager.BAL.Services
             string frequency,
             string eventType)
         {
-            int monthsToAdd = frequency.ToUpperInvariant() switch
+            int? monthsToAdd = GetFrequencyMonths(frequency);
+
+            if (monthsToAdd == null || monthsToAdd <= 0)
             {
-                "MONTHLY" => 1,
-                "QUARTERLY" => 3,
-                "HALF_YEARLY" => 6,
-                "ANNUALLY" => 12,
-                _ => throw new InvalidOperationException($"Unsupported frequency '{frequency}'.")
-            };
+                throw new InvalidOperationException($"Unsupported frequency '{frequency}'.");
+            }
 
             // Anchor: the first schedule date is startDate + monthsToAdd
-            DateTime nextDate = AddPeriodWithEomHandling(startDate, monthsToAdd);
+            DateTime nextDate = AddPeriodWithEomHandling(startDate, monthsToAdd.Value);
 
             while (nextDate <= endDate)
             {
                 events.Add((nextDate.Date, eventType));
-                nextDate = AddPeriodWithEomHandling(nextDate, monthsToAdd);
+                nextDate = AddPeriodWithEomHandling(nextDate, monthsToAdd.Value);
             }
         }
 
@@ -289,10 +343,20 @@ namespace FinTrustFDManager.BAL.Services
             return result;
         }
 
+        private static decimal GetEffectiveInterestRate(FDInterest interest)
+        {
+            if (string.Equals(interest.InterestRateType, "FLOATING", StringComparison.OrdinalIgnoreCase))
+            {
+                return (interest.BenchmarkRate ?? 0m) + (interest.Margin ?? 0m);
+            }
+            return interest.InterestRate;
+        }
+
         private List<FDCashFlow> GenerateCashFlows(
             FDIdentification fd,
             FDInterest interest)
         {
+            decimal effectiveRate = GetEffectiveInterestRate(interest);
             var cashFlows = new List<FDCashFlow>();
             var now = DateTime.UtcNow;
 
@@ -303,7 +367,7 @@ namespace FinTrustFDManager.BAL.Services
                 StartDate = fd.StartDate,
                 EndDate = fd.StartDate,
                 Days = 0,
-                InterestRate = interest.InterestRate,
+                InterestRate = effectiveRate,
                 OpeningBalance = 0,
                 InterestAmount = 0,
                 ClosingBalance = fd.PrincipalAmount,
@@ -318,6 +382,7 @@ namespace FinTrustFDManager.BAL.Services
             decimal balance = fd.PrincipalAmount;
             decimal accruedInterest = 0;
             DateTime lastCalculationDate = fd.StartDate;
+            DateTime lastCompoundingDate = fd.StartDate;
 
             bool isCompounding = interest.IsCompounding;
             bool isAtMaturity = string.Equals(interest.InterestFrequency, "AT_MATURITY", StringComparison.OrdinalIgnoreCase);
@@ -353,7 +418,7 @@ namespace FinTrustFDManager.BAL.Services
                     {
                         periodInterest = FinTrustFDManager.BAL.Common.FinancialCalculator.CalculateInterest(
                             balance, 
-                            interest.InterestRate, 
+                            effectiveRate, 
                             days, 
                             interest.CalculationBasis);
                         
@@ -364,6 +429,7 @@ namespace FinTrustFDManager.BAL.Services
                 if (periodInterest == 0 && accruedInterest == 0)
                 {
                     if (isInterestDate || isCompoundingDate) lastCalculationDate = date;
+                    if (isCompoundingDate) lastCompoundingDate = date;
                     continue;
                 }
 
@@ -376,7 +442,7 @@ namespace FinTrustFDManager.BAL.Services
                         StartDate = lastCalculationDate,
                         EndDate = date,
                         Days = days,
-                        InterestRate = interest.InterestRate,
+                        InterestRate = effectiveRate,
                         OpeningBalance = balance,
                         InterestAmount = Math.Round(periodInterest, 2),
                         ClosingBalance = balance,
@@ -399,15 +465,16 @@ namespace FinTrustFDManager.BAL.Services
                 if (isCompoundingDate)
                 {
                     decimal compoundedAmount = accruedInterest;
+                    int compoundingDays = (date.Date - lastCompoundingDate.Date).Days;
                     
                     cashFlows.Add(new FDCashFlow
                     {
                         FdId = fd.FdId,
                         Event = "Compounding Interest",
-                        StartDate = date,
+                        StartDate = lastCompoundingDate,
                         EndDate = date,
-                        Days = 0,
-                        InterestRate = interest.InterestRate,
+                        Days = compoundingDays,
+                        InterestRate = effectiveRate,
                         OpeningBalance = balance,
                         InterestAmount = Math.Round(compoundedAmount, 2),
                         ClosingBalance = balance + Math.Round(compoundedAmount, 2),
@@ -421,9 +488,10 @@ namespace FinTrustFDManager.BAL.Services
                     
                     balance += Math.Round(compoundedAmount, 2);
                     accruedInterest = 0;
+                    lastCompoundingDate = date;
                 }
 
-                if (isInterestDate)
+                if (isInterestDate || isCompoundingDate)
                 {
                     lastCalculationDate = date;
                 }
@@ -438,9 +506,39 @@ namespace FinTrustFDManager.BAL.Services
                 
                 if (days > 0)
                 {
+                    // If compounding is enabled and there is un-compounded accrued
+                    // interest from the last Interest event, compound it FIRST before
+                    // calculating the partial period interest on the updated balance.
+                    if (isCompounding && accruedInterest > 0)
+                    {
+                        int accruedDays = (lastCalculationDate.Date - lastCompoundingDate.Date).Days;
+                        
+                        cashFlows.Add(new FDCashFlow
+                        {
+                            FdId = fd.FdId,
+                            Event = "Compounding Interest",
+                            StartDate = lastCompoundingDate,
+                            EndDate = lastCalculationDate,
+                            Days = accruedDays,
+                            InterestRate = effectiveRate,
+                            OpeningBalance = balance,
+                            InterestAmount = Math.Round(accruedInterest, 2),
+                            ClosingBalance = balance + Math.Round(accruedInterest, 2),
+                            CashFlowAmount = 0,
+                            Direction = "INFLOW",
+                            CurrencyCode = fd.CurrencyCode ?? "INR",
+                            Status = "PENDING",
+                            ReferenceNo = fd.FdReferenceNo ?? "",
+                            CreatedDate = now
+                        });
+                        balance += Math.Round(accruedInterest, 2);
+                        accruedInterest = 0;
+                        lastCompoundingDate = lastCalculationDate;
+                    }
+
                     decimal partialInterest = FinTrustFDManager.BAL.Common.FinancialCalculator.CalculateInterest(
                         balance, 
-                        interest.InterestRate, 
+                        effectiveRate, 
                         days, 
                         interest.CalculationBasis);
                     
@@ -454,7 +552,7 @@ namespace FinTrustFDManager.BAL.Services
                             StartDate = lastCalculationDate,
                             EndDate = fd.EndDate,
                             Days = days,
-                            InterestRate = interest.InterestRate,
+                            InterestRate = effectiveRate,
                             OpeningBalance = balance,
                             InterestAmount = Math.Round(partialInterest, 2),
                             ClosingBalance = balance + Math.Round(partialInterest, 2),
@@ -478,7 +576,7 @@ namespace FinTrustFDManager.BAL.Services
                             StartDate = lastCalculationDate,
                             EndDate = fd.EndDate,
                             Days = days,
-                            InterestRate = interest.InterestRate,
+                            InterestRate = effectiveRate,
                             OpeningBalance = balance,
                             InterestAmount = Math.Round(partialInterest, 2),
                             ClosingBalance = balance,
@@ -506,7 +604,7 @@ namespace FinTrustFDManager.BAL.Services
                 StartDate = fd.EndDate,
                 EndDate = fd.EndDate,
                 Days = 0,
-                InterestRate = interest.InterestRate,
+                InterestRate = effectiveRate,
                 OpeningBalance = maturityBalance,
                 InterestAmount = 0,
                 ClosingBalance = 0,

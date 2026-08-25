@@ -622,7 +622,7 @@ export class FDDetailComponent implements OnInit {
               'interest';
               
             // Strategy A: Change URL without triggering router to avoid duplicate load
-            this.location.replaceState(`/fd/${this.fdId}`);
+            this.location.replaceState(`/fd-detail/${this.fdId}`);
 
           },
 
@@ -663,9 +663,31 @@ export class FDDetailComponent implements OnInit {
   onInterestSaved(interest: any): void {
     if (!this.fdId) return;
 
-    // Strategy B: We must fetch the newly generated CashFlows from the backend
-    // But we pass hideUI=false to prevent the FD card from disappearing/flickering
-    this.loadFDDetails(this.fdId, true, false).subscribe();
+    // Update local interest state from the save response
+    this.interestData = interest;
+
+    // Invalidate only the cash flow cache — the backend regenerates cash flows
+    // as part of saving interest, so we need fresh data.
+    // Use a targeted refresh: only re-fetch cash flows, not general/interest.
+    this.cashFlowService.getByFdId(this.fdId).pipe(
+      map(res => (res && Array.isArray(res) ? res : [])),
+      catchError(() => of([]))
+    ).subscribe(cashFlows => {
+      this.cashFlows = cashFlows.sort((a: any, b: any) => {
+        const timeDiff = new Date(a.startDate).getTime() - new Date(b.startDate).getTime();
+        return timeDiff === 0 ? a.cashFlowId - b.cashFlowId : timeDiff;
+      });
+
+      // Update the session storage cache
+      const cacheKey = `FINTRUST_FD_DETAIL_CACHE_${this.fdId}`;
+      const cachedData = sessionStorage.getItem(cacheKey);
+      if (cachedData) {
+        const result = JSON.parse(cachedData);
+        result.interest = interest;
+        result.cashFlows = this.cashFlows;
+        sessionStorage.setItem(cacheKey, JSON.stringify(result));
+      }
+    });
 
     // Open Cashflow tab for the same FD
     this.activeTab = 'cashflow';

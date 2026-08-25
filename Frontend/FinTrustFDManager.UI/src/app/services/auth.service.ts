@@ -16,6 +16,7 @@ export interface LoginResponse {
   userId?: number;
 }
 
+
 export interface RegisterDto {
   fullName: string;
   email: string;
@@ -51,9 +52,19 @@ export class AuthService {
     if (res.role) {
       localStorage.setItem('role', res.role);
     }
-    // Store userName if available (backend returns it in LoginResponse)
-    if ((res as any).name) {
-      localStorage.setItem('userName', (res as any).name);
+    if (res.name) {
+      localStorage.setItem('userName', res.name);
     }
+  }
+
+  logout() {
+    localStorage.removeItem('token');
+    localStorage.removeItem('role');
+    localStorage.removeItem('userName');
+    sessionStorage.clear();
+  }
+
+  isLoggedIn(): boolean {
+    return !!localStorage.getItem('token');
   }
 }

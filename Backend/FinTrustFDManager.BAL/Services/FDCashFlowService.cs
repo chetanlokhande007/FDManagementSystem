@@ -168,6 +168,8 @@ namespace FinTrustFDManager.BAL.Services
 
             // Recalculate subsequent cash flows
             decimal accruedInterest = 0;
+            DateTime lastAccruedStartDate = DateTime.MinValue;
+            DateTime lastAccruedEndDate = DateTime.MinValue;
             
             for (int i = 0; i < existingCashFlows.Count; i++)
             {
@@ -213,10 +215,17 @@ namespace FinTrustFDManager.BAL.Services
                                 current.Days,
                                 interest.CalculationBasis);
 
+                            // Only accrue period interest once per distinct period
+                            if (current.StartDate != lastAccruedStartDate || current.EndDate != lastAccruedEndDate)
+                            {
+                                accruedInterest += periodInterest;
+                                lastAccruedStartDate = current.StartDate;
+                                lastAccruedEndDate = current.EndDate;
+                            }
+
                             if (isCompounding && current.Event == "Compounding Interest")
                             {
-                                // Compounding event: add this period's interest to accrued, then compound all
-                                accruedInterest += periodInterest;
+                                // Compounding event: compound all accrued interest
                                 current.InterestAmount = Math.Round(accruedInterest, 2);
                                 current.ClosingBalance = current.OpeningBalance + Math.Round(accruedInterest, 2);
                                 current.CashFlowAmount = 0;
@@ -224,8 +233,7 @@ namespace FinTrustFDManager.BAL.Services
                             }
                             else if (isCompounding && current.Event == "Interest")
                             {
-                                // Compounding mode, interest payment event: accrue interest (do NOT pay out)
-                                accruedInterest += periodInterest;
+                                // Compounding mode, interest payment event:
                                 current.InterestAmount = Math.Round(periodInterest, 2);
                                 current.ClosingBalance = current.OpeningBalance;
                                 current.CashFlowAmount = 0;

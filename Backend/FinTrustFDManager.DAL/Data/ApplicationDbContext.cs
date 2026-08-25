@@ -183,7 +183,7 @@ namespace FinTrustFDManager.DAL.Data
                 new InterestFrequency
                 {
                     Id = 4,
-                    FrequencyName = "Yearly"
+                    FrequencyName = "Annually"
                 },
 
                 new InterestFrequency
