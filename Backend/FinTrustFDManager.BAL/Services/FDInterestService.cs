@@ -188,9 +188,11 @@ namespace FinTrustFDManager.BAL.Services
                 throw new KeyNotFoundException($"FD with ID {fdId} not found.");
 
             var interest = await _interestRepository.GetByFdIdAsync(fdId);
-            var records = (await _cashFlowRepository.GetByFdIdAsync(fdId))
-                .OrderBy(c => c.StartDate)
-                .ThenBy(c => c.CreatedDate)
+
+            var rawRecords = await _cashFlowRepository.GetByFdIdAsync(fdId);
+            var records = rawRecords
+                .OrderBy(c => c.EndDate)
+                .ThenBy(c => GetEventSortOrder(c.Event))
                 .ToList();
 
             decimal principal = fd.PrincipalAmount;
@@ -207,14 +209,13 @@ namespace FinTrustFDManager.BAL.Services
             }
             else
             {
-                // Non-Compounding: Sum of all periodic payouts; Maturity pays back principal
                 totalInterest = records.Where(r => r.Event == "Interest").Sum(r => r.InterestAmount);
                 maturityAmount = maturityRow?.CashFlowAmount ?? principal;
             }
 
             int totalDays = (fd.EndDate.Date - fd.StartDate.Date).Days;
             decimal effectiveRate = interest != null
-                ? (string.Equals(interest.InterestRateType, "FLOATING", System.StringComparison.OrdinalIgnoreCase)
+                ? (string.Equals(interest.InterestRateType, "FLOATING", StringComparison.OrdinalIgnoreCase)
                     ? (interest.BenchmarkRate ?? 0) + (interest.Margin ?? 0)
                     : interest.InterestRate)
                 : 0m;
@@ -247,7 +248,7 @@ namespace FinTrustFDManager.BAL.Services
                 InterestRate = effectiveRate,
                 InterestRateType = interest?.InterestRateType ?? "FIXED",
                 InterestFrequency = interest?.InterestFrequency ?? "Monthly",
-                CompoundingFrequency = interest?.CompoundingFrequency ?? "Not Applicable",
+                CompoundingFrequency = interest?.CompoundingFrequency ?? (isCompounding ? "Quarterly" : "Not Applicable"),
                 IsCompounding = isCompounding,
                 CalculationBasis = interest?.CalculationBasis ?? "ACTUAL_365",
                 TotalTenorDays = totalDays,
@@ -301,7 +302,7 @@ namespace FinTrustFDManager.BAL.Services
             while (currentPeriodStart < maturityDate)
             {
                 DateTime periodEnd = GetNextInterestPeriodEnd(currentPeriodStart, interest.InterestFrequency, maturityDate);
-                int days = (periodEnd - currentPeriodStart).Days + (periodEnd == maturityDate ? 0 : 1);
+                int days = (periodEnd - currentPeriodStart).Days + 1;
 
                 decimal periodInterest = 0m;
                 if (days > 0)
@@ -401,7 +402,6 @@ namespace FinTrustFDManager.BAL.Services
                 CreatedDate = now
             });
 
-            // PostgreSQL UTC date normalization
             foreach (var cf in cashFlows)
             {
                 cf.StartDate = DateTime.SpecifyKind(cf.StartDate.Date, DateTimeKind.Utc);
@@ -410,6 +410,18 @@ namespace FinTrustFDManager.BAL.Services
             }
 
             return cashFlows;
+        }
+
+        private static int GetEventSortOrder(string? eventName)
+        {
+            return eventName switch
+            {
+                "FD Created" => 0,
+                "Interest" => 1,
+                "Compounding Interest" => 2,
+                "Maturity" => 3,
+                _ => 4
+            };
         }
 
         private static DateTime GetNextInterestPeriodEnd(DateTime periodStart, string frequency, DateTime maxDate)
