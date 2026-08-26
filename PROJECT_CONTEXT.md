@@ -74,14 +74,17 @@ Angular UI → API Controllers → BAL Services → DAL Repositories → EF Core
 |---|-----|--------------|
 | 11 | **Fixed accruedInterest double-counting** | `BAL/Services/FDInterestService.cs` — reset accruedInterest after non-compounding interest events |
 | 12 | **Fixed maturity partial period** | `BAL/Services/FDInterestService.cs` — removed undocumented 1-day skip hack, simplified maturity interest logic |
-| 13 | **Fixed FDCashFlowService.UpdateAsync recalculation** | `BAL/Services/FDCashFlowService.cs` — correct Days calculation, proper accruedInterest reset, correct interest amount per period |
+| 13 | **Fixed FDCashFlowService.UpdateAsync recalculation** | `BAL/Services/FDCashFlowService.cs` — replaced fragmented manual recalculation logic with authoritative engine call (`RegenerateCashFlowsAsync`) |
+| 14 | **Shifted Aggregation to Backend** | `BAL/Services/FDCashFlowService.cs`, `DTOs/FDCashFlowSummaryDto.cs` — API now returns Total Interest and Maturity Amount (sum of all maturity inflows) natively |
 
 ### Frontend Fixes
 
 | # | Fix | Files Changed |
 |---|-----|--------------|
-| 14 | **Fixed dashboard broken route** | `dashboard.component.html` — `/fd/new` → `/fd-detail` |
-| 15 | **Added error UI feedback in FdInterestComponent** | `fd-interest.component.ts`, `fd-interest.component.html` — error message now displayed to user |
+| 15 | **Fixed dashboard broken route** | `dashboard.component.html` — `/fd/new` → `/fd-detail` |
+| 16 | **Added error UI feedback in FdInterestComponent** | `fd-interest.component.ts`, `fd-interest.component.html` — error message now displayed to user |
+| 17 | **Removed client-side math aggregation** | `fd-cashflow.component.ts`, `fd-cash-flow.service.ts` — Purged `calculateCashFlowSummary()`. Frontend is now strictly a display layer consuming backend DTOs. |
+| 18 | **Direct tab routing** | `fd-detail.component.ts` — Implemented query params for instant tab switching |
 
 ---
 
@@ -90,6 +93,7 @@ Angular UI → API Controllers → BAL Services → DAL Repositories → EF Core
 ### Backend (Created)
 - `Backend/FinTrustFDManager.DAL/Repositories/DashboardRepository.cs`
 - `Backend/FinTrustFDManager.BAL/Services/DashboardService.cs`
+- `Backend/FinTrustFDManager.BAL/DTOs/FDCashFlowSummaryDto.cs`
 
 ### Backend (Modified)
 - `Backend/FinTrustFDManager.API/Program.cs`
@@ -102,10 +106,12 @@ Angular UI → API Controllers → BAL Services → DAL Repositories → EF Core
 - `Backend/FinTrustFDManager.API/Controllers/CashFlowController.cs`
 - `Backend/FinTrustFDManager.API/Controllers/BankController.cs`
 - `Backend/FinTrustFDManager.API/Controllers/CounterPartyController.cs`
+- `Backend/FinTrustFDManager.API/Controllers/FDCashFlowController.cs`
 - `Backend/FinTrustFDManager.BAL/Common/DependencyInjection.cs`
 - `Backend/FinTrustFDManager.BAL/Services/FDInterestService.cs`
 - `Backend/FinTrustFDManager.BAL/Services/FDIdentificationService.cs`
 - `Backend/FinTrustFDManager.BAL/Services/FDCashFlowService.cs`
+- `Backend/FinTrustFDManager.BAL/Interfaces/IFDCashFlowService.cs`
 - `Backend/FinTrustFDManager.DAL/Interfaces/IFDCashFlowRepository.cs`
 - `Backend/FinTrustFDManager.DAL/Repositories/FDCashFlowRepository.cs`
 
@@ -127,6 +133,9 @@ Angular UI → API Controllers → BAL Services → DAL Repositories → EF Core
 - `FinTrustFDManager.UI/src/app/features/dashboard/dashboard.component.html`
 - `FinTrustFDManager.UI/src/app/features/fd/fd-interest/fd-interest.component.ts`
 - `FinTrustFDManager.UI/src/app/features/fd/fd-interest/fd-interest.component.html`
+- `FinTrustFDManager.UI/src/app/features/fd/fd-detail/fd-detail.component.ts`
+- `FinTrustFDManager.UI/src/app/features/fd/fd-detail/fd-detail.component.html`
+- `FinTrustFDManager.UI/src/app/features/fd/fd-cashflow/fd-cashflow.component.ts`
 
 ---
 

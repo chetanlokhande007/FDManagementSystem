@@ -158,8 +158,12 @@ namespace FinTrustFDManager.DAL.Repositories
             // ── Assemble DTOs in memory ──
             return fdWithInterest.Select(fd =>
             {
+                // If no cash flows exist for this FD (e.g. interest not yet configured),
+                // grossInterest should be 0 — not negative.
                 cashFlowAggregates.TryGetValue(fd.FdId, out var totalInflows);
-                var grossInterest = totalInflows - fd.PrincipalAmount;
+                var grossInterest = totalInflows > 0
+                    ? totalInflows - fd.PrincipalAmount
+                    : 0m;
                 return new FDLandingDto
                 {
                     FdId = fd.FdId,

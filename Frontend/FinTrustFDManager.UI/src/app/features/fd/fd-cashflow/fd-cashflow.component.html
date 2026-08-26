@@ -1,99 +1,103 @@
-<div class="cashflow-page">
-
-  <div>
-    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
-      <h3>FD Cash Flow</h3>
+<div class="cashflow-wrapper">
+  <!-- Summary Header -->
+  <div *ngIf="fdData && fdData.fdReferenceNo" class="cashflow-summary-card">
+    <div class="summary-item">
+      <span class="summary-label">FD Reference</span>
+      <span class="summary-value">{{ fdData.fdReferenceNo }}</span>
     </div>
-
-    <!-- SUMMARY HEADER -->
-    <div *ngIf="fdData && interestData" class="cashflow-summary-card">
-      <div class="summary-item">
-        <span class="summary-label">FD Reference</span>
-        <span class="summary-value">{{ fdData.fdReferenceNo }}</span>
-      </div>
-      <div class="summary-item">
-        <span class="summary-label">Principal</span>
-        <span class="summary-value">{{ fdData.principalAmount | currency:'₹':'symbol':'1.2-2' }}</span>
-      </div>
-      <div class="summary-item">
-        <span class="summary-label">Interest Rate</span>
-        <span class="summary-value">{{ interestData.interestRate | number:'1.2-2' }}%</span>
-      </div>
-      <div class="summary-item">
-        <span class="summary-label">Apply Compounding</span>
-        <span class="summary-value"
-          [ngStyle]="{'color': (interestData.isCompounding || interestData.IsCompounding) ? '#059669' : '#dc2626'}">
-          {{ (interestData.isCompounding || interestData.IsCompounding) ? 'YES' : 'NO' }}
-        </span>
-      </div>
-      <div class="summary-item">
-        <span class="summary-label">Interest Frequency</span>
-        <span class="summary-value">{{ interestData.interestFrequency || interestData.InterestFrequency }}</span>
-      </div>
-      <div class="summary-item" *ngIf="(interestData.isCompounding || interestData.IsCompounding)">
-        <span class="summary-label">Compounding Frequency</span>
-        <span class="summary-value">{{ interestData.compoundingFrequency || interestData.CompoundingFrequency }}</span>
-      </div>
+    <div class="summary-item">
+      <span class="summary-label">Principal</span>
+      <span class="summary-value">{{ principalAmount | currency:'INR':'symbol':'1.2-2' }}</span>
     </div>
-
-    <!-- LOADING STATE -->
-    <div *ngIf="isLoading" style="text-align: center; margin-top: 40px; color: #6b7280;">
-      <p>Loading cash flows...</p>
+    <div class="summary-item" *ngIf="interestData">
+      <span class="summary-label">Interest Rate</span>
+      <span class="summary-value">{{ interestData.interestRate | number:'1.2-2' }}%</span>
     </div>
-
-    <!-- ERROR STATE -->
-    <div *ngIf="errorMessage" style="text-align: center; margin-top: 40px; color: #dc2626;">
-      <p>{{ errorMessage }}</p>
+    <div class="summary-item" *ngIf="interestData">
+      <span class="summary-label">Compounding</span>
+      <span class="summary-value">{{ interestData.isCompounding ? 'YES' : 'NO' }}</span>
     </div>
-
-    <!-- SUCCESS WITH DATA -->
-    <div *ngIf="!isLoading && !errorMessage && cashFlows && cashFlows.length > 0">
-      <table>
-        <thead>
-          <tr>
-            <th style="text-align: center;">Event</th>
-            <th>Start Date</th>
-            <th>End Date</th>
-            <th style="text-align: right;">Days</th>
-            <th style="text-align: right;">Interest Rate</th>
-            <th style="text-align: right;">Opening Balance</th>
-            <th style="text-align: right;">Interest Amount</th>
-            <th style="text-align: right;">Closing Balance</th>
-            <th style="text-align: right;">Cash Flow Amount</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr *ngFor="let cf of enrichedCashFlows; trackBy: trackByCashFlowId">
-            <td style="text-align: center;">
-              <span *ngIf="cf.event === 'FD Created'" style="font-weight: 500; color: #475569;">FD Created</span>
-              <span *ngIf="cf.event === 'Maturity'" style="font-weight: 500; color: #15803d;">Maturity</span>
-              <span *ngIf="cf.event === 'Interest'" style="font-weight: 500; color: #2563eb;">Interest</span>
-              <span *ngIf="cf.event === 'Compounding Interest'" style="font-weight: 500; color: #1f2937;">Compounding Interest</span>
-            </td>
-            <td>{{ cf.startDate | date:'dd-MMM-yyyy' }}</td>
-            <td>{{ cf.endDate | date:'dd-MMM-yyyy' }}</td>
-            <td style="text-align: right;">{{ cf.days }}</td>
-            <td style="text-align: right;">{{ cf.interestRate | number:'1.2-2' }}%</td>
-            <td style="text-align: right;">{{ cf.openingBalance | currency:'₹':'symbol':'1.2-2' }}</td>
-            <td style="text-align: right;">{{ cf.interestAmount | currency:'₹':'symbol':'1.2-2' }}</td>
-            <td style="text-align: right;">{{ cf.closingBalance | currency:'₹':'symbol':'1.2-2' }}</td>
-            <td style="text-align: right;">{{ cf.cashFlowAmount | currency:'₹':'symbol':'1.2-2' }}</td>
-          </tr>
-        </tbody>
-      </table>
-
-      <!-- FOOTER TOTALS -->
-      <div class="totals-section">
-        <div class="totals-group">
-          <p><strong>Total Interest:</strong> {{ totalInterest | currency:'₹':'symbol':'1.2-2' }}</p>
-          <p style="margin-bottom: 0;"><strong>Maturity Amount:</strong> {{ maturityAmount | currency:'₹':'symbol':'1.2-2' }}</p>
-        </div>
-      </div>
+    <div class="summary-item" *ngIf="interestData && interestData.isCompounding && interestData.compoundingFrequency">
+      <span class="summary-label">Compounding Frequency</span>
+      <span class="summary-value">{{ interestData.compoundingFrequency }}</span>
     </div>
+  </div>
 
-    <!-- SUCCESS WITH NO DATA -->
-    <div *ngIf="!isLoading && !errorMessage && (!cashFlows || cashFlows.length === 0)" style="text-align: center; color: #6b7280; margin-top: 40px;">
-      <p>No CashFlows found.</p>
+  <!-- Metric Cards -->
+  <div class="metrics-grid">
+    <div class="metric-card card-blue">
+      <div class="metric-title">Principal Amount</div>
+      <div class="metric-number">{{ principalAmount | currency:'INR':'symbol':'1.2-2' }}</div>
     </div>
+    <div class="metric-card card-green">
+      <div class="metric-title">Total Interest</div>
+      <div class="metric-number">{{ totalInterest | currency:'INR':'symbol':'1.2-2' }}</div>
+    </div>
+    <div class="metric-card card-purple">
+      <div class="metric-title">Maturity Amount</div>
+      <div class="metric-number">{{ maturityAmount | currency:'INR':'symbol':'1.2-2' }}</div>
+    </div>
+  </div>
+
+  <!-- Loading & Error -->
+  <div *ngIf="isLoading" class="loading-state">
+    <div class="loader-spinner"></div>
+    <span>Loading schedule data...</span>
+  </div>
+
+  <div *ngIf="errorMessage" class="error-box">
+    {{ errorMessage }}
+  </div>
+
+  <!-- Cash Flow Table -->
+  <div *ngIf="!isLoading && cashFlows.length > 0" class="table-container">
+    <table class="styled-table">
+      <thead>
+        <tr>
+          <th>#</th>
+          <th>Event</th>
+          <th>Start Date</th>
+          <th>End Date</th>
+          <th class="text-center">Days</th>
+          <th class="text-right">Rate</th>
+          <th class="text-right">Opening Balance</th>
+          <th class="text-right">Interest Amount</th>
+          <th class="text-right">Closing Balance</th>
+          <th class="text-right">Cash Flow</th>
+          <th class="text-center">Direction</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let item of cashFlows; let idx = index; trackBy: trackByCashFlowId"
+          [class.row-accent]="item.event === 'Compounding Interest' || item.event === 'Maturity'">
+          <td>{{ idx + 1 }}</td>
+          <td>
+            <span class="pill" [ngClass]="getBadgeClass(item.event)">
+              {{ item.event }}
+            </span>
+          </td>
+          <td>{{ item.startDate | date:'dd-MMM-yyyy' }}</td>
+          <td>{{ item.endDate | date:'dd-MMM-yyyy' }}</td>
+          <td class="text-center">{{ item.days }}</td>
+          <td class="text-right">{{ item.interestRate | number:'1.2-2' }}%</td>
+          <td class="text-right">{{ item.openingBalance | currency:'INR':'symbol':'1.2-2' }}</td>
+          <td class="text-right font-bold">{{ item.interestAmount | currency:'INR':'symbol':'1.2-2' }}</td>
+          <td class="text-right">{{ item.closingBalance | currency:'INR':'symbol':'1.2-2' }}</td>
+          <td class="text-right" [class.highlight-cash]="item.cashFlowAmount > 0">
+            {{ item.cashFlowAmount | currency:'INR':'symbol':'1.2-2' }}
+          </td>
+          <td class="text-center">
+            <span class="dir-badge" [ngClass]="item.direction.toLowerCase()">
+              {{ item.direction }}
+            </span>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Empty State -->
+  <div *ngIf="!isLoading && !errorMessage && cashFlows.length === 0" class="empty-state">
+    <span>No CashFlows found. Configure interest settings to generate the cash flow schedule.</span>
   </div>
 </div>

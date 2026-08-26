@@ -2,23 +2,30 @@ using FinTrustFDManager.BAL.DTOs;
 using FinTrustFDManager.BAL.Interfaces;
 using FinTrustFDManager.DAL.Interfaces;
 using FinTrustFDManager.Model.Entities.Investment;
+using Microsoft.Extensions.Logging;
 
 namespace FinTrustFDManager.BAL.Services
 {
     public class FDCashFlowService : IFDCashFlowService
     {
         private readonly IFDCashFlowRepository _repository;
-        private readonly IFDInterestRepository _interestRepository;
+        private readonly IFDInterestService _interestService;
         private readonly IFDIdentificationRepository _fdRepository;
+        private readonly IUnitOfWork _unitOfWork;
+        private readonly ILogger<FDCashFlowService> _logger;
 
         public FDCashFlowService(
             IFDCashFlowRepository repository,
-            IFDInterestRepository interestRepository,
-            IFDIdentificationRepository fdRepository)
+            IFDInterestService interestService,
+            IFDIdentificationRepository fdRepository,
+            IUnitOfWork unitOfWork,
+            ILogger<FDCashFlowService> logger)
         {
             _repository = repository;
-            _interestRepository = interestRepository;
+            _interestService = interestService;
             _fdRepository = fdRepository;
+            _unitOfWork = unitOfWork;
+            _logger = logger;
         }
 
         // GET ALL
@@ -77,11 +84,11 @@ namespace FinTrustFDManager.BAL.Services
         }
 
         // GET BY FD ID
-        public async Task<IEnumerable<FDCashFlowDto>> GetByFdIdAsync(long fdId)
+        public async Task<FDCashFlowSummaryDto> GetByFdIdAsync(long fdId)
         {
-            var cashFlows = await _repository.GetByFdIdAsync(fdId);
-
-            return cashFlows.Select(x => new FDCashFlowDto
+            var cashFlowEntities = await _repository.GetByFdIdAsync(fdId);
+            
+            var cashFlows = cashFlowEntities.Select(x => new FDCashFlowDto
             {
                 CashFlowId = x.CashFlowId,
                 FdId = x.FdId,
@@ -99,7 +106,28 @@ namespace FinTrustFDManager.BAL.Services
                 Status = x.Status,
                 ReferenceNo = x.ReferenceNo,
                 CreatedDate = x.CreatedDate
-            });
+            }).ToList();
+
+            decimal principal = cashFlows.FirstOrDefault(c => c.Event == "FD Created")?.CashFlowAmount ?? 0;
+            decimal totalInflows = cashFlows.Where(c => c.Direction == "INFLOW").Sum(c => c.CashFlowAmount);
+            decimal totalInterest = totalInflows - principal;
+            var maturityRow = cashFlows.FirstOrDefault(c => c.Event == "Maturity");
+            decimal maturityAmount = 0;
+            if (maturityRow != null)
+            {
+                maturityAmount = cashFlows
+                    .Where(c => c.EndDate == maturityRow.EndDate && c.Direction == "INFLOW")
+                    .Sum(c => c.CashFlowAmount);
+            }
+
+            return new FDCashFlowSummaryDto
+            {
+                FdId = fdId,
+                PrincipalAmount = principal,
+                TotalInterest = totalInterest,
+                MaturityAmount = maturityAmount,
+                CashFlows = cashFlows
+            };
         }
 
         // CREATE
@@ -134,162 +162,70 @@ namespace FinTrustFDManager.BAL.Services
             return dto;
         }
 
-        // UPDATE
+        // UPDATE — Regenerates cash flows using the authoritative calculation engine.
+        // This ensures the same financial rules are used for initial generation
+        // and any recalculation (date editing, interest config changes, etc.).
         public async Task<FDCashFlowDto?> UpdateAsync(
             long id,
             FDCashFlowDto dto)
         {
-            var existingCashFlows = (await _repository.GetByFdIdAsync(dto.FdId)).OrderBy(c => c.StartDate).ToList();
-            var targetIndex = existingCashFlows.FindIndex(c => c.CashFlowId == id);
-
-            if (targetIndex == -1)
-                return null;
+            _logger.LogInformation(
+                "Updating cash flow {CashFlowId} for FD {FdId}. " +
+                "Regenerating all cash flows using authoritative engine.",
+                id, dto.FdId);
 
             var fd = await _fdRepository.GetByIdAsync(dto.FdId);
-            var interest = await _interestRepository.GetByFdIdAsync(dto.FdId);
+            if (fd == null)
+                throw new InvalidOperationException($"FD with ID {dto.FdId} not found.");
 
-            if (fd == null || interest == null)
-                throw new InvalidOperationException("FD or Interest configuration not found.");
+            var interest = await _interestService.GetByFdIdAsync(dto.FdId);
+            if (interest == null)
+                throw new InvalidOperationException($"Interest configuration not found for FD ID {dto.FdId}.");
 
-            var editedCashFlow = existingCashFlows[targetIndex];
-            
-            // Validations
-            if (dto.EndDate <= editedCashFlow.StartDate)
+            // Validate the edit
+            if (dto.EndDate <= dto.StartDate)
                 throw new InvalidOperationException("End Date must be after Start Date.");
-            
+
             if (dto.EndDate > fd.EndDate)
                 throw new InvalidOperationException("End Date cannot exceed FD Maturity Date.");
 
-            editedCashFlow.EndDate = dto.EndDate;
-            // Recalculate Days for the edited cash flow
-            editedCashFlow.Days = (editedCashFlow.EndDate.Date - editedCashFlow.StartDate.Date).Days;
-            
-            bool isCompounding = interest.IsCompounding;
+            // Regenerate all cash flows using the authoritative calculation engine.
+            // This is the SAME engine used for initial generation (GenerateCashFlows).
+            await _interestService.RegenerateCashFlowsAsync(dto.FdId);
 
-            // Recalculate subsequent cash flows
-            decimal accruedInterest = 0;
-            DateTime lastAccruedStartDate = DateTime.MinValue;
-            DateTime lastAccruedEndDate = DateTime.MinValue;
-            
-            for (int i = 0; i < existingCashFlows.Count; i++)
-            {
-                var current = existingCashFlows[i];
+            _logger.LogInformation(
+                "Cash flows regenerated for FD {FdId}.", dto.FdId);
 
-                if (i < targetIndex)
-                {
-                    // Before the edited row: just track compounding resets
-                    if (isCompounding && current.Event == "Compounding Interest")
-                    {
-                        accruedInterest = 0;
-                    }
-                    else if (!isCompounding && current.Event == "Interest")
-                    {
-                        accruedInterest = 0;
-                    }
-                }
-                else
-                {
-                    // At or after the edited row: recalculate chain
-                    if (i > 0)
-                    {
-                        var prev = existingCashFlows[i - 1];
-                        if (current.Event != "Maturity")
-                        {
-                            current.StartDate = prev.EndDate.Date;
-                            if (current.EndDate < current.StartDate)
-                            {
-                                current.EndDate = current.StartDate;
-                            }
-                            current.Days = (current.EndDate.Date - current.StartDate.Date).Days;
-                        }
-                        current.OpeningBalance = prev.ClosingBalance;
-                    }
+            // Return the updated cash flow that matches the requested ID
+            // (the IDs will be new after regeneration, so return the first matching by position)
+            var updatedCashFlows = (await _repository.GetByFdIdAsync(dto.FdId))
+                .OrderBy(c => c.StartDate)
+                .ToList();
 
-                    if (current.Event == "Interest" || current.Event == "Compounding Interest")
-                    {
-                        if (current.Days > 0)
-                        {
-                            decimal periodInterest = FinTrustFDManager.BAL.Common.FinancialCalculator.CalculateInterest(
-                                current.OpeningBalance,
-                                current.InterestRate,
-                                current.Days,
-                                interest.CalculationBasis);
+            if (updatedCashFlows.Count == 0)
+                return null;
 
-                            // Only accrue period interest once per distinct period
-                            if (current.StartDate != lastAccruedStartDate || current.EndDate != lastAccruedEndDate)
-                            {
-                                accruedInterest += periodInterest;
-                                lastAccruedStartDate = current.StartDate;
-                                lastAccruedEndDate = current.EndDate;
-                            }
-
-                            if (isCompounding && current.Event == "Compounding Interest")
-                            {
-                                // Compounding event: compound all accrued interest
-                                current.InterestAmount = Math.Round(accruedInterest, 2);
-                                current.ClosingBalance = current.OpeningBalance + Math.Round(accruedInterest, 2);
-                                current.CashFlowAmount = 0;
-                                accruedInterest = 0;
-                            }
-                            else if (isCompounding && current.Event == "Interest")
-                            {
-                                // Compounding mode, interest payment event:
-                                current.InterestAmount = Math.Round(periodInterest, 2);
-                                current.ClosingBalance = current.OpeningBalance;
-                                current.CashFlowAmount = 0;
-                            }
-                            else if (!isCompounding && current.Event == "Interest")
-                            {
-                                // Non-compounding: interest is paid out each period
-                                current.InterestAmount = Math.Round(periodInterest, 2);
-                                current.ClosingBalance = current.OpeningBalance;
-                                current.CashFlowAmount = Math.Round(periodInterest, 2);
-                                accruedInterest = 0;
-                            }
-                            else
-                            {
-                                // Compounding event but not compounding mode: zero out
-                                current.InterestAmount = 0;
-                                current.ClosingBalance = current.OpeningBalance;
-                                current.CashFlowAmount = 0;
-                            }
-                        }
-                        else
-                        {
-                            // Zero-day period: no interest
-                            current.InterestAmount = 0;
-                            current.ClosingBalance = current.OpeningBalance;
-                            current.CashFlowAmount = 0;
-                        }
-                    }
-                    else if (current.Event == "Maturity")
-                    {
-                        current.ClosingBalance = 0;
-                        current.CashFlowAmount = current.OpeningBalance;
-                    }
-                }
-            }
-
-            await _repository.UpdateRangeAsync(existingCashFlows);
+            // Return the first non-FD-Created cash flow (or the first one)
+            var result = updatedCashFlows.FirstOrDefault(c => c.CashFlowId != 0) ?? updatedCashFlows[0];
 
             return new FDCashFlowDto
             {
-                CashFlowId = editedCashFlow.CashFlowId,
-                FdId = editedCashFlow.FdId,
-                Event = editedCashFlow.Event,
-                StartDate = editedCashFlow.StartDate,
-                EndDate = editedCashFlow.EndDate,
-                Days = editedCashFlow.Days,
-                InterestRate = editedCashFlow.InterestRate,
-                OpeningBalance = editedCashFlow.OpeningBalance,
-                InterestAmount = editedCashFlow.InterestAmount,
-                ClosingBalance = editedCashFlow.ClosingBalance,
-                CashFlowAmount = editedCashFlow.CashFlowAmount,
-                Direction = editedCashFlow.Direction,
-                CurrencyCode = editedCashFlow.CurrencyCode,
-                Status = editedCashFlow.Status,
-                ReferenceNo = editedCashFlow.ReferenceNo,
-                CreatedDate = editedCashFlow.CreatedDate
+                CashFlowId = result.CashFlowId,
+                FdId = result.FdId,
+                Event = result.Event,
+                StartDate = result.StartDate,
+                EndDate = result.EndDate,
+                Days = result.Days,
+                InterestRate = result.InterestRate,
+                OpeningBalance = result.OpeningBalance,
+                InterestAmount = result.InterestAmount,
+                ClosingBalance = result.ClosingBalance,
+                CashFlowAmount = result.CashFlowAmount,
+                Direction = result.Direction,
+                CurrencyCode = result.CurrencyCode,
+                Status = result.Status,
+                ReferenceNo = result.ReferenceNo,
+                CreatedDate = result.CreatedDate
             };
         }
 

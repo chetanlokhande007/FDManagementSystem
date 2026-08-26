@@ -22,6 +22,14 @@ export interface FDCashFlow {
   createdDate?: string;
 }
 
+export interface FDCashFlowSummary {
+  fdId: number;
+  principalAmount: number;
+  totalInterest: number;
+  maturityAmount: number;
+  cashFlows: FDCashFlow[];
+}
+
 @Injectable({
   providedIn: 'root'
 })
@@ -50,7 +58,7 @@ export class FDCashFlowService {
     return this.http.delete<void>(`${this.apiUrl}/${id}`);
   }
 
-  getByFdId(fdId: number): Observable<FDCashFlow[]> {
-    return this.http.get<FDCashFlow[]>(`${this.apiUrl}/fd/${fdId}`);
+  getByFdId(fdId: number): Observable<FDCashFlowSummary> {
+    return this.http.get<FDCashFlowSummary>(`${this.apiUrl}/fd/${fdId}`);
   }
 }

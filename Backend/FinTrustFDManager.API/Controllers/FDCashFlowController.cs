@@ -52,7 +52,7 @@ namespace FinTrustFDManager.API.Controllers
 
             if (data == null)
             {
-                data = new List<FDCashFlowDto>();
+                data = new FDCashFlowSummaryDto();
             }
 
             return Ok(data);

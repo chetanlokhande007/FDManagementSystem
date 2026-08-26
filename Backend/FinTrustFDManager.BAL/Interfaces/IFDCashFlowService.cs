@@ -8,7 +8,7 @@ namespace FinTrustFDManager.BAL.Interfaces
 
         Task<FDCashFlowDto?> GetByIdAsync(long id);
 
-        Task<IEnumerable<FDCashFlowDto>> GetByFdIdAsync(long fdId);
+        Task<FDCashFlowSummaryDto> GetByFdIdAsync(long fdId);
 
         Task<FDCashFlowDto> CreateAsync(FDCashFlowDto dto);
 

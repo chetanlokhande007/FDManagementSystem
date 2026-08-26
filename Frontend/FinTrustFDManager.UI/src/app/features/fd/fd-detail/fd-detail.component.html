@@ -30,7 +30,7 @@
     </div>
 
     <!-- SKELETON LOADING -->
-    <div *ngIf="loading" class="tab-content skeleton-area">
+    <div *ngIf="loading && activeTab === 'general'" class="tab-content skeleton-area">
       <div class="skeleton-grid">
         <div *ngFor="let s of [1,2,3,4,5,6,7,8]" class="skeleton-field">
           <div class="skeleton-label"></div>
@@ -221,7 +221,7 @@
     <!-- CASHFLOW TAB -->
     <div *ngIf="activeTab === 'cashflow'">
       <app-fd-cashflow *ngIf="!loading && fdId" [fdId]="fdId" [fdData]="fixedDeposit" [interestData]="interestData"
-        [initialCashFlows]="cashFlows"
+        [initialCashFlowSummary]="cashFlowSummary"
         (cashFlowSaved)="loadFDDetails(fdId!, true, false).subscribe()"></app-fd-cashflow>
       <div *ngIf="loading" class="tab-content skeleton-area">
         <div class="skeleton-table">
