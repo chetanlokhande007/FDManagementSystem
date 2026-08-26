@@ -299,8 +299,8 @@ export class FDDetailComponent implements OnInit {
         map(res => res || null),
         catchError(() => of(null))
       ).subscribe(freshCashFlows => {
-        if (freshCashFlows && freshCashFlows.cashFlows) {
-          freshCashFlows.cashFlows = freshCashFlows.cashFlows.sort((a: any, b: any) => {
+        if (freshCashFlows && freshCashFlows.schedule) {
+          freshCashFlows.schedule = freshCashFlows.schedule.sort((a: any, b: any) => {
             const timeDiff = new Date(a.startDate).getTime() - new Date(b.startDate).getTime();
             return timeDiff === 0 ? a.cashFlowId - b.cashFlowId : timeDiff;
           });
@@ -373,8 +373,8 @@ export class FDDetailComponent implements OnInit {
     };
 
     this.interestData = result.interest;
-    if (result.cashFlowSummary && result.cashFlowSummary.cashFlows && Array.isArray(result.cashFlowSummary.cashFlows)) {
-      result.cashFlowSummary.cashFlows = result.cashFlowSummary.cashFlows.sort((a: any, b: any) => {
+    if (result.cashFlowSummary && result.cashFlowSummary.schedule && Array.isArray(result.cashFlowSummary.schedule)) {
+      result.cashFlowSummary.schedule = result.cashFlowSummary.schedule.sort((a: any, b: any) => {
         const timeDiff = new Date(a.startDate).getTime() - new Date(b.startDate).getTime();
         return timeDiff === 0 ? a.cashFlowId - b.cashFlowId : timeDiff;
       });
@@ -593,8 +593,8 @@ export class FDDetailComponent implements OnInit {
               map(res => res || null),
               catchError(() => of(null))
             ).subscribe(cashFlowSummary => {
-              if (cashFlowSummary && cashFlowSummary.cashFlows) {
-                cashFlowSummary.cashFlows = cashFlowSummary.cashFlows.sort((a: any, b: any) => {
+              if (cashFlowSummary && cashFlowSummary.schedule) {
+                cashFlowSummary.schedule = cashFlowSummary.schedule.sort((a: any, b: any) => {
                   const timeDiff = new Date(a.startDate).getTime() - new Date(b.startDate).getTime();
                   return timeDiff === 0 ? a.cashFlowId - b.cashFlowId : timeDiff;
                 });
@@ -714,8 +714,8 @@ export class FDDetailComponent implements OnInit {
       map(res => res || null),
       catchError(() => of(null))
     ).subscribe(cashFlowSummary => {
-      if (cashFlowSummary && cashFlowSummary.cashFlows) {
-        cashFlowSummary.cashFlows = cashFlowSummary.cashFlows.sort((a: any, b: any) => {
+      if (cashFlowSummary && cashFlowSummary.schedule) {
+        cashFlowSummary.schedule = cashFlowSummary.schedule.sort((a: any, b: any) => {
           const timeDiff = new Date(a.startDate).getTime() - new Date(b.startDate).getTime();
           return timeDiff === 0 ? a.cashFlowId - b.cashFlowId : timeDiff;
         });

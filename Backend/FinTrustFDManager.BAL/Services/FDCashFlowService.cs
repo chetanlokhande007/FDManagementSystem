@@ -126,7 +126,7 @@ namespace FinTrustFDManager.BAL.Services
                 PrincipalAmount = principal,
                 TotalInterest = totalInterest,
                 MaturityAmount = maturityAmount,
-                CashFlows = cashFlows
+                Schedule = cashFlows
             };
         }
 

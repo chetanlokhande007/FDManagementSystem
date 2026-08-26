@@ -187,14 +187,37 @@ namespace FinTrustFDManager.BAL.Services
             if (fd == null)
                 throw new KeyNotFoundException($"FD with ID {fdId} not found.");
 
+            var interest = await _interestRepository.GetByFdIdAsync(fdId);
             var records = (await _cashFlowRepository.GetByFdIdAsync(fdId))
                 .OrderBy(c => c.StartDate)
                 .ThenBy(c => c.CreatedDate)
                 .ToList();
 
-            decimal totalInterest = records
-                .Where(r => r.Event == "Interest")
-                .Sum(r => r.InterestAmount);
+            decimal principal = fd.PrincipalAmount;
+            bool isCompounding = interest?.IsCompounding ?? false;
+            var maturityRow = records.FirstOrDefault(r => r.Event == "Maturity");
+
+            decimal totalInterest;
+            decimal maturityAmount;
+
+            if (isCompounding)
+            {
+                maturityAmount = maturityRow?.CashFlowAmount ?? principal;
+                totalInterest = Math.Round(maturityAmount - principal, 2, MidpointRounding.AwayFromZero);
+            }
+            else
+            {
+                // Non-Compounding: Sum of all periodic payouts; Maturity pays back principal
+                totalInterest = records.Where(r => r.Event == "Interest").Sum(r => r.InterestAmount);
+                maturityAmount = maturityRow?.CashFlowAmount ?? principal;
+            }
+
+            int totalDays = (fd.EndDate.Date - fd.StartDate.Date).Days;
+            decimal effectiveRate = interest != null
+                ? (string.Equals(interest.InterestRateType, "FLOATING", System.StringComparison.OrdinalIgnoreCase)
+                    ? (interest.BenchmarkRate ?? 0) + (interest.Margin ?? 0)
+                    : interest.InterestRate)
+                : 0m;
 
             var dtos = records.Select(x => new FDCashFlowDto
             {
@@ -219,10 +242,18 @@ namespace FinTrustFDManager.BAL.Services
             return new FDCashFlowSummaryDto
             {
                 FdId = fdId,
-                PrincipalAmount = fd.PrincipalAmount,
+                FdReferenceNo = fd.FdReferenceNo ?? $"FD-{fdId:D4}",
+                PrincipalAmount = principal,
+                InterestRate = effectiveRate,
+                InterestRateType = interest?.InterestRateType ?? "FIXED",
+                InterestFrequency = interest?.InterestFrequency ?? "Monthly",
+                CompoundingFrequency = interest?.CompoundingFrequency ?? "Not Applicable",
+                IsCompounding = isCompounding,
+                CalculationBasis = interest?.CalculationBasis ?? "ACTUAL_365",
+                TotalTenorDays = totalDays,
                 TotalInterest = Math.Round(totalInterest, 2),
-                MaturityAmount = Math.Round(fd.PrincipalAmount + totalInterest, 2),
-                CashFlows = dtos
+                MaturityAmount = Math.Round(maturityAmount, 2),
+                Schedule = dtos
             };
         }
 
@@ -349,6 +380,8 @@ namespace FinTrustFDManager.BAL.Services
             }
 
             // 3. Maturity Settlement
+            decimal finalMaturityPayout = balance + (isCompounding ? accumulatedAccrual : 0m);
+
             cashFlows.Add(new FDCashFlow
             {
                 FdId = fd.FdId,
@@ -360,7 +393,7 @@ namespace FinTrustFDManager.BAL.Services
                 OpeningBalance = balance,
                 InterestAmount = accumulatedAccrual,
                 ClosingBalance = 0m,
-                CashFlowAmount = balance,
+                CashFlowAmount = finalMaturityPayout,
                 Direction = "INFLOW",
                 CurrencyCode = fd.CurrencyCode ?? "INR",
                 Status = "PENDING",

@@ -1,0 +1,155 @@
+.cashflow-wrapper {
+  padding: 1.5rem;
+  background-color: #ffffff;
+  border-radius: 12px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.04);
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+
+  .header-metadata-card {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+    gap: 1.25rem;
+    padding: 1.25rem 1.5rem;
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 10px;
+
+    .meta-item {
+      display: flex;
+      flex-direction: column;
+      gap: 0.35rem;
+
+      .label {
+        font-size: 0.7rem;
+        font-weight: 700;
+        color: #64748b;
+        letter-spacing: 0.5px;
+        text-transform: uppercase;
+      }
+
+      .value {
+        font-size: 0.95rem;
+        font-weight: 600;
+        color: #1e293b;
+
+        &.text-primary { color: #2563eb; }
+        
+        .basis-chip {
+          background: #e2e8f0;
+          padding: 2px 6px;
+          border-radius: 4px;
+          font-size: 0.8rem;
+          font-weight: 700;
+        }
+
+        .status-pill {
+          padding: 2px 8px;
+          border-radius: 4px;
+          font-size: 0.75rem;
+          font-weight: 700;
+
+          &.pill-yes { background: #dcfce7; color: #15803d; }
+          &.pill-no { background: #f1f5f9; color: #475569; }
+        }
+      }
+    }
+  }
+
+  .metrics-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 1.25rem;
+
+    .metric-card {
+      padding: 1.25rem 1.5rem;
+      border-radius: 10px;
+      background: #ffffff;
+      border: 1px solid #e2e8f0;
+      border-left: 5px solid #cbd5e1;
+      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.02);
+
+      .metric-title {
+        font-size: 0.75rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        color: #64748b;
+      }
+
+      .metric-number {
+        font-size: 1.6rem;
+        font-weight: 800;
+        color: #0f172a;
+        margin: 0.4rem 0 0.2rem;
+      }
+
+      .metric-sub {
+        font-size: 0.75rem;
+        color: #94a3b8;
+      }
+
+      &.card-blue { border-left-color: #2563eb; }
+      &.card-green { border-left-color: #10b981; }
+      &.card-purple { border-left-color: #8b5cf6; }
+    }
+  }
+
+  .table-container {
+    overflow-x: auto;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+  }
+
+  .styled-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.85rem;
+
+    th, td {
+      padding: 0.85rem 1rem;
+      border-bottom: 1px solid #f1f5f9;
+      white-space: nowrap;
+    }
+
+    th {
+      background-color: #f8fafc;
+      color: #475569;
+      font-weight: 700;
+      text-transform: uppercase;
+      font-size: 0.72rem;
+    }
+
+    tbody tr:hover { background-color: #f8fafc; }
+    .row-accent { background-color: #faf5ff; }
+
+    .text-center { text-align: center; }
+    .text-right { text-align: right; }
+    .font-bold { font-weight: 700; }
+    
+    .highlight-cash {
+      color: #059669;
+      font-weight: 800;
+    }
+
+    .pill {
+      display: inline-block;
+      padding: 3px 8px;
+      font-size: 0.75rem;
+      font-weight: 600;
+      border-radius: 4px;
+
+      &.badge-outflow { background: #fee2e2; color: #dc2626; }
+      &.badge-accrual { background: #e0f2fe; color: #0284c7; }
+      &.badge-reinvest { background: #fef3c7; color: #d97706; }
+      &.badge-maturity { background: #dcfce7; color: #16a34a; }
+    }
+
+    .dir-badge {
+      font-size: 0.7rem;
+      font-weight: 800;
+      &.outflow { color: #dc2626; }
+      &.inflow { color: #16a34a; }
+    }
+  }
+}

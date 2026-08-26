@@ -33,19 +33,53 @@ namespace FinTrustFDManager.DAL.Repositories
             var activeFDCount = activeFDs.Count;
             var totalPrincipal = activeFDs.Sum(f => f.PrincipalAmount);
 
-            // ── Accrued interest: sum of Interest events from FDCashFlows ──
-            var totalAccruedInterest = await _context.FDCashFlows
+            // ── Accrued interest: Total Inflows − Principal ──
+            // This is the financially correct aggregation that avoids
+            // double-counting when Interest and Compounding events share a date.
+            var totalInflows = await _context.FDCashFlows
                 .AsNoTracking()
-                .Where(cf => cf.Event == "Interest" || cf.Event == "Compounding Interest")
-                .SumAsync(cf => cf.InterestAmount);
+                .Where(cf => cf.Direction == "INFLOW")
+                .SumAsync(cf => cf.CashFlowAmount);
 
-            // ── Maturity amounts per FD (last Maturity cash flow) ──
-            var maturityAmounts = await _context.FDCashFlows
+            var totalOutflows = await _context.FDCashFlows
+                .AsNoTracking()
+                .Where(cf => cf.Direction == "OUTFLOW")
+                .SumAsync(cf => cf.CashFlowAmount);
+
+            var totalAccruedInterest = totalInflows - totalOutflows;
+
+            // ── Maturity amounts per FD ──
+            // For each FD, sum all INFLOW CashFlowAmounts occurring on the
+            // Maturity date. This correctly includes both the principal return
+            // AND any final interest payout on the same date.
+            var maturityEndDates = await _context.FDCashFlows
                 .AsNoTracking()
                 .Where(cf => cf.Event == "Maturity")
                 .GroupBy(cf => cf.FdId)
-                .Select(g => new { FdId = g.Key, MaturityAmount = g.Sum(cf => cf.CashFlowAmount) })
-                .ToDictionaryAsync(x => x.FdId, x => x.MaturityAmount);
+                .Select(g => new { FdId = g.Key, MaturityEndDate = g.Max(cf => cf.EndDate) })
+                .ToDictionaryAsync(x => x.FdId, x => x.MaturityEndDate);
+
+            var maturityAmounts = new System.Collections.Generic.Dictionary<long, decimal>();
+            if (maturityEndDates.Count > 0)
+            {
+                var fdIdsWithMaturity = maturityEndDates.Keys.ToList();
+                var maturityDatePairs = maturityEndDates.ToList();
+
+                // Batch query: get all INFLOW cash flows on each FD's maturity date
+                var allMaturityCashFlows = await _context.FDCashFlows
+                    .AsNoTracking()
+                    .Where(cf => fdIdsWithMaturity.Contains(cf.FdId)
+                                 && cf.Direction == "INFLOW")
+                    .ToListAsync();
+
+                foreach (var pair in maturityDatePairs)
+                {
+                    var amt = allMaturityCashFlows
+                        .Where(cf => cf.FdId == pair.Key && cf.EndDate == pair.Value)
+                        .Sum(cf => cf.CashFlowAmount);
+                    maturityAmounts[pair.Key] = amt;
+                }
+            }
 
             // ── Upcoming maturities (next 30 days) ──
             var upcomingFDs = activeFDs
@@ -89,11 +123,16 @@ namespace FinTrustFDManager.DAL.Repositories
                 .Take(5)
                 .ToList();
 
+            // Batch-fetch interest records for recent FDs (avoids N+1)
+            var recentFdIds = recentFDs.Select(f => f.FdId).ToList();
+            var recentInterests = await _context.FDInterests
+                .AsNoTracking()
+                .Where(i => recentFdIds.Contains(i.FdId))
+                .ToDictionaryAsync(i => i.FdId, i => i);
+
             var recentlyAdded = recentFDs.Select(f =>
             {
-                var interest = _context.FDInterests
-                    .AsNoTracking()
-                    .FirstOrDefault(i => i.FdId == f.FdId);
+                recentInterests.TryGetValue(f.FdId, out var interest);
 
                 return new FDRecentDto
                 {

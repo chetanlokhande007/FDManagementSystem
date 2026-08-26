@@ -19,6 +19,13 @@ builder.Services.AddDbContext<ApplicationDbContext>(options =>
 builder.Services.AddControllers();
 builder.Services.AddMemoryCache();
 
+// ── Health Checks ──
+builder.Services.AddHealthChecks()
+    .AddNpgSql(
+        builder.Configuration.GetConnectionString("DefaultConnection")!,
+        name: "postgresql",
+        tags: new[] { "db" });
+
 // ── Repositories ──
 builder.Services.AddScoped<IFDIdentificationRepository, FDIdentificationRepository>();
 builder.Services.AddScoped<IFDInterestRepository, FDInterestRepository>();
@@ -53,7 +60,12 @@ builder.Services.AddCors(options =>
     options.AddPolicy("AngularPolicy", policy =>
     {
         policy
-            .WithOrigins("http://localhost:4200")
+            .WithOrigins(
+                "http://localhost:4200",
+                "http://localhost",
+                "http://localhost:80",
+                "http://frontend",
+                "http://frontend:80")
             .AllowAnyHeader()
             .AllowAnyMethod();
     });
@@ -96,6 +108,37 @@ if (app.Environment.IsDevelopment())
 
 app.UseHttpsRedirection();
 
+// ── Global Exception Handler ──
+// Maps known exceptions to appropriate HTTP status codes.
+// In production, never exposes internal details.
+app.UseExceptionHandler(error =>
+{
+    error.Run(async context =>
+    {
+        context.Response.ContentType = "application/json";
+        var exception = context.Features.Get<Microsoft.AspNetCore.Diagnostics.IExceptionHandlerFeature>();
+        if (exception != null)
+        {
+            var statusCode = exception.Error switch
+            {
+                KeyNotFoundException => StatusCodes.Status404NotFound,
+                InvalidOperationException => StatusCodes.Status400BadRequest,
+                ArgumentException => StatusCodes.Status400BadRequest,
+                _ => StatusCodes.Status500InternalServerError
+            };
+            context.Response.StatusCode = statusCode;
+
+            var message = app.Environment.IsDevelopment()
+                ? exception.Error.Message
+                : statusCode == StatusCodes.Status500InternalServerError
+                    ? "An unexpected error occurred."
+                    : exception.Error.Message;
+
+            await context.Response.WriteAsJsonAsync(new { message });
+        }
+    });
+});
+
 app.UseCors("AngularPolicy");
 
 // IMPORTANT: Authentication must come BEFORE Authorization
@@ -103,5 +146,8 @@ app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapControllers();
+
+// ── Health Check endpoint (no auth required) ──
+app.MapHealthChecks("/health");
 
 app.Run();

@@ -3,6 +3,7 @@ using FinTrustFDManager.BAL.Services;
 using FinTrustFDManager.DAL.Interfaces;
 using FinTrustFDManager.Model.Entities.Investment;
 using Microsoft.EntityFrameworkCore.Storage;
+using Microsoft.Extensions.Logging;
 using Moq;
 using Xunit;
 
@@ -18,6 +19,7 @@ namespace FinTrustFDManager.BAL.Tests
         private readonly Mock<IFDIdentificationRepository> _fdRepo;
         private readonly Mock<IFDCashFlowRepository> _cashFlowRepo;
         private readonly Mock<IUnitOfWork> _unitOfWork;
+        private readonly Mock<ILogger<FDInterestService>> _logger;
         private readonly FDInterestService _service;
 
         public FDInterestServiceCashFlowTests()
@@ -26,6 +28,7 @@ namespace FinTrustFDManager.BAL.Tests
             _fdRepo = new Mock<IFDIdentificationRepository>();
             _cashFlowRepo = new Mock<IFDCashFlowRepository>();
             _unitOfWork = new Mock<IUnitOfWork>();
+            _logger = new Mock<ILogger<FDInterestService>>();
 
             // UnitOfWork transaction stubs
             var mockTransaction = new Mock<IDbContextTransaction>();
@@ -40,7 +43,8 @@ namespace FinTrustFDManager.BAL.Tests
                 _interestRepo.Object,
                 _fdRepo.Object,
                 _cashFlowRepo.Object,
-                _unitOfWork.Object);
+                _unitOfWork.Object,
+                _logger.Object);
         }
 
         // ═══════════════════════════════════════════

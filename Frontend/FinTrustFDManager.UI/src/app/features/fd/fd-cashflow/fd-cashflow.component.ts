@@ -1,4 +1,4 @@
-import { Component, Input, Output, EventEmitter, OnInit, OnChanges, SimpleChanges } from '@angular/core';
+import { Component, Input, OnInit, OnChanges, SimpleChanges, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FDCashFlowService, FDCashFlow, FDCashFlowSummary } from '../../../core/services/fd-cash-flow.service';
 
@@ -7,76 +7,55 @@ import { FDCashFlowService, FDCashFlow, FDCashFlowSummary } from '../../../core/
   standalone: true,
   imports: [CommonModule],
   templateUrl: './fd-cashflow.component.html',
-  styleUrls: ['./fd-cashflow.component.css']
+  styleUrls: ['./fd-cashflow.component.scss']
 })
 export class FdCashflowComponent implements OnInit, OnChanges {
-  @Input() fdId!: number;
-  @Input() initialCashFlowSummary: any = null;
-  @Input() fdData: any = null;
-  @Input() interestData: any = null;
-  @Output() cashFlowSaved = new EventEmitter<void>();
+  @Input() fdId!: number | string;
 
+  summary: FDCashFlowSummary | null = null;
   cashFlows: FDCashFlow[] = [];
-  principalAmount: number = 0;
-  totalInterest: number = 0;
-  maturityAmount: number = 0;
   isLoading: boolean = false;
   errorMessage: string = '';
 
-  constructor(private cashFlowService: FDCashFlowService) { }
+  constructor(
+    private cashFlowService: FDCashFlowService,
+    private cdr: ChangeDetectorRef
+  ) {}
 
   ngOnInit(): void {
-    if (this.initialCashFlowSummary && this.initialCashFlowSummary.cashFlows && this.initialCashFlowSummary.cashFlows.length > 0) {
-      this.applySummary(this.initialCashFlowSummary);
-    } else if (this.fdId) {
-      this.loadData();
-    }
+    if (this.fdId) this.loadData();
   }
 
   ngOnChanges(changes: SimpleChanges): void {
-    if (changes['initialCashFlowSummary'] && !changes['initialCashFlowSummary'].isFirstChange()) {
-      this.applySummary(changes['initialCashFlowSummary'].currentValue);
-    }
-
-    if (changes['fdId'] && !changes['fdId'].isFirstChange()) {
+    if (changes['fdId'] && changes['fdId'].currentValue) {
       this.loadData();
     }
   }
 
-  private applySummary(summary: any): void {
-    if (!summary) {
-      this.cashFlows = [];
-      this.totalInterest = 0;
-      this.maturityAmount = 0;
-      this.principalAmount = this.fdData?.principalAmount || 0;
-      return;
-    }
-
-    this.cashFlows = summary.cashFlows || [];
-    this.totalInterest = summary.totalInterest || 0;
-    this.maturityAmount = summary.maturityAmount || 0;
-
-    // Principal can come from the parent's fdData, or extracted from the "FD Created" event.
-    const principalFlow = this.cashFlows.find(cf => cf.event === 'FD Created');
-    this.principalAmount = principalFlow ? principalFlow.cashFlowAmount : (this.fdData?.principalAmount || 0);
-  }
-
   loadData(): void {
+    const id = Number(this.fdId);
+    if (!id || isNaN(id)) return;
+
     this.isLoading = true;
     this.errorMessage = '';
 
-    this.cashFlowService.getByFdId(this.fdId).subscribe({
-      next: (summary: FDCashFlowSummary) => {
-        this.applySummary(summary);
+    this.cashFlowService.getByFdId(id).subscribe({
+      next: (res: FDCashFlowSummary) => {
+        this.summary = res;
+        this.cashFlows = res.schedule || [];
         this.isLoading = false;
+        this.cdr.detectChanges();
       },
-      error: (err: any) => {
-        console.error(err);
-        this.errorMessage = 'Unable to load cash flow records.';
-        this.applySummary(null);
+      error: () => {
+        this.errorMessage = 'Failed to load cash flow details.';
         this.isLoading = false;
+        this.cdr.detectChanges();
       }
     });
+  }
+
+  formatBasis(basis: string): string {
+    return basis ? basis.replace('_', '/') : 'ACTUAL/365';
   }
 
   getBadgeClass(event: string): string {
@@ -86,13 +65,5 @@ export class FdCashflowComponent implements OnInit, OnChanges {
       case 'Maturity': return 'badge-maturity';
       default: return 'badge-accrual';
     }
-  }
-
-  get currencyCode(): string {
-    return this.fdData?.currencyCode || 'INR';
-  }
-
-  trackByCashFlowId(index: number, item: FDCashFlow): number {
-    return item.cashFlowId;
   }
 }

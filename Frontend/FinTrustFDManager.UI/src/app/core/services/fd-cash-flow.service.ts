@@ -24,10 +24,18 @@ export interface FDCashFlow {
 
 export interface FDCashFlowSummary {
   fdId: number;
+  fdReferenceNo: string;
   principalAmount: number;
+  interestRate: number;
+  interestRateType: string;
+  interestFrequency: string;
+  compoundingFrequency: string;
+  isCompounding: boolean;
+  calculationBasis: string;
+  totalTenorDays: number;
   totalInterest: number;
   maturityAmount: number;
-  cashFlows: FDCashFlow[];
+  schedule: FDCashFlow[];
 }
 
 @Injectable({

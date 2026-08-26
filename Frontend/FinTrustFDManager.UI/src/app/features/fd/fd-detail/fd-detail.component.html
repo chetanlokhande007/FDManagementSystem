@@ -220,9 +220,7 @@
 
     <!-- CASHFLOW TAB -->
     <div *ngIf="activeTab === 'cashflow'">
-      <app-fd-cashflow *ngIf="!loading && fdId" [fdId]="fdId" [fdData]="fixedDeposit" [interestData]="interestData"
-        [initialCashFlowSummary]="cashFlowSummary"
-        (cashFlowSaved)="loadFDDetails(fdId!, true, false).subscribe()"></app-fd-cashflow>
+      <app-fd-cashflow *ngIf="!loading && fdId" [fdId]="fdId"></app-fd-cashflow>
       <div *ngIf="loading" class="tab-content skeleton-area">
         <div class="skeleton-table">
           <div *ngFor="let s of [1,2,3,4,5]" class="skeleton-table-row">
