@@ -1,4 +1,5 @@
 using FinTrustFDManager.Model.DTOs.Investment;
+using FinTrustFDManager.Model.Entities;
 using FinTrustFDManager.Model.Entities.Investment;
 using System;
 using System.Collections.Generic;
@@ -19,7 +20,6 @@ namespace FinTrustFDManager.DAL.Interfaces
         Task<FDIdentification?> UpdateAsync(FDIdentification model);
         Task<FDIdentification?> GetLastAsync();
         Task<bool> DeleteAsync(long id);
-        Task<bool> ChangeStatusAsync(long id, string status);
 
         /// <summary>
         /// Returns FD landing data in a single optimized query
@@ -27,5 +27,21 @@ namespace FinTrustFDManager.DAL.Interfaces
         /// Replaces the N+1 query pattern.
         /// </summary>
         Task<IEnumerable<FDLandingDto>> GetLandingDataAsync();
+
+        /// <summary>
+        /// Gets the next FD reference number atomically using a PostgreSQL sequence.
+        /// Returns the formatted reference (e.g. FD-0001).
+        /// </summary>
+        Task<string> GetNextFdReferenceNoAsync();
+
+        /// <summary>
+        /// Adds an approval history record.
+        /// </summary>
+        Task AddApprovalHistoryAsync(FDApprovalHistory history);
+
+        /// <summary>
+        /// Gets approval history for an FD.
+        /// </summary>
+        Task<IEnumerable<FDApprovalHistory>> GetApprovalHistoryAsync(long fdId);
     }
 }

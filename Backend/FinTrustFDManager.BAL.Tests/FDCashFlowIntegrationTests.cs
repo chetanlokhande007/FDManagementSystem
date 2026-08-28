@@ -1,4 +1,5 @@
 using FinTrustFDManager.BAL.DTOs;
+using FinTrustFDManager.BAL.Interfaces;
 using FinTrustFDManager.BAL.Services;
 using FinTrustFDManager.DAL.Data;
 using FinTrustFDManager.DAL.Repositories;
@@ -41,9 +42,12 @@ namespace FinTrustFDManager.BAL.Tests
 
             var loggerCashFlow = new Mock<ILogger<FDCashFlowService>>();
             var loggerInterest = new Mock<ILogger<FDInterestService>>();
+            var benchmarkRateHistoryService = new Mock<IBenchmarkRateHistoryService>();
+            benchmarkRateHistoryService.Setup(s => s.GetEffectiveRateAsync(It.IsAny<int>(), It.IsAny<DateTime>()))
+                .ReturnsAsync(0m);
 
             _interestService = new FDInterestService(
-                _interestRepo, _fdRepo, _cashFlowRepo, _unitOfWork, loggerInterest.Object);
+                _interestRepo, _fdRepo, _cashFlowRepo, benchmarkRateHistoryService.Object, _unitOfWork, loggerInterest.Object);
 
             _cashFlowService = new FDCashFlowService(
                 _cashFlowRepo, _interestService, _fdRepo, _unitOfWork, loggerCashFlow.Object);
@@ -150,15 +154,13 @@ namespace FinTrustFDManager.BAL.Tests
             Assert.Equal(fd.FdId, summary.FdId);
             Assert.Equal(100_000m, summary.PrincipalAmount);
             Assert.True(summary.TotalInterest > 0, "TotalInterest should be > 0");
-            Assert.True(summary.MaturityAmount > summary.PrincipalAmount,
-                "MaturityAmount should exceed principal");
             // For non-compounding: MaturityAmount = principal (cash flows paid out separately)
             // For compounding: MaturityAmount = principal + all compounded interest
             // Both are valid; totalInterest + principal should approximate maturityAmount
             Assert.True(summary.MaturityAmount >= summary.PrincipalAmount,
                 $"MaturityAmount ({summary.MaturityAmount}) should be >= principal ({summary.PrincipalAmount})");
-            Assert.True(summary.CashFlows.Count >= 3,
-                $"Expected >= 3 cash flows, got {summary.CashFlows.Count}");
+            Assert.True(summary.Schedule.Count >= 3,
+                $"Expected >= 3 cash flows, got {summary.Schedule.Count}");
         }
 
         // ═══════════════════════════════════════════════════════
@@ -186,7 +188,7 @@ namespace FinTrustFDManager.BAL.Tests
             await _interestService.CreateAsync(interest);
 
             var summary = await _cashFlowService.GetByFdIdAsync(fd.FdId);
-            var interestEvents = summary.CashFlows
+            var interestEvents = summary.Schedule
                 .Where(c => c.Event == "Interest").ToList();
 
             Assert.True(interestEvents.Count >= 1,
@@ -231,7 +233,7 @@ namespace FinTrustFDManager.BAL.Tests
             var summary = await _cashFlowService.GetByFdIdAsync(fd.FdId);
 
             // Should have Compounding Interest events
-            var compoundingEvents = summary.CashFlows
+            var compoundingEvents = summary.Schedule
                 .Where(c => c.Event == "Compounding Interest").ToList();
             Assert.True(compoundingEvents.Count >= 1,
                 $"Expected >= 1 compounding event, got {compoundingEvents.Count}");
@@ -247,7 +249,7 @@ namespace FinTrustFDManager.BAL.Tests
             }
 
             // Maturity should reflect the compounded balance
-            var maturity = summary.CashFlows.Last(c => c.Event == "Maturity");
+            var maturity = summary.Schedule.Last(c => c.Event == "Maturity");
             Assert.True(maturity.CashFlowAmount > 60_000m,
                 $"Maturity ({maturity.CashFlowAmount}) should exceed principal (60000)");
         }
@@ -280,7 +282,7 @@ namespace FinTrustFDManager.BAL.Tests
             await _interestService.CreateAsync(interest);
 
             var summary = await _cashFlowService.GetByFdIdAsync(fd.FdId);
-            var interestEvents = summary.CashFlows
+            var interestEvents = summary.Schedule
                 .Where(c => c.Event == "Interest").ToList();
 
             // Last interest event should be a partial period (< 180 days)
@@ -289,7 +291,7 @@ namespace FinTrustFDManager.BAL.Tests
                 $"Last period ({lastInterest.Days} days) should be a partial period");
 
             // Maturity should still return principal
-            var maturity = summary.CashFlows.Last(c => c.Event == "Maturity");
+            var maturity = summary.Schedule.Last(c => c.Event == "Maturity");
             Assert.Equal(fd.PrincipalAmount, maturity.CashFlowAmount);
         }
 
@@ -317,7 +319,7 @@ namespace FinTrustFDManager.BAL.Tests
             var summary = await _cashFlowService.GetByFdIdAsync(fd.FdId);
 
             // Sum of all interest amounts should equal TotalInterest
-            decimal sumInterest = summary.CashFlows
+            decimal sumInterest = summary.Schedule
                 .Where(c => c.Event == "Interest")
                 .Sum(c => c.CashFlowAmount);
 
@@ -341,7 +343,7 @@ namespace FinTrustFDManager.BAL.Tests
             Assert.Equal(0, summary.PrincipalAmount);
             Assert.Equal(0, summary.TotalInterest);
             Assert.Equal(0, summary.MaturityAmount);
-            Assert.Empty(summary.CashFlows);
+            Assert.Empty(summary.Schedule);
         }
 
         // ═══════════════════════════════════════════════════════
@@ -485,7 +487,7 @@ namespace FinTrustFDManager.BAL.Tests
             await _interestService.CreateAsync(interest);
 
             var summary = await _cashFlowService.GetByFdIdAsync(fd.FdId);
-            var events = summary.CashFlows.OrderBy(c => c.StartDate).ToList();
+            var events = summary.Schedule.OrderBy(c => c.StartDate).ToList();
 
             // First event starts at FD start date
             Assert.Equal(new DateTime(2025, 3, 15), events[0].StartDate);
@@ -517,7 +519,7 @@ namespace FinTrustFDManager.BAL.Tests
 
             var summary = await _cashFlowService.GetByFdIdAsync(fd.FdId);
 
-            foreach (var cf in summary.CashFlows)
+            foreach (var cf in summary.Schedule)
             {
                 Assert.Equal(fd.FdId, cf.FdId);
                 Assert.Equal("INR", cf.CurrencyCode);
@@ -629,7 +631,7 @@ namespace FinTrustFDManager.BAL.Tests
             await _interestService.CreateAsync(interest);
 
             var summary = await _cashFlowService.GetByFdIdAsync(fd.FdId);
-            var interestEvents = summary.CashFlows
+            var interestEvents = summary.Schedule
                 .Where(c => c.Event == "Interest").ToList();
 
             // Should have exactly 1 interest event (the full period)

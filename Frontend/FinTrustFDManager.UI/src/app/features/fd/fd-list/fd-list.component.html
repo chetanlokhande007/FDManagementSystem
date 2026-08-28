@@ -127,11 +127,13 @@
                 <button class="kebab-btn" (click)="toggleDropdown(fd.fdId, $event)">⋮</button>
                 <div class="kebab-dropdown" *ngIf="openDropdownId === fd.fdId">
                   <button class="kebab-item" (click)="handleAction('view', fd)">👁️ View</button>
-                  <button class="kebab-item" (click)="handleAction('edit', fd)">✏️ Edit</button>
-                  <button class="kebab-item" (click)="handleAction('cashflow', fd)">💰 Cashflow</button>
-                  <button class="kebab-item" (click)="handleAction('status', fd)">🔄 Change Status</button>
+                  <button class="kebab-item" *ngIf="fd.status === 'DRAFT' || fd.status === 'REJECTED'" (click)="handleAction('edit', fd)">✏️ Edit</button>
+                  <button class="kebab-item" *ngIf="fd.status !== 'DRAFT' && fd.status !== 'REJECTED'" (click)="handleAction('cashflow', fd)">💰 Cashflow</button>
+                  <button class="kebab-item" *ngIf="fd.status === 'DRAFT' || fd.status === 'REJECTED'" (click)="handleAction('submit', fd)">📤 Submit</button>
+                  <button class="kebab-item" *ngIf="fd.status === 'PENDING_APPROVAL'" (click)="handleAction('approve', fd)">✅ Approve</button>
+                  <button class="kebab-item" *ngIf="fd.status === 'PENDING_APPROVAL'" (click)="handleAction('reject', fd)">❌ Reject</button>
                   <div class="kebab-divider"></div>
-                  <button class="kebab-item danger" (click)="handleAction('delete', fd)">🗑️ Delete</button>
+                  <button class="kebab-item danger" *ngIf="fd.status === 'DRAFT' || fd.status === 'REJECTED'" (click)="handleAction('delete', fd)">🗑️ Delete</button>
                 </div>
               </div>
             </td>
@@ -243,41 +245,50 @@
 
 </div>
 
-<!-- STATUS CHANGE MODAL -->
-<div class="status-modal-overlay" *ngIf="showStatusModal">
+<!-- REJECT MODAL -->
+<div class="status-modal-overlay" *ngIf="showRejectModal">
   <div class="status-modal">
     <div class="status-modal-header">
-      <h3>Change Status</h3>
-      <button class="close-btn" (click)="closeStatusModal()">×</button>
+      <h3>Reject FD</h3>
+      <button class="close-btn" (click)="closeRejectModal()">×</button>
     </div>
     
     <div class="status-modal-body">
-      <p>Are you sure you want to {{ newStatus === 'Active' ? 'activate' : 'deactivate' }} this FD?</p>
+      <p>Provide a reason for rejecting {{ rejectFd?.fdReferenceNo }}:</p>
       
       <div class="status-details">
         <div class="status-row">
           <span class="status-label">FD Reference:</span>
-          <span class="status-value">{{ statusFd?.fdReferenceNo }}</span>
+          <span class="status-value">{{ rejectFd?.fdReferenceNo }}</span>
         </div>
         <div class="status-row">
           <span class="status-label">Current Status:</span>
-          <span class="status-value status-badge" [ngClass]="statusFd?.status === 'Active' ? 'status-active' : 'status-inactive'">
-            {{ statusFd?.status || 'Unknown' }}
+          <span class="status-value status-badge">
+            {{ rejectFd?.status || 'Unknown' }}
           </span>
         </div>
-        <div class="status-row">
-          <span class="status-label">New Status:</span>
-          <span class="status-value status-badge" [ngClass]="newStatus === 'Active' ? 'status-active' : 'status-inactive'">
-            {{ newStatus }}
-          </span>
-        </div>
+      </div>
+
+      <div style="margin-top: 12px;">
+        <label style="display: block; margin-bottom: 4px; font-weight: 500;">Rejection Reason *</label>
+        <textarea
+          [(ngModel)]="rejectComments"
+          rows="3"
+          placeholder="Enter rejection reason (minimum 5 characters)"
+          style="width: 100%; padding: 8px; border: 1px solid #ccc; border-radius: 4px; resize: vertical;">
+        </textarea>
+        <small *ngIf="rejectComments && rejectComments.length < 5" style="color: #dc2626;">
+          Must be at least 5 characters ({{ rejectComments.length }}/5)
+        </small>
       </div>
     </div>
     
     <div class="status-modal-footer">
-      <button class="btn-cancel" (click)="closeStatusModal()">Cancel</button>
-      <button class="btn-confirm" [ngClass]="newStatus === 'Active' ? 'btn-activate' : 'btn-deactivate'" (click)="confirmChangeStatus()">
-        {{ newStatus === 'Active' ? 'Activate' : 'Deactivate' }}
+      <button class="btn-cancel" (click)="closeRejectModal()">Cancel</button>
+      <button class="btn-confirm" style="background-color: #dc2626; color: white;"
+        [disabled]="!rejectComments || rejectComments.length < 5"
+        (click)="confirmReject()">
+        Reject FD
       </button>
     </div>
   </div>

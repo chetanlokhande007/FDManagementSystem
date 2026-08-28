@@ -1,6 +1,7 @@
 using FinTrustFDManager.DAL.Data;
 using FinTrustFDManager.DAL.Interfaces;
 using FinTrustFDManager.Model.Entities.Investment;
+using FinTrustFDManager.Model.Entities.MasterData;
 using Microsoft.EntityFrameworkCore;
 
 namespace FinTrustFDManager.DAL.Repositories
@@ -55,6 +56,7 @@ namespace FinTrustFDManager.DAL.Repositories
             existing.FdId = model.FdId;
             existing.InterestRateType = model.InterestRateType;
             existing.InterestRate = model.InterestRate;
+            existing.BenchmarkId = model.BenchmarkId;
             existing.BenchmarkName = model.BenchmarkName;
             existing.BenchmarkRate = model.BenchmarkRate;
             existing.Margin = model.Margin;
@@ -82,6 +84,13 @@ namespace FinTrustFDManager.DAL.Repositories
             await _context.SaveChangesAsync();
 
             return true;
+        }
+
+        public async Task<Benchmark?> GetBenchmarkByIdAsync(int benchmarkId)
+        {
+            return await _context.Benchmarks
+                .AsNoTracking()
+                .FirstOrDefaultAsync(x => x.BenchmarkId == benchmarkId);
         }
     }
 }

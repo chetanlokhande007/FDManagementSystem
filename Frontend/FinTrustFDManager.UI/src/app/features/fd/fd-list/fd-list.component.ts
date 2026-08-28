@@ -156,8 +156,16 @@ export class FDListComponent implements OnInit {
         this.cashFlow(fd);
         break;
 
-      case 'status':
-        this.openStatusModal(fd);
+      case 'submit':
+        this.submitFD(fd);
+        break;
+
+      case 'approve':
+        this.approveFD(fd);
+        break;
+
+      case 'reject':
+        this.openRejectModal(fd);
         break;
     }
   }
@@ -235,53 +243,106 @@ export class FDListComponent implements OnInit {
   }
 
   // ==============================
-  // CHANGE STATUS MODAL
+  // SUBMIT FD FOR APPROVAL
   // ==============================
 
-  showStatusModal = false;
-  statusFd: FDLanding | null = null;
-  newStatus = '';
+  submitFD(fd: FDLanding): void {
+    const confirmed = confirm(`Submit ${fd.fdReferenceNo} for approval?`);
+    if (!confirmed) return;
 
-  openStatusModal(fd: FDLanding): void {
-    this.statusFd = fd;
-    // Assuming current statuses might be DRAFT, Active, Inactive
-    // If it's Active, we suggest Inactive. If it's Inactive or DRAFT, we suggest Active.
-    this.newStatus = (fd.status === 'Active') ? 'Inactive' : 'Active';
-    this.showStatusModal = true;
-  }
-
-  closeStatusModal(): void {
-    this.showStatusModal = false;
-    this.statusFd = null;
-    this.newStatus = '';
-  }
-
-  confirmChangeStatus(): void {
-    if (!this.statusFd) return;
-
-    const fd = this.statusFd;
     const oldStatus = fd.status;
-    const updatedStatus = this.newStatus;
-
-    // Optimistic UI update
-    fd.status = updatedStatus;
+    fd.status = 'PENDING_APPROVAL';
     sessionStorage.setItem('FINTRUST_FD_LANDING_CACHE', JSON.stringify(this.fdList));
-    this.closeStatusModal();
 
-    this.fdService.changeStatus(fd.fdId, updatedStatus).subscribe({
+    this.fdService.submit(fd.fdId).subscribe({
       next: () => {
-        // Silent success, optionally refresh in background
         this.fdService.getLandingData().subscribe(data => {
           sessionStorage.setItem('FINTRUST_FD_LANDING_CACHE', JSON.stringify(data));
           this.fdList = data.sort((a: any, b: any) => b.fdId - a.fdId);
         });
       },
       error: (error: any) => {
-        // Revert on error
         fd.status = oldStatus;
         sessionStorage.setItem('FINTRUST_FD_LANDING_CACHE', JSON.stringify(this.fdList));
-        console.error('Change status failed:', error);
-        alert('Failed to change FD status.');
+        console.error('Submit failed:', error);
+        alert(`Submit Error: ${error?.error?.message || error?.message || 'Unable to submit FD.'}`);
+      }
+    });
+  }
+
+  // ==============================
+  // APPROVE FD
+  // ==============================
+
+  approveFD(fd: FDLanding): void {
+    const confirmed = confirm(`Approve ${fd.fdReferenceNo}?`);
+    if (!confirmed) return;
+
+    const oldStatus = fd.status;
+    fd.status = 'APPROVED';
+    sessionStorage.setItem('FINTRUST_FD_LANDING_CACHE', JSON.stringify(this.fdList));
+
+    this.fdService.approve(fd.fdId).subscribe({
+      next: () => {
+        this.fdService.getLandingData().subscribe(data => {
+          sessionStorage.setItem('FINTRUST_FD_LANDING_CACHE', JSON.stringify(data));
+          this.fdList = data.sort((a: any, b: any) => b.fdId - a.fdId);
+        });
+      },
+      error: (error: any) => {
+        fd.status = oldStatus;
+        sessionStorage.setItem('FINTRUST_FD_LANDING_CACHE', JSON.stringify(this.fdList));
+        console.error('Approve failed:', error);
+        alert(`Approve Error: ${error?.error?.message || error?.message || 'Unable to approve FD.'}`);
+      }
+    });
+  }
+
+  // ==============================
+  // REJECT FD
+  // ==============================
+
+  showRejectModal = false;
+  rejectFd: FDLanding | null = null;
+  rejectComments = '';
+
+  openRejectModal(fd: FDLanding): void {
+    this.rejectFd = fd;
+    this.rejectComments = '';
+    this.showRejectModal = true;
+  }
+
+  closeRejectModal(): void {
+    this.showRejectModal = false;
+    this.rejectFd = null;
+    this.rejectComments = '';
+  }
+
+  confirmReject(): void {
+    if (!this.rejectFd) return;
+    if (!this.rejectComments || this.rejectComments.length < 5) {
+      alert('Rejection reason must be at least 5 characters.');
+      return;
+    }
+
+    const fd = this.rejectFd;
+    const oldStatus = fd.status;
+    fd.status = 'REJECTED';
+    sessionStorage.setItem('FINTRUST_FD_LANDING_CACHE', JSON.stringify(this.fdList));
+    this.closeRejectModal();
+
+    this.fdService.reject(fd.fdId, this.rejectComments).subscribe({
+      next: () => {
+        this.fdService.getLandingData().subscribe(data => {
+          sessionStorage.setItem('FINTRUST_FD_LANDING_CACHE', JSON.stringify(data));
+          this.fdList = data.sort((a: any, b: any) => b.fdId - a.fdId);
+        });
+      },
+      error: (error: any) => {
+        fd.status = oldStatus;
+        sessionStorage.setItem('FINTRUST_FD_LANDING_CACHE', JSON.stringify(this.fdList));
+        console.error('Reject failed:', error);
+        alert(`Reject Error: ${error?.error?.message || error?.message || 'Unable to reject FD.'}`);
       }
     });
   }

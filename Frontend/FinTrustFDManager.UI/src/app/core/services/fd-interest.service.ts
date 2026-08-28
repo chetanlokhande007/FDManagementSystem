@@ -8,6 +8,7 @@ export interface FDInterest {
   fdId: number;
   interestRateType: string;
   interestRate: number;
+  benchmarkId?: number;
   benchmarkName: string;
   benchmarkRate: number;
   margin: number;

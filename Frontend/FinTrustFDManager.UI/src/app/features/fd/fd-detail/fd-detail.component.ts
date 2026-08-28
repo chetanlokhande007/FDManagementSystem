@@ -31,6 +31,11 @@ import {
 } from '../../../core/services/interest-frequency.service';
 
 import {
+  BenchmarkService,
+  Benchmark
+} from '../../../core/services/benchmark.service';
+
+import {
   DayCountConventionService,
   DayCountConvention
 } from '../../../core/services/day-count-convention.service';
@@ -101,6 +106,7 @@ export class FDDetailComponent implements OnInit {
   interestFrequencies: InterestFrequency[] = [];
 
   dayCountConventions: DayCountConvention[] = [];
+  benchmarks: Benchmark[] = [];
 
 
   /* =========================
@@ -142,6 +148,7 @@ export class FDDetailComponent implements OnInit {
 
     private interestFrequencyService:
       InterestFrequencyService,
+    private benchmarkService: BenchmarkService,
 
     private dayCountConventionService:
       DayCountConventionService,
@@ -253,7 +260,8 @@ export class FDDetailComponent implements OnInit {
       currencies: this.currencyService.getAll().pipe(catchError((err) => { console.error('Currency API Error:', err); return of([]); })),
       countries: this.countryService.getAll().pipe(catchError((err) => { console.error('Country API Error:', err); return of([]); })),
       interestFrequencies: this.interestFrequencyService.getAll().pipe(catchError((err) => { console.error('Interest Frequency API Error:', err); return of([]); })),
-      dayCountConventions: this.dayCountConventionService.getAll().pipe(catchError((err) => { console.error('Day Count API Error:', err); return of([]); }))
+      dayCountConventions: this.dayCountConventionService.getAll().pipe(catchError((err) => { console.error('Day Count API Error:', err); return of([]); })),
+      benchmarks: this.benchmarkService.getAll().pipe(catchError((err) => { console.error('Benchmark API Error:', err); return of([]); }))
     }).pipe(
       tap(results => {
         cachedCoreData = results;
@@ -273,6 +281,7 @@ export class FDDetailComponent implements OnInit {
     this.countries = cache.countries.filter((x: any) => x.isActive);
     this.interestFrequencies = cache.interestFrequencies;
     this.dayCountConventions = cache.dayCountConventions;
+    this.benchmarks = (cache.benchmarks || []).filter((x: any) => x.isActive);
   }
 
 
@@ -739,13 +748,97 @@ export class FDDetailComponent implements OnInit {
   }
 
   /* =========================
+     AMENDMENT
+  ========================= */
+
+  showAmendmentModal = false;
+  amendmentReason = '';
+  amendmentEndDate = '';
+  amendmentPrincipal: number | null = null;
+  amendmentInterestRate: number | null = null;
+  isAmendmentLoading = false;
+
+  get isProtectedStatus(): boolean {
+    const s = this.fixedDeposit.status;
+    return s === 'APPROVED' || s === 'ACTIVE' || s === 'MATURED';
+  }
+
+  openAmendmentModal(): void {
+    this.amendmentReason = '';
+    this.amendmentEndDate = this.fixedDeposit.endDate || '';
+    this.amendmentPrincipal = null;
+    this.amendmentInterestRate = null;
+    this.showAmendmentModal = true;
+  }
+
+  closeAmendmentModal(): void {
+    this.showAmendmentModal = false;
+  }
+
+  submitAmendment(): void {
+    if (!this.fdId || !this.amendmentReason || this.amendmentReason.length < 5) {
+      alert('Reason must be at least 5 characters.');
+      return;
+    }
+
+    this.isAmendmentLoading = true;
+
+    const payload: any = { reason: this.amendmentReason };
+    if (this.amendmentEndDate) payload.endDate = this.amendmentEndDate;
+    if (this.amendmentPrincipal) payload.principalAmount = this.amendmentPrincipal;
+    if (this.amendmentInterestRate) payload.interestRate = this.amendmentInterestRate;
+
+    this.fdService.requestAmendment(this.fdId, payload).subscribe({
+      next: () => {
+        this.isAmendmentLoading = false;
+        this.closeAmendmentModal();
+        alert('Amendment request submitted for approval.');
+      },
+      error: (err: any) => {
+        this.isAmendmentLoading = false;
+        alert(`Amendment Error: ${err?.error?.message || err?.message || 'Unable to submit amendment.'}`);
+      }
+    });
+  }
+
+  /* =========================
+     AUDIT HISTORY
+  ========================= */
+
+  showAuditTab = false;
+  auditHistory: any[] = [];
+  loadingAudit = false;
+
+  loadAuditHistory(): void {
+    if (!this.fdId) return;
+    this.loadingAudit = true;
+    this.fdService.getApprovalHistory(this.fdId).subscribe({
+      next: (data) => {
+        this.auditHistory = data.sort((a: any, b: any) =>
+          new Date(b.actionDate).getTime() - new Date(a.actionDate).getTime()
+        );
+        this.loadingAudit = false;
+      },
+      error: () => {
+        this.auditHistory = [];
+        this.loadingAudit = false;
+      }
+    });
+  }
+
+  toggleAuditTab(): void {
+    this.showAuditTab = !this.showAuditTab;
+    if (this.showAuditTab && this.auditHistory.length === 0) {
+      this.loadAuditHistory();
+    }
+  }
+
+  /* =========================
      BACK
   ========================= */
 
   goBack(): void {
-    this.router.navigate([
-      '/fd'
-    ]);
+    this.router.navigate(['/fd']);
   }
 
 }

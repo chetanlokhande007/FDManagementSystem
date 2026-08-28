@@ -110,7 +110,20 @@ namespace FinTrustFDManager.DAL.Repositories
 
         public async Task DeleteRangeAsync(IEnumerable<FDCashFlow> cashFlows)
         {
-            _context.FDCashFlows.RemoveRange(cashFlows);
+            var cashFlowList = cashFlows.ToList();
+            var ids = cashFlowList.Select(c => c.CashFlowId).ToHashSet();
+
+            // Detach any tracked FDCashFlow entities with matching keys
+            // to avoid tracking conflicts when the same entity was loaded
+            // in a prior operation within the same DbContext scope.
+            foreach (var entry in _context.ChangeTracker.Entries<FDCashFlow>()
+                .Where(e => ids.Contains(e.Entity.CashFlowId))
+                .ToList())
+            {
+                entry.State = EntityState.Detached;
+            }
+
+            _context.FDCashFlows.RemoveRange(cashFlowList);
             await _context.SaveChangesAsync();
         }
     }

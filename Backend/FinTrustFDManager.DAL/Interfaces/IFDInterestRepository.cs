@@ -4,6 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using FinTrustFDManager.Model.Entities.Investment;
+using FinTrustFDManager.Model.Entities.MasterData;
 namespace FinTrustFDManager.DAL.Interfaces
 {
     public interface IFDInterestRepository
@@ -19,5 +20,7 @@ namespace FinTrustFDManager.DAL.Interfaces
         Task<FDInterest?> UpdateAsync(FDInterest model);
 
         Task<bool> DeleteAsync(long id);
+
+        Task<Benchmark?> GetBenchmarkByIdAsync(int benchmarkId);
     }
 }

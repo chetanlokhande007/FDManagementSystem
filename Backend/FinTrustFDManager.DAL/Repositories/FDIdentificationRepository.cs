@@ -1,8 +1,10 @@
 using FinTrustFDManager.DAL.Data;
 using FinTrustFDManager.DAL.Interfaces;
 using FinTrustFDManager.Model.DTOs.Investment;
+using FinTrustFDManager.Model.Entities;
 using FinTrustFDManager.Model.Entities.Investment;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Storage;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
@@ -40,6 +42,7 @@ namespace FinTrustFDManager.DAL.Repositories
 
             return model;
         }
+
         public async Task<FDIdentification?> GetLastAsync()
         {
             return await _context.FDIdentifications
@@ -47,6 +50,42 @@ namespace FinTrustFDManager.DAL.Repositories
                 .OrderByDescending(x => x.FdId)
                 .FirstOrDefaultAsync();
         }
+
+        public async Task<string> GetNextFdReferenceNoAsync()
+        {
+            // Use PostgreSQL atomic sequence to generate unique FD reference numbers.
+            // This avoids the race condition of GetLastAsync() + increment.
+            var conn = _context.Database.GetDbConnection();
+            await conn.OpenAsync();
+            try
+            {
+                using var cmd = conn.CreateCommand();
+                cmd.CommandText = "SELECT nextval('fd_reference_seq')";
+                var result = await cmd.ExecuteScalarAsync();
+                long seqValue = Convert.ToInt64(result);
+                return $"FD-{seqValue:D4}";
+            }
+            finally
+            {
+                await conn.CloseAsync();
+            }
+        }
+
+        public async Task AddApprovalHistoryAsync(FDApprovalHistory history)
+        {
+            _context.FDApprovalHistories.Add(history);
+            await _context.SaveChangesAsync();
+        }
+
+        public async Task<IEnumerable<FDApprovalHistory>> GetApprovalHistoryAsync(long fdId)
+        {
+            return await _context.FDApprovalHistories
+                .AsNoTracking()
+                .Where(x => x.FdId == fdId)
+                .OrderBy(x => x.ActionDate)
+                .ToListAsync();
+        }
+
         public async Task<FDIdentification?> UpdateAsync(
             FDIdentification model)
         {

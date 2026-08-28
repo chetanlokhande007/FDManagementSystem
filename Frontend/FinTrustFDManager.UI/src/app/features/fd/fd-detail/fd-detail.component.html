@@ -83,7 +83,9 @@
           </div>
         </div>
         <div class="form-actions">
-          <button type="button" class="save-btn" (click)="editGeneral()">Edit</button>
+          <button type="button" class="save-btn" *ngIf="!isProtectedStatus" (click)="editGeneral()">Edit</button>
+          <button type="button" class="save-btn" *ngIf="isProtectedStatus" (click)="openAmendmentModal()" style="background-color: #d97706;">Request Amendment</button>
+          <button type="button" class="cancel-btn" (click)="toggleAuditTab()">{{ showAuditTab ? 'Hide Audit' : 'View Audit History' }}</button>
         </div>
       </div>
 
@@ -207,7 +209,7 @@
     <!-- INTEREST TAB -->
     <div *ngIf="activeTab === 'interest'">
       <app-fd-interest *ngIf="!loading && fdId" [fdId]="fdId" [interestData]="interestData"
-        [interestFrequencies]="interestFrequencies" (interestSaved)="onInterestSaved($event)"></app-fd-interest>
+        [interestFrequencies]="interestFrequencies" [benchmarks]="benchmarks" (interestSaved)="onInterestSaved($event)"></app-fd-interest>
       <div *ngIf="loading" class="tab-content skeleton-area">
         <div class="skeleton-grid">
           <div *ngFor="let s of [1,2,3,4,5,6]" class="skeleton-field">
@@ -235,4 +237,89 @@
     </div>
 
   </div>
+</div>
+
+<!-- AMENDMENT REQUEST MODAL -->
+<div class="status-modal-overlay" *ngIf="showAmendmentModal">
+  <div class="status-modal">
+    <div class="status-modal-header">
+      <h3>Request Amendment</h3>
+      <button class="close-btn" (click)="closeAmendmentModal()">×</button>
+    </div>
+    <div class="status-modal-body">
+      <p>Request changes to {{ fixedDeposit.fdReferenceNo }} (Status: {{ fixedDeposit.status }})</p>
+
+      <div style="margin-top: 12px;">
+        <label style="display: block; margin-bottom: 4px; font-weight: 500;">Reason *</label>
+        <textarea
+          [(ngModel)]="amendmentReason"
+          rows="3"
+          placeholder="Enter reason for amendment (minimum 5 characters)"
+          style="width: 100%; padding: 8px; border: 1px solid #ccc; border-radius: 4px; resize: vertical;">
+        </textarea>
+        <small *ngIf="amendmentReason && amendmentReason.length < 5" style="color: #dc2626;">
+          Must be at least 5 characters
+        </small>
+      </div>
+
+      <div style="margin-top: 12px;">
+        <label style="display: block; margin-bottom: 4px; font-weight: 500;">New End Date (leave blank for no change)</label>
+        <input type="date" [(ngModel)]="amendmentEndDate" style="width: 100%; padding: 8px; border: 1px solid #ccc; border-radius: 4px;">
+      </div>
+
+      <div style="margin-top: 12px;">
+        <label style="display: block; margin-bottom: 4px; font-weight: 500;">New Principal (leave blank for no change)</label>
+        <input type="number" [(ngModel)]="amendmentPrincipal" placeholder="Current: {{ fixedDeposit.principalAmount }}"
+          style="width: 100%; padding: 8px; border: 1px solid #ccc; border-radius: 4px;">
+      </div>
+
+      <div style="margin-top: 12px;">
+        <label style="display: block; margin-bottom: 4px; font-weight: 500;">New Interest Rate (leave blank for no change)</label>
+        <input type="number" [(ngModel)]="amendmentInterestRate" placeholder="Current rate"
+          style="width: 100%; padding: 8px; border: 1px solid #ccc; border-radius: 4px;">
+      </div>
+    </div>
+    <div class="status-modal-footer">
+      <button class="btn-cancel" (click)="closeAmendmentModal()">Cancel</button>
+      <button class="btn-confirm" style="background-color: #d97706; color: white;"
+        [disabled]="!amendmentReason || amendmentReason.length < 5 || isAmendmentLoading"
+        (click)="submitAmendment()">
+        {{ isAmendmentLoading ? 'Submitting...' : 'Submit Amendment' }}
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- AUDIT HISTORY SECTION -->
+<div *ngIf="showAuditTab" style="margin-top: 20px; padding: 20px; border: 1px solid #e5e7eb; border-radius: 8px; background: #fafafa;">
+  <h3 style="margin-bottom: 12px;">Audit History</h3>
+  <div *ngIf="loadingAudit" style="color: #6b7280;">Loading audit history...</div>
+  <div *ngIf="!loadingAudit && auditHistory.length === 0" style="color: #6b7280;">No audit records found.</div>
+  <table *ngIf="!loadingAudit && auditHistory.length > 0" style="width: 100%; border-collapse: collapse; font-size: 0.875rem;">
+    <thead>
+      <tr style="border-bottom: 2px solid #d1d5db;">
+        <th style="text-align: left; padding: 8px;">Date</th>
+        <th style="text-align: left; padding: 8px;">Action</th>
+        <th style="text-align: left; padding: 8px;">By</th>
+        <th style="text-align: left; padding: 8px;">From</th>
+        <th style="text-align: left; padding: 8px;">To</th>
+        <th style="text-align: left; padding: 8px;">Comments</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr *ngFor="let audit of auditHistory" style="border-bottom: 1px solid #e5e7eb;">
+        <td style="padding: 8px;">{{ audit.actionDate | date:'dd-MMM-yyyy HH:mm' }}</td>
+        <td style="padding: 8px;">
+          <span [style.background-color]="audit.action === 'APPROVE' || audit.action === 'AMENDMENT_APPROVE' ? '#d1fae5' : audit.action === 'REJECT' || audit.action === 'AMENDMENT_REJECT' ? '#fee2e2' : '#e0e7ff'"
+            style="padding: 2px 8px; border-radius: 4px; font-size: 0.75rem;">
+            {{ audit.action }}
+          </span>
+        </td>
+        <td style="padding: 8px;">{{ audit.actionBy }}</td>
+        <td style="padding: 8px;">{{ audit.fromStatus || '—' }}</td>
+        <td style="padding: 8px;">{{ audit.toStatus || '—' }}</td>
+        <td style="padding: 8px; max-width: 200px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">{{ audit.comments || '—' }}</td>
+      </tr>
+    </tbody>
+  </table>
 </div>

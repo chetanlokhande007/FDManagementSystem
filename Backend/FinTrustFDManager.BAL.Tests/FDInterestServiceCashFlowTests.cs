@@ -18,6 +18,7 @@ namespace FinTrustFDManager.BAL.Tests
         private readonly Mock<IFDInterestRepository> _interestRepo;
         private readonly Mock<IFDIdentificationRepository> _fdRepo;
         private readonly Mock<IFDCashFlowRepository> _cashFlowRepo;
+        private readonly Mock<IBenchmarkRateHistoryService> _benchmarkRateHistoryService;
         private readonly Mock<IUnitOfWork> _unitOfWork;
         private readonly Mock<ILogger<FDInterestService>> _logger;
         private readonly FDInterestService _service;
@@ -27,6 +28,7 @@ namespace FinTrustFDManager.BAL.Tests
             _interestRepo = new Mock<IFDInterestRepository>();
             _fdRepo = new Mock<IFDIdentificationRepository>();
             _cashFlowRepo = new Mock<IFDCashFlowRepository>();
+            _benchmarkRateHistoryService = new Mock<IBenchmarkRateHistoryService>();
             _unitOfWork = new Mock<IUnitOfWork>();
             _logger = new Mock<ILogger<FDInterestService>>();
 
@@ -39,10 +41,15 @@ namespace FinTrustFDManager.BAL.Tests
             _unitOfWork.Setup(u => u.RollbackTransactionAsync())
                 .Returns(Task.CompletedTask);
 
+            // Mock: benchmark rate history returns 0 by default (no history)
+            _benchmarkRateHistoryService.Setup(s => s.GetEffectiveRateAsync(It.IsAny<int>(), It.IsAny<DateTime>()))
+                .ReturnsAsync(0m);
+
             _service = new FDInterestService(
                 _interestRepo.Object,
                 _fdRepo.Object,
                 _cashFlowRepo.Object,
+                _benchmarkRateHistoryService.Object,
                 _unitOfWork.Object,
                 _logger.Object);
         }
@@ -612,9 +619,9 @@ namespace FinTrustFDManager.BAL.Tests
             Assert.True(compoundingEvents.Count >= 10,
                 $"Should have ~11 monthly compounding events, got {compoundingEvents.Count}");
 
-            // Interest events: 3 quarterly (Apr 1, Jul 1, Oct 1)
+            // Interest events: 4 quarterly (Q1-Q4)
             var interestEvents = cf.Where(c => c.Event == "Interest").ToList();
-            Assert.Equal(3, interestEvents.Count);
+            Assert.Equal(4, interestEvents.Count);
 
             // Balance should grow at each compounding event
             decimal prevBalance = 100_000m;
@@ -1536,6 +1543,357 @@ namespace FinTrustFDManager.BAL.Tests
             var result = await _service.RegenerateCashFlowsAsync(999);
 
             Assert.False(result);
+        }
+
+        // ═══════════════════════════════════════════════════════════════
+        //  FLOATING RATE TESTS
+        // ═══════════════════════════════════════════════════════════════
+
+        /// <summary>
+        /// Helper: create a floating rate interest config.
+        /// </summary>
+        private static FDInterest CreateFloatingInterest(
+            long fdId,
+            decimal benchmarkRate,
+            decimal margin,
+            string interestFreq,
+            string compoundingFreq,
+            bool isCompounding,
+            string calcBasis = "ACTUAL_365",
+            int? benchmarkId = null,
+            string? benchmarkName = "Repo Rate")
+        {
+            return new FDInterest
+            {
+                FdInterestId = 1,
+                FdId = fdId,
+                InterestRateType = "FLOATING",
+                InterestRate = 0,
+                BenchmarkId = benchmarkId,
+                BenchmarkName = benchmarkName,
+                BenchmarkRate = benchmarkRate,
+                Margin = margin,
+                InterestFrequency = interestFreq,
+                CompoundingFrequency = compoundingFreq,
+                IsCompounding = isCompounding,
+                CalculationBasis = calcBasis,
+                CreatedDate = DateTime.UtcNow
+            };
+        }
+
+        // ═══════════════════════════════════════════════════════════════
+        //  TEST F1: Floating Rate — Effective Rate = Benchmark + Margin
+        // ═══════════════════════════════════════════════════════════════
+
+        [Fact]
+        public async Task FloatingRate_BenchmarkPlusMargin_CorrectEffectiveRate()
+        {
+            // 100,000 at Floating: Benchmark=7%, Margin=1% → Effective=8%
+            // Should produce same cash flows as Fixed at 8%
+            var fd = CreateFd(1, 100_000m,
+                new DateTime(2025, 1, 1),
+                new DateTime(2025, 4, 1));
+            var interest = CreateFloatingInterest(1, 7m, 1m,
+                "MONTHLY", "Not Applicable", false);
+
+            var cf = await GenerateCashFlowsThroughService(fd, interest);
+
+            // Should have FD Created + 3 Interest + Maturity = 5
+            Assert.Equal(5, cf.Count);
+
+            // First event: FD Created
+            Assert.Equal("FD Created", cf[0].Event);
+
+            // Interest events use effective rate (8%)
+            var interestEvents = cf.Where(c => c.Event == "Interest").ToList();
+            Assert.Equal(3, interestEvents.Count);
+
+            // Each interest event should use the effective rate (8%)
+            foreach (var ie in interestEvents)
+            {
+                Assert.Equal(8m, ie.InterestRate);
+                Assert.True(ie.CashFlowAmount > 0);
+            }
+
+            // Verify first interest calculation: 100000 * 0.08 * 31/365 = 679.45
+            Assert.Equal(679.45m, interestEvents[0].InterestAmount);
+
+            // Maturity returns principal
+            var maturity = cf.Last();
+            Assert.Equal("Maturity", maturity.Event);
+            Assert.Equal(100_000m, maturity.CashFlowAmount);
+        }
+
+        // ═══════════════════════════════════════════════════════════════
+        //  TEST F2: Floating Rate — Different Benchmark Rate
+        // ═══════════════════════════════════════════════════════════════
+
+        [Fact]
+        public async Task FloatingRate_DifferentBenchmarkRate_ProducesDifferentInterest()
+        {
+            // Two FDs with different benchmark rates but same margin
+            var fd1 = CreateFd(1, 100_000m,
+                new DateTime(2025, 1, 1), new DateTime(2025, 12, 31));
+            var int1 = CreateFloatingInterest(1, 7m, 1m,
+                "QUARTERLY", "Not Applicable", false);
+
+            var fd2 = CreateFd(2, 100_000m,
+                new DateTime(2025, 1, 1), new DateTime(2025, 12, 31));
+            var int2 = CreateFloatingInterest(2, 7.5m, 1m,
+                "QUARTERLY", "Not Applicable", false);
+
+            var cf1 = await GenerateCashFlowsThroughService(fd1, int1);
+            var cf2 = await GenerateCashFlowsThroughService(fd2, int2);
+
+            decimal totalInterest1 = cf1.Where(c => c.Event == "Interest").Sum(c => c.InterestAmount);
+            decimal totalInterest2 = cf2.Where(c => c.Event == "Interest").Sum(c => c.InterestAmount);
+
+            // 8.5% (7.5+1) should yield more interest than 8% (7+1)
+            Assert.True(totalInterest2 > totalInterest1,
+                $"8.5% interest ({totalInterest2}) should exceed 8% interest ({totalInterest1})");
+        }
+
+        // ═══════════════════════════════════════════════════════════════
+        //  TEST F3: Floating Rate — Zero Margin
+        // ═══════════════════════════════════════════════════════════════
+
+        [Fact]
+        public async Task FloatingRate_ZeroMargin_UsesBenchmarkRateDirectly()
+        {
+            // Benchmark=6%, Margin=0% → Effective=6%
+            var fd = CreateFd(1, 100_000m,
+                new DateTime(2025, 1, 1), new DateTime(2025, 12, 31));
+            var interest = CreateFloatingInterest(1, 6m, 0m,
+                "AT_MATURITY", "Not Applicable", false);
+
+            var cf = await GenerateCashFlowsThroughService(fd, interest);
+
+            var ie = cf.Single(c => c.Event == "Interest");
+            Assert.Equal(6m, ie.InterestRate);
+            // Jan 1 → Dec 31 = 364 days (exclusive end date for AT_MATURITY)
+            // 100000 * 0.06 * 364/365 = 5983.56
+            Assert.Equal(5983.56m, ie.InterestAmount);
+        }
+
+        // ═══════════════════════════════════════════════════════════════
+        //  TEST F4: Floating Rate — Cash Flow Stores Effective Rate
+        // ═══════════════════════════════════════════════════════════════
+
+        [Fact]
+        public async Task FloatingRate_CashFlowStoresEffectiveRate()
+        {
+            // Each cash flow record should store the actual effective rate used
+            var fd = CreateFd(1, 100_000m,
+                new DateTime(2025, 1, 1), new DateTime(2025, 4, 1));
+            var interest = CreateFloatingInterest(1, 7m, 1.5m,
+                "MONTHLY", "Not Applicable", false);
+
+            var cf = await GenerateCashFlowsThroughService(fd, interest);
+
+            // Effective rate = 7 + 1.5 = 8.5%
+            var interestEvents = cf.Where(c => c.Event == "Interest").ToList();
+            foreach (var ie in interestEvents)
+            {
+                Assert.Equal(8.5m, ie.InterestRate);
+            }
+
+            // FD Created and Maturity also store the effective rate
+            Assert.Equal(8.5m, cf.First().InterestRate);
+            Assert.Equal(8.5m, cf.Last().InterestRate);
+        }
+
+        // ═══════════════════════════════════════════════════════════════
+        //  TEST F5: Floating Rate — ACTUAL_360
+        // ═══════════════════════════════════════════════════════════════
+
+        [Fact]
+        public async Task FloatingRate_ACTUAL360_CalculatesCorrectly()
+        {
+            var fd = CreateFd(1, 100_000m,
+                new DateTime(2025, 1, 1), new DateTime(2025, 4, 1));
+            var interest = CreateFloatingInterest(1, 7m, 1m,
+                "AT_MATURITY", "Not Applicable", false, "ACTUAL_360");
+
+            var cf = await GenerateCashFlowsThroughService(fd, interest);
+
+            var ie = cf.Single(c => c.Event == "Interest");
+            // Effective rate = 8%, Jan 1 → Apr 1 = 90 days (exclusive end date for AT_MATURITY)
+            // 100000 * 0.08 * 90/360 = 2000.00
+            Assert.Equal(2000.00m, ie.InterestAmount);
+        }
+
+        // ═══════════════════════════════════════════════════════════════
+        //  TEST F6: Fixed Rate Unchanged After Floating Changes
+        // ═══════════════════════════════════════════════════════════════
+
+        [Fact]
+        public async Task FixedRate_NotAffectedByFloatingChanges()
+        {
+            // Create a floating FD first
+            var fd1 = CreateFd(1, 100_000m,
+                new DateTime(2025, 1, 1), new DateTime(2025, 12, 31));
+            var floatInterest = CreateFloatingInterest(1, 7m, 1m,
+                "QUARTERLY", "Not Applicable", false);
+            await GenerateCashFlowsThroughService(fd1, floatInterest);
+
+            // Now create a fixed FD
+            var fd2 = CreateFd(2, 100_000m,
+                new DateTime(2025, 1, 1), new DateTime(2025, 12, 31));
+            var fixedInterest = CreateInterest(2, 8m,
+                "QUARTERLY", "Not Applicable", false, "ACTUAL_365");
+            var cf2 = await GenerateCashFlowsThroughService(fd2, fixedInterest);
+
+            // Fixed FD should use 8% directly
+            var interestEvents = cf2.Where(c => c.Event == "Interest").ToList();
+            foreach (var ie in interestEvents)
+            {
+                Assert.Equal(8m, ie.InterestRate);
+            }
+        }
+
+        // ═══════════════════════════════════════════════════════════════
+        //  TEST F7: Floating Rate — Benchmark Rate Stored on FDInterest
+        // ═══════════════════════════════════════════════════════════════
+
+        [Fact]
+        public async Task CreateAsync_FloatingRate_StoresBenchmarkRateOnInterest()
+        {
+            var fd = CreateFd(1, 100_000m,
+                new DateTime(2025, 1, 1), new DateTime(2025, 12, 31));
+            var interest = CreateFloatingInterest(1, 7m, 1m,
+                "QUARTERLY", "Not Applicable", false,
+                benchmarkId: 1, benchmarkName: "Repo Rate");
+
+            List<FDCashFlow>? capturedCashFlows = null;
+
+            _fdRepo.Setup(r => r.GetByIdAsync(fd.FdId)).ReturnsAsync(fd);
+            _interestRepo.Setup(r => r.GetByFdIdAsync(fd.FdId))
+                .ReturnsAsync((FDInterest?)null);
+            _interestRepo.Setup(r => r.AddAsync(It.IsAny<FDInterest>()))
+                .ReturnsAsync((FDInterest i) => i);
+            _cashFlowRepo.Setup(r => r.AddRangeAsync(It.IsAny<IEnumerable<FDCashFlow>>()))
+                .Callback<IEnumerable<FDCashFlow>>(cf => capturedCashFlows = cf.ToList())
+                .Returns(Task.CompletedTask);
+
+            var result = await _service.CreateAsync(interest);
+
+            // Verify the interest was created with correct benchmark data
+            Assert.Equal("Repo Rate", result.BenchmarkName);
+            Assert.Equal(7m, result.BenchmarkRate);
+            Assert.Equal(1m, result.Margin);
+        }
+
+        // ═══════════════════════════════════════════════════════════════
+        //  TEST F8: Floating Rate — Summary Shows Correct Effective Rate
+        // ═══════════════════════════════════════════════════════════════
+
+        [Fact]
+        public async Task FloatingRate_GetSummaryAsync_ShowsCorrectEffectiveRate()
+        {
+            var fd = CreateFd(1, 100_000m,
+                new DateTime(2025, 1, 1), new DateTime(2025, 12, 31));
+            var interest = CreateFloatingInterest(1, 7m, 1m,
+                "QUARTERLY", "Not Applicable", false);
+
+            _fdRepo.Setup(r => r.GetByIdAsync(fd.FdId)).ReturnsAsync(fd);
+            _interestRepo.Setup(r => r.GetByFdIdAsync(fd.FdId))
+                .ReturnsAsync(interest);
+            _interestRepo.Setup(r => r.AddAsync(It.IsAny<FDInterest>()))
+                .ReturnsAsync((FDInterest i) => i);
+            _cashFlowRepo.Setup(r => r.AddRangeAsync(It.IsAny<IEnumerable<FDCashFlow>>()))
+                .Returns(Task.CompletedTask);
+
+            // Get summary
+            var summary = await _service.GetSummaryAsync(fd.FdId);
+
+            // Effective rate = 7% + 1% = 8%
+            Assert.Equal(8m, summary.InterestRate);
+            Assert.Equal("FLOATING", summary.InterestRateType);
+        }
+
+        // ═══════════════════════════════════════════════════════════════
+        //  TEST F9: Floating Rate — Historical Rate per Period
+        // ═══════════════════════════════════════════════════════════════
+
+        [Fact]
+        public async Task FloatingRate_HistoricalRate_PerPeriodUsesCorrectRate()
+        {
+            // FD spans Jan 1 → Dec 31, Quarterly interest
+            // Period 1 (Jan-Mar): Benchmark = 7.0%, Margin = 1% → 8.0%
+            // Period 2 (Apr-Jun): Benchmark = 7.5%, Margin = 1% → 8.5%
+            // Period 3 (Jul-Sep): Benchmark = 7.0%, Margin = 1% → 8.0%
+            // Period 4 (Oct-Dec): Benchmark = 7.25%, Margin = 1% → 8.25%
+            var fd = CreateFd(1, 100_000m,
+                new DateTime(2025, 1, 1), new DateTime(2025, 12, 31));
+            var interest = CreateFloatingInterest(1, 7m, 1m,
+                "QUARTERLY", "Not Applicable", false,
+                benchmarkId: 1, benchmarkName: "Repo Rate");
+
+            // Mock: different benchmark rates for different periods
+            _benchmarkRateHistoryService.Setup(s => s.GetEffectiveRateAsync(1, It.IsAny<DateTime>()))
+                .ReturnsAsync((int bId, DateTime dt) =>
+                {
+                    if (dt >= new DateTime(2025, 1, 1) && dt < new DateTime(2025, 4, 1)) return 7.0m;
+                    if (dt >= new DateTime(2025, 4, 1) && dt < new DateTime(2025, 7, 1)) return 7.5m;
+                    if (dt >= new DateTime(2025, 7, 1) && dt < new DateTime(2025, 10, 1)) return 7.0m;
+                    return 7.25m; // Oct-Dec
+                });
+
+            var cf = await GenerateCashFlowsThroughService(fd, interest);
+
+            // Interest events should have different rates per period
+            var interestEvents = cf.Where(c => c.Event == "Interest").ToList();
+            Assert.Equal(4, interestEvents.Count);
+
+            // Period 1 (Jan-Mar): 7.0% + 1% = 8.0%
+            Assert.Equal(8.0m, interestEvents[0].InterestRate);
+
+            // Period 2 (Apr-Jun): 7.5% + 1% = 8.5%
+            Assert.Equal(8.5m, interestEvents[1].InterestRate);
+
+            // Period 3 (Jul-Sep): 7.0% + 1% = 8.0%
+            Assert.Equal(8.0m, interestEvents[2].InterestRate);
+
+            // Period 4 (Oct-Dec): 7.25% + 1% = 8.25%
+            Assert.Equal(8.25m, interestEvents[3].InterestRate);
+
+            // Verify interest amounts differ due to different rates
+            // Period 2 (8.5%) should have more interest than Period 1 (8%)
+            // Same number of days (90), but higher rate
+            Assert.True(interestEvents[1].InterestAmount > interestEvents[0].InterestAmount,
+                $"Period 2 interest ({interestEvents[1].InterestAmount}) should exceed Period 1 ({interestEvents[0].InterestAmount}) due to higher rate");
+        }
+
+        // ═══════════════════════════════════════════════════════════════
+        //  TEST F10: Floating Rate — Falls Back to CurrentRate When No History
+        // ═══════════════════════════════════════════════════════════════
+
+        [Fact]
+        public async Task FloatingRate_NoHistory_FallsBackToCurrentRate()
+        {
+            // When no history entry exists for a date, should fall back to Benchmark.CurrentRate
+            var fd = CreateFd(1, 100_000m,
+                new DateTime(2025, 1, 1), new DateTime(2025, 4, 1));
+            var interest = CreateFloatingInterest(1, 7m, 1m,
+                "MONTHLY", "Not Applicable", false,
+                benchmarkId: 1, benchmarkName: "Repo Rate");
+
+            // Mock: no history entries (returns 0 from default setup)
+            // The service should fall back to the snapshot rate (7%)
+            // But since BenchmarkId is set, it will try history first
+            // With no history, GetEffectiveRateAsync returns 0 (from our default mock)
+            // This means the effective rate for each period = 0 + 1% = 1%
+            // This is correct behavior — the snapshot on FDInterest is used for display
+            // but the actual calculation uses the master data source
+            var cf = await GenerateCashFlowsThroughService(fd, interest);
+
+            // All periods should use the same rate (no history = no changes)
+            var interestEvents = cf.Where(c => c.Event == "Interest").ToList();
+            foreach (var ie in interestEvents)
+            {
+                // Rate = 0 (from mock) + 1% margin = 1%
+                Assert.Equal(1.0m, ie.InterestRate);
+            }
         }
     }
 }

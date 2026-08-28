@@ -3,7 +3,7 @@ using FinTrustFDManager.Model.Entities.CoreData;
 using FinTrustFDManager.Model.Entities.MasterData;
 using Microsoft.EntityFrameworkCore;
 using FinTrustFDManager.Model.Entities.Investment;
-
+using FinTrustFDManager.DAL.Data.Converters;
 namespace FinTrustFDManager.DAL.Data
 {
     public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options) : DbContext(options)
@@ -42,6 +42,25 @@ namespace FinTrustFDManager.DAL.Data
 
         public DbSet<FDCashFlow> FDCashFlows
             => Set<FDCashFlow>();
+
+        public DbSet<Benchmark> Benchmarks => Set<Benchmark>();
+        public DbSet<BenchmarkRateHistory> BenchmarkRateHistories => Set<BenchmarkRateHistory>();
+
+        public DbSet<FDApprovalHistory> FDApprovalHistories => Set<FDApprovalHistory>();
+
+        public DbSet<FDAmendment> FDAmendments => Set<FDAmendment>();
+
+        protected override void ConfigureConventions(ModelConfigurationBuilder configurationBuilder)
+        {
+            configurationBuilder
+                .Properties<DateTime>()
+                .HaveConversion(typeof(UtcDateTimeConverter));
+
+            configurationBuilder
+                .Properties<DateTime?>()
+                .HaveConversion(typeof(NullableUtcDateTimeConverter));
+        }
+
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             base.OnModelCreating(modelBuilder);
@@ -160,6 +179,66 @@ namespace FinTrustFDManager.DAL.Data
                 .WithMany()
                 .HasForeignKey(x => x.FdId)
                 .OnDelete(DeleteBehavior.Cascade);
+
+            // FDIdentification -> FDApprovalHistory (1 : Many)
+            modelBuilder.Entity<FDApprovalHistory>()
+                .HasKey(x => x.Id);
+
+            modelBuilder.Entity<FDApprovalHistory>()
+                .HasOne<FDIdentification>()
+                .WithMany()
+                .HasForeignKey(x => x.FdId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            modelBuilder.Entity<FDApprovalHistory>()
+                .HasIndex(x => new { x.FdId, x.ActionDate });
+
+            // Unique constraint on FD reference number
+            modelBuilder.Entity<FDIdentification>()
+                .HasIndex(x => x.FdReferenceNo)
+                .IsUnique();
+
+            // Benchmark Master
+            modelBuilder.Entity<Benchmark>()
+                .HasKey(x => x.BenchmarkId);
+
+            modelBuilder.Entity<Benchmark>()
+                .HasIndex(x => x.BenchmarkName)
+                .IsUnique();
+
+            // FDInterest -> Benchmark (optional FK)
+            modelBuilder.Entity<FDInterest>()
+                .HasOne<Benchmark>()
+                .WithMany()
+                .HasForeignKey(x => x.BenchmarkId)
+                .OnDelete(DeleteBehavior.SetNull)
+                .IsRequired(false);
+
+            // FDAmendment -> FDIdentification (Many : 1)
+            modelBuilder.Entity<FDAmendment>()
+                .HasKey(x => x.AmendmentId);
+
+            modelBuilder.Entity<FDAmendment>()
+                .HasOne<FDIdentification>()
+                .WithMany()
+                .HasForeignKey(x => x.FdId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            modelBuilder.Entity<FDAmendment>()
+                .HasIndex(x => new { x.FdId, x.Status });
+
+            modelBuilder.Entity<FDAmendment>()
+                .HasIndex(x => x.RequestedBy);
+
+            // Benchmark -> BenchmarkRateHistory (1 : Many)
+            modelBuilder.Entity<BenchmarkRateHistory>()
+                .HasKey(x => x.BenchmarkRateHistoryId);
+
+            modelBuilder.Entity<BenchmarkRateHistory>()
+                .HasOne(x => x.Benchmark)
+                .WithMany(x => x.RateHistory)
+                .HasForeignKey(x => x.BenchmarkId)
+                .OnDelete(DeleteBehavior.Cascade);
             modelBuilder.Entity<InterestFrequency>().HasData(
 
                 new InterestFrequency
@@ -219,6 +298,60 @@ namespace FinTrustFDManager.DAL.Data
                 {
                     Id = 4,
                     ConventionName = "Actual/Actual"
+                }
+            );
+
+            // Seed Benchmark Master data
+            modelBuilder.Entity<Benchmark>().HasData(
+                new Benchmark
+                {
+                    BenchmarkId = 1,
+                    BenchmarkName = "Repo Rate",
+                    Description = "Reserve Bank of India Repo Rate",
+                    CurrentRate = 6.50m,
+                    RateUnit = "%",
+                    IsActive = true,
+                    CreatedDate = new DateTime(2025, 1, 1, 0, 0, 0, DateTimeKind.Utc)
+                },
+                new Benchmark
+                {
+                    BenchmarkId = 2,
+                    BenchmarkName = "LIBOR",
+                    Description = "London Interbank Offered Rate",
+                    CurrentRate = 5.50m,
+                    RateUnit = "%",
+                    IsActive = true,
+                    CreatedDate = new DateTime(2025, 1, 1, 0, 0, 0, DateTimeKind.Utc)
+                },
+                new Benchmark
+                {
+                    BenchmarkId = 3,
+                    BenchmarkName = "MIBOR",
+                    Description = "Mumbai Interbank Offered Rate",
+                    CurrentRate = 6.25m,
+                    RateUnit = "%",
+                    IsActive = true,
+                    CreatedDate = new DateTime(2025, 1, 1, 0, 0, 0, DateTimeKind.Utc)
+                },
+                new Benchmark
+                {
+                    BenchmarkId = 4,
+                    BenchmarkName = "T-Bill Rate",
+                    Description = "Treasury Bill Rate",
+                    CurrentRate = 6.00m,
+                    RateUnit = "%",
+                    IsActive = true,
+                    CreatedDate = new DateTime(2025, 1, 1, 0, 0, 0, DateTimeKind.Utc)
+                },
+                new Benchmark
+                {
+                    BenchmarkId = 5,
+                    BenchmarkName = "SOFR",
+                    Description = "Secured Overnight Financing Rate",
+                    CurrentRate = 5.30m,
+                    RateUnit = "%",
+                    IsActive = true,
+                    CreatedDate = new DateTime(2025, 1, 1, 0, 0, 0, DateTimeKind.Utc)
                 }
             );
         }

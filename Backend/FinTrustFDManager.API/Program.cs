@@ -42,11 +42,17 @@ builder.Services.AddScoped<ICashFlowRepository, CashFlowRepository>();
 builder.Services.AddScoped<IInvestmentApprovalRepository, InvestmentApprovalRepository>();
 builder.Services.AddScoped<IAuthRepository, AuthRepository>();
 builder.Services.AddScoped<IDashboardRepository, DashboardRepository>();
+builder.Services.AddScoped<IBenchmarkRepository, BenchmarkRepository>();
+builder.Services.AddScoped<IBenchmarkRateHistoryRepository, BenchmarkRateHistoryRepository>();
+builder.Services.AddScoped<IFDAmendmentRepository, FDAmendmentRepository>();
 
 // ── Services ──
 builder.Services.AddScoped<IFDIdentificationService, FDIdentificationService>();
 builder.Services.AddScoped<IFDInterestService, FDInterestService>();
 builder.Services.AddScoped<IFDCashFlowService, FDCashFlowService>();
+builder.Services.AddScoped<IBenchmarkService, BenchmarkService>();
+builder.Services.AddScoped<IBenchmarkRateHistoryService, BenchmarkRateHistoryService>();
+builder.Services.AddScoped<IFDAmendmentService, FDAmendmentService>();
 builder.Services.AddScoped<IUnitOfWork, UnitOfWork>();
 builder.Services.AddBAL();
 

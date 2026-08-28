@@ -10,6 +10,7 @@ namespace FinTrustFDManager.Model.Entities.Investment
         public string InterestRateType { get; set; } = string.Empty;
         public decimal InterestRate { get; set; }
 
+        public int? BenchmarkId { get; set; }
         public string? BenchmarkName { get; set; }
         public decimal? BenchmarkRate { get; set; }
         public decimal? Margin { get; set; }

@@ -36,7 +36,8 @@ export class SidebarComponent implements OnInit {
       url.includes('/entities') ||
       url.includes('/countries') ||
       url.includes('/currencies') ||
-      url.includes('/counterparties')
+      url.includes('/counterparties') ||
+      url.includes('/benchmarks')
     ) {
       this.isMasterDataOpen = true;
     }

@@ -1,7 +1,9 @@
 using FinTrustFDManager.BAL.Interfaces;
+using FinTrustFDManager.Model.DTOs;
 using FinTrustFDManager.Model.Entities.Investment;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using System.Security.Claims;
 
 namespace FinTrustFDManager.API.Controllers
 {
@@ -15,6 +17,14 @@ namespace FinTrustFDManager.API.Controllers
         public FDIdentificationController(IFDIdentificationService service)
         {
             _service = service;
+        }
+
+        private long GetCurrentUserId()
+        {
+            var claim = User.FindFirst(ClaimTypes.NameIdentifier);
+            if (claim == null || !long.TryParse(claim.Value, out long userId))
+                throw new UnauthorizedAccessException("User ID not found in token.");
+            return userId;
         }
 
         // GET: api/FDIdentification
@@ -83,68 +93,113 @@ namespace FinTrustFDManager.API.Controllers
             return null;
         }
 
+        // GET: api/FDIdentification/1/approval-history
+        [HttpGet("{id}/approval-history")]
+        public async Task<IActionResult> GetApprovalHistory(long id)
+        {
+            var result = await _service.GetApprovalHistoryAsync(id);
+            return Ok(result);
+        }
+
         // POST: api/FDIdentification
         [HttpPost]
+        [Authorize(Roles = "Admin,CA")]
         public async Task<IActionResult> Create([FromBody] FDIdentification model)
         {
             var validationResult = ValidateFD(model);
-            if (validationResult != null)
-                return validationResult;
-
+            if (validationResult != null) return validationResult;
+            model.CreatedBy = GetCurrentUserId();
             var result = await _service.CreateAsync(model);
-
-            return CreatedAtAction(
-                nameof(GetById),
-                new { id = result.FdId },
-                result);
+            return CreatedAtAction(nameof(GetById), new { id = result.FdId }, result);
         }
 
         // PUT: api/FDIdentification/1
         [HttpPut("{id}")]
-        public async Task<IActionResult> Update(
-            long id,
-            [FromBody] FDIdentification model)
+        [Authorize(Roles = "Admin,CA")]
+        public async Task<IActionResult> Update(long id, [FromBody] FDIdentification model)
         {
-            if (id != model.FdId)
-                return BadRequest(new { success = false, errors = new { global = "FD ID mismatch." } });
-
+            if (id != model.FdId) return BadRequest(new { success = false, errors = new { global = "FD ID mismatch." } });
             var validationResult = ValidateFD(model);
-            if (validationResult != null)
-                return validationResult;
-
+            if (validationResult != null) return validationResult;
+            model.ModifiedBy = GetCurrentUserId();
             var result = await _service.UpdateAsync(id, model);
-
-            if (result == null)
-                return NotFound("FD Identification not found.");
-
+            if (result == null) return NotFound("FD Identification not found.");
             return Ok(result);
         }
 
         // DELETE: api/FDIdentification/1
         [HttpDelete("{id}")]
+        [Authorize(Roles = "Admin,CA")]
         public async Task<IActionResult> Delete(long id)
         {
             var result = await _service.DeleteAsync(id);
-
-            if (!result)
-                return NotFound(new { success = false, message = "FD Identification not found." });
-
+            if (!result) return NotFound(new { success = false, message = "FD Identification not found." });
             return Ok(new { success = true, message = "FD Identification deleted successfully." });
         }
 
-        // PATCH: api/FDIdentification/1/status
-        [HttpPatch("{id}/status")]
-        public async Task<IActionResult> ChangeStatus(long id, [FromBody] string status)
+        // POST: api/FDIdentification/1/submit
+        [HttpPost("{id}/submit")]
+        [Authorize(Roles = "Admin,CA")]
+        public async Task<IActionResult> Submit(long id)
         {
-            if (string.IsNullOrWhiteSpace(status))
-                return BadRequest("Status cannot be empty.");
+            try
+            {
+                var userId = GetCurrentUserId();
+                await _service.SubmitAsync(id, userId);
+                return Ok(new { success = true, message = "FD submitted for approval." });
+            }
+            catch (InvalidOperationException ex)
+            {
+                return Conflict(new { success = false, message = ex.Message });
+            }
+            catch (KeyNotFoundException ex)
+            {
+                return NotFound(new { success = false, message = ex.Message });
+            }
+        }
 
-            var result = await _service.ChangeStatusAsync(id, status);
+        // POST: api/FDIdentification/1/approve
+        [HttpPost("{id}/approve")]
+        [Authorize(Roles = "Admin,Approver")]
+        public async Task<IActionResult> Approve(long id, [FromBody] FDRejectRequest? body)
+        {
+            try
+            {
+                var userId = GetCurrentUserId();
+                await _service.ApproveAsync(id, userId, body?.Comments);
+                return Ok(new { success = true, message = "FD approved successfully." });
+            }
+            catch (InvalidOperationException ex)
+            {
+                return Conflict(new { success = false, message = ex.Message });
+            }
+            catch (KeyNotFoundException ex)
+            {
+                return NotFound(new { success = false, message = ex.Message });
+            }
+        }
 
-            if (!result)
-                return NotFound(new { success = false, message = "FD Identification not found." });
-
-            return Ok(new { success = true, message = "Status updated successfully." });
+        // POST: api/FDIdentification/1/reject
+        [HttpPost("{id}/reject")]
+        [Authorize(Roles = "Admin,Approver")]
+        public async Task<IActionResult> Reject(long id, [FromBody] FDRejectRequest body)
+        {
+            if (body == null || string.IsNullOrWhiteSpace(body.Comments))
+                return BadRequest(new { success = false, message = "Rejection reason is required." });
+            try
+            {
+                var userId = GetCurrentUserId();
+                await _service.RejectAsync(id, userId, body.Comments);
+                return Ok(new { success = true, message = "FD rejected." });
+            }
+            catch (InvalidOperationException ex)
+            {
+                return Conflict(new { success = false, message = ex.Message });
+            }
+            catch (KeyNotFoundException ex)
+            {
+                return NotFound(new { success = false, message = ex.Message });
+            }
         }
     }
 }

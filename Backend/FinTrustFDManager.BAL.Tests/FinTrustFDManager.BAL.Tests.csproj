@@ -12,6 +12,11 @@
   <ItemGroup>
     <PackageReference Include="coverlet.collector" Version="6.0.0" />
     <PackageReference Include="Microsoft.EntityFrameworkCore.InMemory" Version="8.0.0" />
+    <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" Version="8.0.0" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="8.0.0">
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+      <PrivateAssets>all</PrivateAssets>
+    </PackageReference>
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.8.0" />
     <PackageReference Include="Moq" Version="4.20.70" />
     <PackageReference Include="xunit" Version="2.5.3" />
@@ -24,6 +29,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\FinTrustFDManager.BAL\FinTrustFDManager.BAL.csproj" />
+    <ProjectReference Include="..\FinTrustFDManager.DAL\FinTrustFDManager.DAL.csproj" />
     <ProjectReference Include="..\FinTrustFDManager.Model\FinTrustFDManager.Model.csproj" />
   </ItemGroup>
 

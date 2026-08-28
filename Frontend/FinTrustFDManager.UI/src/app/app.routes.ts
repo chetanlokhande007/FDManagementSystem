@@ -128,6 +128,19 @@ export const routes: Routes = [
     canActivate: [authGuard]
   },
 
+  // =========================================
+  // BENCHMARKS
+  // =========================================
+
+  {
+    path: 'benchmarks',
+    loadComponent: () =>
+      import('./features/benchmark/benchmark.component')
+        .then(m => m.BenchmarkComponent),
+
+    canActivate: [authGuard]
+  },
+
   // ==============================
   // FD LANDING PAGE
   // ==============================

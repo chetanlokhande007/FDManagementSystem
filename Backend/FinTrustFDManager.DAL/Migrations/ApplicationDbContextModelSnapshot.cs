@@ -31,14 +31,14 @@ namespace FinTrustFDManager.DAL.Migrations
                     NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("CashFlowId"));
 
                     b.Property<DateTime>("CashFlowDate")
-                        .HasColumnType("timestamp without time zone");
+                        .HasColumnType("timestamp with time zone");
 
                     b.Property<string>("CashFlowType")
                         .IsRequired()
                         .HasColumnType("text");
 
                     b.Property<DateTime>("CreatedDate")
-                        .HasColumnType("timestamp without time zone");
+                        .HasColumnType("timestamp with time zone");
 
                     b.Property<decimal>("InterestAmount")
                         .HasColumnType("numeric");
@@ -50,7 +50,7 @@ namespace FinTrustFDManager.DAL.Migrations
                         .HasColumnType("boolean");
 
                     b.Property<DateTime?>("PaidDate")
-                        .HasColumnType("timestamp without time zone");
+                        .HasColumnType("timestamp with time zone");
 
                     b.Property<decimal>("PrincipalAmount")
                         .HasColumnType("numeric");
@@ -185,7 +185,7 @@ namespace FinTrustFDManager.DAL.Migrations
                         .HasColumnType("text");
 
                     b.Property<DateTime>("CreatedDate")
-                        .HasColumnType("timestamp without time zone");
+                        .HasColumnType("timestamp with time zone");
 
                     b.Property<int>("CurrencyId")
                         .HasColumnType("integer");
@@ -194,7 +194,7 @@ namespace FinTrustFDManager.DAL.Migrations
                         .HasColumnType("integer");
 
                     b.Property<DateTime>("EndDate")
-                        .HasColumnType("timestamp without time zone");
+                        .HasColumnType("timestamp with time zone");
 
                     b.Property<int>("EntityId")
                         .HasColumnType("integer");
@@ -213,7 +213,7 @@ namespace FinTrustFDManager.DAL.Migrations
                         .HasColumnType("text");
 
                     b.Property<DateTime?>("ModifiedDate")
-                        .HasColumnType("timestamp without time zone");
+                        .HasColumnType("timestamp with time zone");
 
                     b.Property<decimal>("PrincipalAmount")
                         .HasColumnType("numeric");
@@ -222,7 +222,7 @@ namespace FinTrustFDManager.DAL.Migrations
                         .HasColumnType("text");
 
                     b.Property<DateTime>("StartDate")
-                        .HasColumnType("timestamp without time zone");
+                        .HasColumnType("timestamp with time zone");
 
                     b.Property<string>("Status")
                         .IsRequired()
@@ -264,7 +264,7 @@ namespace FinTrustFDManager.DAL.Migrations
                         .HasColumnType("integer");
 
                     b.Property<DateTime>("ActionDate")
-                        .HasColumnType("timestamp without time zone");
+                        .HasColumnType("timestamp with time zone");
 
                     b.Property<string>("Comments")
                         .HasColumnType("text");
@@ -305,7 +305,7 @@ namespace FinTrustFDManager.DAL.Migrations
                         .HasColumnType("character varying(100)");
 
                     b.Property<DateTime>("CreatedDate")
-                        .HasColumnType("timestamp without time zone");
+                        .HasColumnType("timestamp with time zone");
 
                     b.Property<bool>("IsActive")
                         .HasColumnType("boolean");
@@ -315,7 +315,7 @@ namespace FinTrustFDManager.DAL.Migrations
                         .HasColumnType("character varying(100)");
 
                     b.Property<DateTime?>("ModifiedDate")
-                        .HasColumnType("timestamp without time zone");
+                        .HasColumnType("timestamp with time zone");
 
                     b.HasKey("CounterPartyId");
 
@@ -337,7 +337,7 @@ namespace FinTrustFDManager.DAL.Migrations
                         .HasColumnType("character varying(100)");
 
                     b.Property<DateTime>("CreatedDate")
-                        .HasColumnType("timestamp without time zone");
+                        .HasColumnType("timestamp with time zone");
 
                     b.Property<string>("CurrencyCode")
                         .IsRequired()
@@ -361,7 +361,7 @@ namespace FinTrustFDManager.DAL.Migrations
                         .HasColumnType("character varying(100)");
 
                     b.Property<DateTime?>("ModifiedDate")
-                        .HasColumnType("timestamp without time zone");
+                        .HasColumnType("timestamp with time zone");
 
                     b.Property<string>("Symbol")
                         .HasMaxLength(10)
@@ -391,7 +391,7 @@ namespace FinTrustFDManager.DAL.Migrations
                         .HasColumnType("integer");
 
                     b.Property<DateTime>("CreatedDate")
-                        .HasColumnType("timestamp without time zone");
+                        .HasColumnType("timestamp with time zone");
 
                     b.Property<string>("EntityCode")
                         .IsRequired()
@@ -411,7 +411,7 @@ namespace FinTrustFDManager.DAL.Migrations
                         .HasColumnType("character varying(100)");
 
                     b.Property<DateTime?>("ModifiedDate")
-                        .HasColumnType("timestamp without time zone");
+                        .HasColumnType("timestamp with time zone");
 
                     b.Property<int>("Status")
                         .HasColumnType("integer");
@@ -421,6 +421,119 @@ namespace FinTrustFDManager.DAL.Migrations
                     b.HasIndex("CountryId");
 
                     b.ToTable("Entities");
+                });
+
+            modelBuilder.Entity("FinTrustFDManager.Model.Entities.FDAmendment", b =>
+                {
+                    b.Property<long>("AmendmentId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<long>("AmendmentId"));
+
+                    b.Property<string>("ApprovalComments")
+                        .HasMaxLength(1000)
+                        .HasColumnType("character varying(1000)");
+
+                    b.Property<long?>("ApprovedBy")
+                        .HasColumnType("bigint");
+
+                    b.Property<DateTime?>("ApprovedDate")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<long>("FdId")
+                        .HasColumnType("bigint");
+
+                    b.Property<string>("OriginalValues")
+                        .HasMaxLength(4000)
+                        .HasColumnType("character varying(4000)");
+
+                    b.Property<string>("Reason")
+                        .IsRequired()
+                        .HasMaxLength(2000)
+                        .HasColumnType("character varying(2000)");
+
+                    b.Property<long?>("RejectedBy")
+                        .HasColumnType("bigint");
+
+                    b.Property<DateTime?>("RejectedDate")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("RejectionComments")
+                        .HasMaxLength(1000)
+                        .HasColumnType("character varying(1000)");
+
+                    b.Property<long>("RequestedBy")
+                        .HasColumnType("bigint");
+
+                    b.Property<DateTime>("RequestedDate")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("RequestedValues")
+                        .HasMaxLength(4000)
+                        .HasColumnType("character varying(4000)");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)");
+
+                    b.HasKey("AmendmentId");
+
+                    b.HasIndex("RequestedBy");
+
+                    b.HasIndex("FdId", "Status");
+
+                    b.ToTable("FDAmendments");
+                });
+
+            modelBuilder.Entity("FinTrustFDManager.Model.Entities.FDApprovalHistory", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<long>("Id"));
+
+                    b.Property<string>("Action")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)");
+
+                    b.Property<long>("ActionBy")
+                        .HasColumnType("bigint");
+
+                    b.Property<DateTime>("ActionDate")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("Comments")
+                        .HasMaxLength(1000)
+                        .HasColumnType("character varying(1000)");
+
+                    b.Property<long>("FdId")
+                        .HasColumnType("bigint");
+
+                    b.Property<string>("FromStatus")
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)");
+
+                    b.Property<string>("NewValues")
+                        .HasMaxLength(4000)
+                        .HasColumnType("character varying(4000)");
+
+                    b.Property<string>("OldValues")
+                        .HasMaxLength(4000)
+                        .HasColumnType("character varying(4000)");
+
+                    b.Property<string>("ToStatus")
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("FdId", "ActionDate");
+
+                    b.ToTable("FDApprovalHistories");
                 });
 
             modelBuilder.Entity("FinTrustFDManager.Model.Entities.Investment.FDCashFlow", b =>
@@ -438,7 +551,7 @@ namespace FinTrustFDManager.DAL.Migrations
                         .HasColumnType("numeric");
 
                     b.Property<DateTime>("CreatedDate")
-                        .HasColumnType("timestamp without time zone");
+                        .HasColumnType("timestamp with time zone");
 
                     b.Property<string>("CurrencyCode")
                         .IsRequired()
@@ -452,7 +565,7 @@ namespace FinTrustFDManager.DAL.Migrations
                         .HasColumnType("text");
 
                     b.Property<DateTime>("EndDate")
-                        .HasColumnType("timestamp without time zone");
+                        .HasColumnType("timestamp with time zone");
 
                     b.Property<string>("Event")
                         .IsRequired()
@@ -474,7 +587,7 @@ namespace FinTrustFDManager.DAL.Migrations
                         .HasColumnType("text");
 
                     b.Property<DateTime>("StartDate")
-                        .HasColumnType("timestamp without time zone");
+                        .HasColumnType("timestamp with time zone");
 
                     b.Property<string>("Status")
                         .IsRequired()
@@ -505,14 +618,14 @@ namespace FinTrustFDManager.DAL.Migrations
                         .HasColumnType("bigint");
 
                     b.Property<DateTime>("CreatedDate")
-                        .HasColumnType("timestamp without time zone");
+                        .HasColumnType("timestamp with time zone");
 
                     b.Property<string>("CurrencyCode")
                         .IsRequired()
                         .HasColumnType("text");
 
                     b.Property<DateTime>("EndDate")
-                        .HasColumnType("timestamp without time zone");
+                        .HasColumnType("timestamp with time zone");
 
                     b.Property<long>("EntityId")
                         .HasColumnType("bigint");
@@ -525,7 +638,7 @@ namespace FinTrustFDManager.DAL.Migrations
                         .HasColumnType("bigint");
 
                     b.Property<DateTime?>("ModifiedDate")
-                        .HasColumnType("timestamp without time zone");
+                        .HasColumnType("timestamp with time zone");
 
                     b.Property<decimal>("PrincipalAmount")
                         .HasColumnType("numeric");
@@ -534,16 +647,19 @@ namespace FinTrustFDManager.DAL.Migrations
                         .HasColumnType("text");
 
                     b.Property<DateTime?>("SettlementDate")
-                        .HasColumnType("timestamp without time zone");
+                        .HasColumnType("timestamp with time zone");
 
                     b.Property<DateTime>("StartDate")
-                        .HasColumnType("timestamp without time zone");
+                        .HasColumnType("timestamp with time zone");
 
                     b.Property<string>("Status")
                         .IsRequired()
                         .HasColumnType("text");
 
                     b.HasKey("FdId");
+
+                    b.HasIndex("FdReferenceNo")
+                        .IsUnique();
 
                     b.ToTable("FDIdentifications");
                 });
@@ -555,6 +671,9 @@ namespace FinTrustFDManager.DAL.Migrations
                         .HasColumnType("bigint");
 
                     NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<long>("FdInterestId"));
+
+                    b.Property<int?>("BenchmarkId")
+                        .HasColumnType("integer");
 
                     b.Property<string>("BenchmarkName")
                         .HasColumnType("text");
@@ -570,7 +689,7 @@ namespace FinTrustFDManager.DAL.Migrations
                         .HasColumnType("text");
 
                     b.Property<DateTime>("CreatedDate")
-                        .HasColumnType("timestamp without time zone");
+                        .HasColumnType("timestamp with time zone");
 
                     b.Property<long>("FdId")
                         .HasColumnType("bigint");
@@ -596,6 +715,8 @@ namespace FinTrustFDManager.DAL.Migrations
                         .HasColumnType("text");
 
                     b.HasKey("FdInterestId");
+
+                    b.HasIndex("BenchmarkId");
 
                     b.HasIndex("FdId")
                         .IsUnique();
@@ -629,7 +750,7 @@ namespace FinTrustFDManager.DAL.Migrations
                         .HasColumnType("character varying(100)");
 
                     b.Property<DateTime>("CreatedDate")
-                        .HasColumnType("timestamp without time zone");
+                        .HasColumnType("timestamp with time zone");
 
                     b.Property<bool>("IsActive")
                         .HasColumnType("boolean");
@@ -639,7 +760,7 @@ namespace FinTrustFDManager.DAL.Migrations
                         .HasColumnType("character varying(100)");
 
                     b.Property<DateTime?>("ModifiedDate")
-                        .HasColumnType("timestamp without time zone");
+                        .HasColumnType("timestamp with time zone");
 
                     b.HasKey("BankId");
 
@@ -649,6 +770,151 @@ namespace FinTrustFDManager.DAL.Migrations
                     b.HasIndex("CountryId");
 
                     b.ToTable("Banks");
+                });
+
+            modelBuilder.Entity("FinTrustFDManager.Model.Entities.MasterData.Benchmark", b =>
+                {
+                    b.Property<int>("BenchmarkId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("BenchmarkId"));
+
+                    b.Property<string>("BenchmarkName")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
+                    b.Property<string>("CreatedBy")
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
+                    b.Property<DateTime>("CreatedDate")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<decimal>("CurrentRate")
+                        .HasColumnType("numeric");
+
+                    b.Property<string>("Description")
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("boolean");
+
+                    b.Property<string>("ModifiedBy")
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
+                    b.Property<DateTime?>("ModifiedDate")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("RateUnit")
+                        .HasMaxLength(10)
+                        .HasColumnType("character varying(10)");
+
+                    b.HasKey("BenchmarkId");
+
+                    b.HasIndex("BenchmarkName")
+                        .IsUnique();
+
+                    b.ToTable("Benchmarks");
+
+                    b.HasData(
+                        new
+                        {
+                            BenchmarkId = 1,
+                            BenchmarkName = "Repo Rate",
+                            CreatedDate = new DateTime(2025, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            CurrentRate = 6.50m,
+                            Description = "Reserve Bank of India Repo Rate",
+                            IsActive = true,
+                            RateUnit = "%"
+                        },
+                        new
+                        {
+                            BenchmarkId = 2,
+                            BenchmarkName = "LIBOR",
+                            CreatedDate = new DateTime(2025, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            CurrentRate = 5.50m,
+                            Description = "London Interbank Offered Rate",
+                            IsActive = true,
+                            RateUnit = "%"
+                        },
+                        new
+                        {
+                            BenchmarkId = 3,
+                            BenchmarkName = "MIBOR",
+                            CreatedDate = new DateTime(2025, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            CurrentRate = 6.25m,
+                            Description = "Mumbai Interbank Offered Rate",
+                            IsActive = true,
+                            RateUnit = "%"
+                        },
+                        new
+                        {
+                            BenchmarkId = 4,
+                            BenchmarkName = "T-Bill Rate",
+                            CreatedDate = new DateTime(2025, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            CurrentRate = 6.00m,
+                            Description = "Treasury Bill Rate",
+                            IsActive = true,
+                            RateUnit = "%"
+                        },
+                        new
+                        {
+                            BenchmarkId = 5,
+                            BenchmarkName = "SOFR",
+                            CreatedDate = new DateTime(2025, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            CurrentRate = 5.30m,
+                            Description = "Secured Overnight Financing Rate",
+                            IsActive = true,
+                            RateUnit = "%"
+                        });
+                });
+
+            modelBuilder.Entity("FinTrustFDManager.Model.Entities.MasterData.BenchmarkRateHistory", b =>
+                {
+                    b.Property<long>("BenchmarkRateHistoryId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<long>("BenchmarkRateHistoryId"));
+
+                    b.Property<int>("BenchmarkId")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("CreatedBy")
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
+                    b.Property<DateTime>("CreatedDate")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTime>("EffectiveFrom")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTime?>("EffectiveTo")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("boolean");
+
+                    b.Property<string>("ModifiedBy")
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
+                    b.Property<DateTime?>("ModifiedDate")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<decimal>("Rate")
+                        .HasColumnType("numeric");
+
+                    b.HasKey("BenchmarkRateHistoryId");
+
+                    b.HasIndex("BenchmarkId");
+
+                    b.ToTable("BenchmarkRateHistories");
                 });
 
             modelBuilder.Entity("FinTrustFDManager.Model.Entities.MasterData.Country", b =>
@@ -674,7 +940,7 @@ namespace FinTrustFDManager.DAL.Migrations
                         .HasColumnType("character varying(100)");
 
                     b.Property<DateTime>("CreatedDate")
-                        .HasColumnType("timestamp without time zone");
+                        .HasColumnType("timestamp with time zone");
 
                     b.Property<string>("Description")
                         .HasMaxLength(500)
@@ -688,7 +954,7 @@ namespace FinTrustFDManager.DAL.Migrations
                         .HasColumnType("character varying(100)");
 
                     b.Property<DateTime?>("ModifiedDate")
-                        .HasColumnType("timestamp without time zone");
+                        .HasColumnType("timestamp with time zone");
 
                     b.HasKey("CountryId");
 
@@ -708,7 +974,7 @@ namespace FinTrustFDManager.DAL.Migrations
                         .HasColumnType("character varying(100)");
 
                     b.Property<DateTime>("CreatedDate")
-                        .HasColumnType("timestamp without time zone");
+                        .HasColumnType("timestamp with time zone");
 
                     b.Property<bool>("IsActive")
                         .HasColumnType("boolean");
@@ -718,7 +984,7 @@ namespace FinTrustFDManager.DAL.Migrations
                         .HasColumnType("character varying(100)");
 
                     b.Property<DateTime?>("ModifiedDate")
-                        .HasColumnType("timestamp without time zone");
+                        .HasColumnType("timestamp with time zone");
 
                     b.Property<string>("RoleName")
                         .IsRequired()
@@ -733,21 +999,21 @@ namespace FinTrustFDManager.DAL.Migrations
                         new
                         {
                             Id = 1,
-                            CreatedDate = new DateTime(2026, 8, 20, 6, 40, 0, 226, DateTimeKind.Utc).AddTicks(1372),
+                            CreatedDate = new DateTime(2026, 8, 28, 12, 18, 42, 455, DateTimeKind.Utc).AddTicks(3205),
                             IsActive = true,
                             RoleName = "Admin"
                         },
                         new
                         {
                             Id = 2,
-                            CreatedDate = new DateTime(2026, 8, 20, 6, 40, 0, 226, DateTimeKind.Utc).AddTicks(1373),
+                            CreatedDate = new DateTime(2026, 8, 28, 12, 18, 42, 455, DateTimeKind.Utc).AddTicks(3206),
                             IsActive = true,
                             RoleName = "CA"
                         },
                         new
                         {
                             Id = 3,
-                            CreatedDate = new DateTime(2026, 8, 20, 6, 40, 0, 226, DateTimeKind.Utc).AddTicks(1375),
+                            CreatedDate = new DateTime(2026, 8, 28, 12, 18, 42, 455, DateTimeKind.Utc).AddTicks(3208),
                             IsActive = true,
                             RoleName = "Approver"
                         });
@@ -766,7 +1032,7 @@ namespace FinTrustFDManager.DAL.Migrations
                         .HasColumnType("character varying(100)");
 
                     b.Property<DateTime>("CreatedDate")
-                        .HasColumnType("timestamp without time zone");
+                        .HasColumnType("timestamp with time zone");
 
                     b.Property<string>("Email")
                         .IsRequired()
@@ -791,7 +1057,7 @@ namespace FinTrustFDManager.DAL.Migrations
                         .HasColumnType("character varying(100)");
 
                     b.Property<DateTime?>("ModifiedDate")
-                        .HasColumnType("timestamp without time zone");
+                        .HasColumnType("timestamp with time zone");
 
                     b.Property<string>("Password")
                         .IsRequired()
@@ -902,6 +1168,24 @@ namespace FinTrustFDManager.DAL.Migrations
                     b.Navigation("Country");
                 });
 
+            modelBuilder.Entity("FinTrustFDManager.Model.Entities.FDAmendment", b =>
+                {
+                    b.HasOne("FinTrustFDManager.Model.Entities.Investment.FDIdentification", null)
+                        .WithMany()
+                        .HasForeignKey("FdId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("FinTrustFDManager.Model.Entities.FDApprovalHistory", b =>
+                {
+                    b.HasOne("FinTrustFDManager.Model.Entities.Investment.FDIdentification", null)
+                        .WithMany()
+                        .HasForeignKey("FdId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
             modelBuilder.Entity("FinTrustFDManager.Model.Entities.Investment.FDCashFlow", b =>
                 {
                     b.HasOne("FinTrustFDManager.Model.Entities.Investment.FDIdentification", null)
@@ -913,6 +1197,11 @@ namespace FinTrustFDManager.DAL.Migrations
 
             modelBuilder.Entity("FinTrustFDManager.Model.Entities.Investment.FDInterest", b =>
                 {
+                    b.HasOne("FinTrustFDManager.Model.Entities.MasterData.Benchmark", null)
+                        .WithMany()
+                        .HasForeignKey("BenchmarkId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
                     b.HasOne("FinTrustFDManager.Model.Entities.Investment.FDIdentification", null)
                         .WithOne()
                         .HasForeignKey("FinTrustFDManager.Model.Entities.Investment.FDInterest", "FdId")
@@ -931,6 +1220,17 @@ namespace FinTrustFDManager.DAL.Migrations
                     b.Navigation("Country");
                 });
 
+            modelBuilder.Entity("FinTrustFDManager.Model.Entities.MasterData.BenchmarkRateHistory", b =>
+                {
+                    b.HasOne("FinTrustFDManager.Model.Entities.MasterData.Benchmark", "Benchmark")
+                        .WithMany("RateHistory")
+                        .HasForeignKey("BenchmarkId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Benchmark");
+                });
+
             modelBuilder.Entity("FinTrustFDManager.Model.Entities.User", b =>
                 {
                     b.HasOne("FinTrustFDManager.Model.Entities.Role", "Role")
@@ -947,6 +1247,11 @@ namespace FinTrustFDManager.DAL.Migrations
                     b.Navigation("Approvals");
 
                     b.Navigation("CashFlows");
+                });
+
+            modelBuilder.Entity("FinTrustFDManager.Model.Entities.MasterData.Benchmark", b =>
+                {
+                    b.Navigation("RateHistory");
                 });
 
             modelBuilder.Entity("FinTrustFDManager.Model.Entities.MasterData.Country", b =>

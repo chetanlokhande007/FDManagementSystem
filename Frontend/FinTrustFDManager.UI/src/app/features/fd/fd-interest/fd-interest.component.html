@@ -10,21 +10,30 @@
           <option value="FLOATING">FLOATING</option>
         </select>
       </div>
-      <div class="form-group">
+      <div class="form-group" *ngIf="interestForm.get('interestRateType')?.value === 'FIXED'">
         <label>Interest Rate (%)</label>
         <input type="number" formControlName="interestRate">
       </div>
-      <div class="form-group">
-        <label>Benchmark Name</label>
-        <input type="text" formControlName="benchmarkName">
+      <div class="form-group" *ngIf="interestForm.get('interestRateType')?.value === 'FLOATING'">
+        <label>Benchmark Name *</label>
+        <select formControlName="benchmarkId">
+          <option [ngValue]="null">Select Benchmark</option>
+          <option *ngFor="let b of benchmarks" [ngValue]="b.benchmarkId">
+            {{ b.benchmarkName }}
+          </option>
+        </select>
       </div>
-      <div class="form-group">
-        <label>Benchmark Rate</label>
-        <input type="number" formControlName="benchmarkRate">
+      <div class="form-group" *ngIf="interestForm.get('interestRateType')?.value === 'FLOATING'">
+        <label>Benchmark Rate (%)</label>
+        <input type="number" formControlName="benchmarkRate" readonly>
       </div>
-      <div class="form-group">
-        <label>Margin</label>
+      <div class="form-group" *ngIf="interestForm.get('interestRateType')?.value === 'FLOATING'">
+        <label>Margin (%)</label>
         <input type="number" formControlName="margin">
+      </div>
+      <div class="form-group" *ngIf="interestForm.get('interestRateType')?.value === 'FLOATING'">
+        <label>Effective Rate (%)</label>
+        <input type="number" [value]="effectiveRate" readonly>
       </div>
       <div class="form-group">
         <label>Interest Frequency</label>

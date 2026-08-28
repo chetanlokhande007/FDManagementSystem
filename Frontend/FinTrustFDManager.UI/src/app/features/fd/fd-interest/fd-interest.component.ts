@@ -2,6 +2,9 @@ import { Component, Input, OnInit, OnChanges, SimpleChanges, Output, EventEmitte
 import { CommonModule } from '@angular/common';
 import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { FDInterestService, FDInterest } from '../../../core/services/fd-interest.service';
+import { BenchmarkService, Benchmark } from '../../../core/services/benchmark.service';
+import { forkJoin, of } from 'rxjs';
+import { catchError } from 'rxjs/operators';
 
 @Component({
   selector: 'app-fd-interest',
@@ -15,6 +18,7 @@ export class FdInterestComponent implements OnInit, OnChanges {
   @Input() fdId!: number;
   @Input() interestData: any = null;
   @Input() interestFrequencies: any[] = [];
+  @Input() benchmarks: Benchmark[] = [];
   @Output() interestSaved = new EventEmitter<any>();
 
   /** Frequencies valid for compounding — excludes "At Maturity" */
@@ -29,10 +33,12 @@ export class FdInterestComponent implements OnInit, OnChanges {
   isReadOnly = false;
   isSaving = false;
   errorMessage = '';
+  effectiveRate = 0;
 
   constructor(
     private fb: FormBuilder,
-    private fdInterestService: FDInterestService
+    private fdInterestService: FDInterestService,
+    private benchmarkService: BenchmarkService
   ) { }
 
   createForm(): void {
@@ -41,6 +47,7 @@ export class FdInterestComponent implements OnInit, OnChanges {
       fdId: [this.fdId],
       interestRateType: ['FIXED', Validators.required],
       interestRate: [0, [Validators.required, Validators.min(0.01)]],
+      benchmarkId: [null],
       benchmarkName: [''],
       benchmarkRate: [0],
       margin: [0],
@@ -52,12 +59,83 @@ export class FdInterestComponent implements OnInit, OnChanges {
     });
   }
 
+  loadBenchmarks(): void {
+    this.benchmarkService.getAll().pipe(
+      catchError(() => of([]))
+    ).subscribe(benchmarks => {
+      this.benchmarks = benchmarks.filter(b => b.isActive);
+    });
+  }
+
+  onRateTypeChange(rateType: string): void {
+    const isFloating = rateType === 'FLOATING';
+    const benchmarkIdControl = this.interestForm.get('benchmarkId');
+    const benchmarkRateControl = this.interestForm.get('benchmarkRate');
+    const benchmarkNameControl = this.interestForm.get('benchmarkName');
+    const marginControl = this.interestForm.get('margin');
+    const interestRateControl = this.interestForm.get('interestRate');
+
+    if (isFloating) {
+      benchmarkIdControl?.setValidators([Validators.required]);
+      marginControl?.setValidators([Validators.required, Validators.min(0)]);
+      // Disable manual interest rate for floating
+      interestRateControl?.clearValidators();
+      interestRateControl?.setValue(0);
+    } else {
+      benchmarkIdControl?.clearValidators();
+      benchmarkIdControl?.setValue(null);
+      benchmarkRateControl?.setValue(0);
+      benchmarkNameControl?.setValue('');
+      marginControl?.clearValidators();
+      marginControl?.setValue(0);
+      interestRateControl?.setValidators([Validators.required, Validators.min(0.01)]);
+      this.effectiveRate = 0;
+    }
+
+    benchmarkIdControl?.updateValueAndValidity();
+    benchmarkRateControl?.updateValueAndValidity();
+    marginControl?.updateValueAndValidity();
+    interestRateControl?.updateValueAndValidity();
+  }
+
+  onBenchmarkChange(benchmarkId: number): void {
+    if (!benchmarkId) {
+      this.interestForm.patchValue({
+        benchmarkName: '',
+        benchmarkRate: 0
+      });
+      this.calculateEffectiveRate();
+      return;
+    }
+
+    const selected = this.benchmarks.find(b => b.benchmarkId === benchmarkId);
+    if (selected) {
+      this.interestForm.patchValue({
+        benchmarkName: selected.benchmarkName,
+        benchmarkRate: selected.currentRate
+      });
+      this.calculateEffectiveRate();
+    }
+  }
+
+  calculateEffectiveRate(): void {
+    const rateType = this.interestForm.get('interestRateType')?.value;
+    if (rateType === 'FLOATING') {
+      const benchmarkRate = this.interestForm.get('benchmarkRate')?.value || 0;
+      const margin = this.interestForm.get('margin')?.value || 0;
+      this.effectiveRate = benchmarkRate + margin;
+    } else {
+      this.effectiveRate = this.interestForm.get('interestRate')?.value || 0;
+    }
+  }
+
   populateForm(interest: any): void {
     this.interestForm.patchValue({
       fdInterestId: interest.fdInterestId,
       fdId: interest.fdId,
       interestRateType: interest.interestRateType,
       interestRate: interest.interestRate,
+      benchmarkId: interest.benchmarkId || null,
       benchmarkName: interest.benchmarkName,
       benchmarkRate: interest.benchmarkRate,
       margin: interest.margin,
@@ -68,10 +146,15 @@ export class FdInterestComponent implements OnInit, OnChanges {
       paymentConvention: interest.paymentConvention
     }, { emitEvent: true });
     this.toggleCompoundingFrequency(interest.isCompounding || false);
+    this.calculateEffectiveRate();
   }
 
   ngOnInit(): void {
     this.createForm();
+    if (!this.benchmarks || this.benchmarks.length === 0) {
+      this.loadBenchmarks();
+    }
+
     if (this.interestData) {
       this.isEdit = true;
       this.isReadOnly = true;
@@ -83,11 +166,30 @@ export class FdInterestComponent implements OnInit, OnChanges {
     this.interestForm.get('isCompounding')?.valueChanges.subscribe(val => {
       this.toggleCompoundingFrequency(val);
     });
+
+    // Watch for rate type changes
+    this.interestForm.get('interestRateType')?.valueChanges.subscribe(val => {
+      this.onRateTypeChange(val);
+    });
+
+    // Watch for benchmark selection changes
+    this.interestForm.get('benchmarkId')?.valueChanges.subscribe(val => {
+      this.onBenchmarkChange(val);
+    });
+
+    // Watch for margin changes to recalculate effective rate
+    this.interestForm.get('margin')?.valueChanges.subscribe(() => {
+      this.calculateEffectiveRate();
+    });
   }
 
   ngOnChanges(changes: SimpleChanges): void {
     if (!this.interestForm) {
       return; // form not created yet, ngOnInit will handle it
+    }
+
+    if (changes['benchmarks'] && this.benchmarks && this.benchmarks.length > 0) {
+      // Benchmarks loaded from parent, no need to fetch
     }
 
     if (changes['interestData'] || changes['interestFrequencies']) {

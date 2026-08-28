@@ -85,6 +85,57 @@ export class FDIdentificationService {
     );
   }
 
+  submit(id: number): Observable<{ success: boolean; message: string }> {
+    return this.http.post<{ success: boolean; message: string }>(`${this.apiUrl}/${id}/submit`, {}).pipe(
+      catchError(this.handleError)
+    );
+  }
+
+  approve(id: number, comments?: string): Observable<{ success: boolean; message: string }> {
+    return this.http.post<{ success: boolean; message: string }>(`${this.apiUrl}/${id}/approve`, { comments }).pipe(
+      catchError(this.handleError)
+    );
+  }
+
+  reject(id: number, comments: string): Observable<{ success: boolean; message: string }> {
+    return this.http.post<{ success: boolean; message: string }>(`${this.apiUrl}/${id}/reject`, { comments }).pipe(
+      catchError(this.handleError)
+    );
+  }
+
+  getApprovalHistory(id: number): Observable<any[]> {
+    return this.http.get<any[]>(`${this.apiUrl}/${id}/approval-history`).pipe(
+      catchError(this.handleError)
+    );
+  }
+
+  // ── Amendment methods ──
+
+  requestAmendment(fdId: number, data: any): Observable<any> {
+    return this.http.post<any>(`${this.apiUrl}/${fdId}/amendments`, data).pipe(
+      catchError(this.handleError)
+    );
+  }
+
+  getAmendments(fdId: number): Observable<any[]> {
+    return this.http.get<any[]>(`${this.apiUrl}/${fdId}/amendments`).pipe(
+      catchError(this.handleError)
+    );
+  }
+
+  approveAmendment(fdId: number, amendmentId: number, comments?: string): Observable<{ success: boolean; message: string }> {
+    return this.http.post<{ success: boolean; message: string }>(
+      `${this.apiUrl}/${fdId}/amendments/${amendmentId}/approve`, { comments }
+    ).pipe(catchError(this.handleError));
+  }
+
+  rejectAmendment(fdId: number, amendmentId: number, comments: string): Observable<{ success: boolean; message: string }> {
+    return this.http.post<{ success: boolean; message: string }>(
+      `${this.apiUrl}/${fdId}/amendments/${amendmentId}/reject`, { comments }
+    ).pipe(catchError(this.handleError));
+  }
+
+  /** @deprecated Use submit/approve/reject instead */
   changeStatus(id: number, status: string): Observable<{ success: boolean; message: string }> {
     const headers = new HttpHeaders({ 'Content-Type': 'application/json' });
     return this.http.patch<{ success: boolean; message: string }>(`${this.apiUrl}/${id}/status`, JSON.stringify(status), { headers }).pipe(
