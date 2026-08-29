@@ -1,10 +1,6 @@
 import { Routes } from '@angular/router';
 
 import { DashboardComponent } from './features/dashboard/dashboard.component';
-import { ApproverDashboardComponent } from './features/approver/dashboard/approver-dashboard.component';
-import { AdminDashboardComponent } from './features/admin/dashboard/admin-dashboard.component';
-import { ResetConfigurationComponent } from './features/admin/reset-configuration/reset-configuration.component';
-import { CashFlowGenerationComponent } from './features/admin/cash-flow-generation/cash-flow-generation.component';
 import { RegisterComponent } from './features/auth/register/register.component';
 import { LoginComponent } from './features/auth/login/login.component';
 
@@ -73,37 +69,10 @@ export const routes: Routes = [
 
   {
     path: 'approver/dashboard',
-    component: ApproverDashboardComponent,
+    component: DashboardComponent,
     canActivate: [authGuard],
     data: {
       roles: ['Approver', 'Admin']
-    }
-  },
-
-  {
-    path: 'admin/approvals',
-    component: AdminDashboardComponent,
-    canActivate: [authGuard],
-    data: {
-      roles: ['Admin']
-    }
-  },
-
-  {
-    path: 'admin/reset-configuration',
-    component: ResetConfigurationComponent,
-    canActivate: [authGuard],
-    data: {
-      roles: ['Admin']
-    }
-  },
-
-  {
-    path: 'admin/cash-flow-generation',
-    component: CashFlowGenerationComponent,
-    canActivate: [authGuard],
-    data: {
-      roles: ['Admin']
     }
   },
 

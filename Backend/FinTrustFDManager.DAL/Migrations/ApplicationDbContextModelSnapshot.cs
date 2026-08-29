@@ -22,8 +22,6 @@ namespace FinTrustFDManager.DAL.Migrations
 
             NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
 
-            modelBuilder.HasSequence("fd_reference_seq");
-
             modelBuilder.Entity("FinTrustFDManager.Model.Entities.CoreData.CashFlow", b =>
                 {
                     b.Property<int>("CashFlowId")
@@ -610,11 +608,11 @@ namespace FinTrustFDManager.DAL.Migrations
 
                     NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<long>("FdId"));
 
-                    b.Property<long?>("BankAccountId")
-                        .HasColumnType("bigint");
+                    b.Property<int?>("BankId")
+                        .HasColumnType("integer");
 
-                    b.Property<long>("CounterpartyId")
-                        .HasColumnType("bigint");
+                    b.Property<int>("CounterpartyId")
+                        .HasColumnType("integer");
 
                     b.Property<long?>("CreatedBy")
                         .HasColumnType("bigint");
@@ -622,19 +620,19 @@ namespace FinTrustFDManager.DAL.Migrations
                     b.Property<DateTime>("CreatedDate")
                         .HasColumnType("timestamp with time zone");
 
-                    b.Property<string>("CurrencyCode")
-                        .IsRequired()
-                        .HasColumnType("text");
+                    b.Property<int>("CurrencyId")
+                        .HasColumnType("integer");
 
                     b.Property<DateTime>("EndDate")
                         .HasColumnType("timestamp with time zone");
 
-                    b.Property<long>("EntityId")
-                        .HasColumnType("bigint");
+                    b.Property<int>("EntityId")
+                        .HasColumnType("integer");
 
                     b.Property<string>("FdReferenceNo")
                         .IsRequired()
-                        .HasColumnType("text");
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)");
 
                     b.Property<long?>("ModifiedBy")
                         .HasColumnType("bigint");
@@ -646,7 +644,8 @@ namespace FinTrustFDManager.DAL.Migrations
                         .HasColumnType("numeric");
 
                     b.Property<string>("Remarks")
-                        .HasColumnType("text");
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)");
 
                     b.Property<DateTime?>("SettlementDate")
                         .HasColumnType("timestamp with time zone");
@@ -656,9 +655,18 @@ namespace FinTrustFDManager.DAL.Migrations
 
                     b.Property<string>("Status")
                         .IsRequired()
-                        .HasColumnType("text");
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)");
 
                     b.HasKey("FdId");
+
+                    b.HasIndex("BankId");
+
+                    b.HasIndex("CounterpartyId");
+
+                    b.HasIndex("CurrencyId");
+
+                    b.HasIndex("EntityId");
 
                     b.HasIndex("FdReferenceNo")
                         .IsUnique();
@@ -678,34 +686,34 @@ namespace FinTrustFDManager.DAL.Migrations
                         .HasColumnType("integer");
 
                     b.Property<string>("BenchmarkName")
-                        .HasColumnType("text");
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
 
                     b.Property<decimal?>("BenchmarkRate")
                         .HasColumnType("numeric");
 
-                    b.Property<string>("CalculationBasis")
-                        .IsRequired()
-                        .HasColumnType("text");
-
-                    b.Property<string>("CompoundingFrequency")
-                        .HasColumnType("text");
+                    b.Property<int?>("CompoundingFrequencyId")
+                        .HasColumnType("integer");
 
                     b.Property<DateTime>("CreatedDate")
                         .HasColumnType("timestamp with time zone");
 
+                    b.Property<int>("DayCountConventionId")
+                        .HasColumnType("integer");
+
                     b.Property<long>("FdId")
                         .HasColumnType("bigint");
 
-                    b.Property<string>("InterestFrequency")
-                        .IsRequired()
-                        .HasColumnType("text");
+                    b.Property<int>("InterestFrequencyId")
+                        .HasColumnType("integer");
 
                     b.Property<decimal>("InterestRate")
                         .HasColumnType("numeric");
 
                     b.Property<string>("InterestRateType")
                         .IsRequired()
-                        .HasColumnType("text");
+                        .HasMaxLength(10)
+                        .HasColumnType("character varying(10)");
 
                     b.Property<bool>("IsCompounding")
                         .HasColumnType("boolean");
@@ -714,14 +722,21 @@ namespace FinTrustFDManager.DAL.Migrations
                         .HasColumnType("numeric");
 
                     b.Property<string>("PaymentConvention")
-                        .HasColumnType("text");
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)");
 
                     b.HasKey("FdInterestId");
 
                     b.HasIndex("BenchmarkId");
 
+                    b.HasIndex("CompoundingFrequencyId");
+
+                    b.HasIndex("DayCountConventionId");
+
                     b.HasIndex("FdId")
                         .IsUnique();
+
+                    b.HasIndex("InterestFrequencyId");
 
                     b.ToTable("FDInterests");
                 });
@@ -1001,21 +1016,21 @@ namespace FinTrustFDManager.DAL.Migrations
                         new
                         {
                             Id = 1,
-                            CreatedDate = new DateTime(2026, 8, 28, 18, 20, 48, 50, DateTimeKind.Utc).AddTicks(2533),
+                            CreatedDate = new DateTime(2026, 8, 29, 14, 20, 8, 734, DateTimeKind.Utc).AddTicks(806),
                             IsActive = true,
                             RoleName = "Admin"
                         },
                         new
                         {
                             Id = 2,
-                            CreatedDate = new DateTime(2026, 8, 28, 18, 20, 48, 50, DateTimeKind.Utc).AddTicks(2534),
+                            CreatedDate = new DateTime(2026, 8, 29, 14, 20, 8, 734, DateTimeKind.Utc).AddTicks(809),
                             IsActive = true,
                             RoleName = "CA"
                         },
                         new
                         {
                             Id = 3,
-                            CreatedDate = new DateTime(2026, 8, 28, 18, 20, 48, 50, DateTimeKind.Utc).AddTicks(2536),
+                            CreatedDate = new DateTime(2026, 8, 29, 14, 20, 8, 734, DateTimeKind.Utc).AddTicks(811),
                             IsActive = true,
                             RoleName = "Approver"
                         });
@@ -1197,18 +1212,79 @@ namespace FinTrustFDManager.DAL.Migrations
                         .IsRequired();
                 });
 
+            modelBuilder.Entity("FinTrustFDManager.Model.Entities.Investment.FDIdentification", b =>
+                {
+                    b.HasOne("FinTrustFDManager.Model.Entities.MasterData.Bank", "Bank")
+                        .WithMany()
+                        .HasForeignKey("BankId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("FinTrustFDManager.Model.Entities.CounterParty", "CounterParty")
+                        .WithMany()
+                        .HasForeignKey("CounterpartyId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("FinTrustFDManager.Model.Entities.Currency", "CurrencyNavigation")
+                        .WithMany()
+                        .HasForeignKey("CurrencyId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("FinTrustFDManager.Model.Entities.Entity", "Entity")
+                        .WithMany()
+                        .HasForeignKey("EntityId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("Bank");
+
+                    b.Navigation("CounterParty");
+
+                    b.Navigation("CurrencyNavigation");
+
+                    b.Navigation("Entity");
+                });
+
             modelBuilder.Entity("FinTrustFDManager.Model.Entities.Investment.FDInterest", b =>
                 {
-                    b.HasOne("FinTrustFDManager.Model.Entities.MasterData.Benchmark", null)
+                    b.HasOne("FinTrustFDManager.Model.Entities.MasterData.Benchmark", "Benchmark")
                         .WithMany()
                         .HasForeignKey("BenchmarkId")
                         .OnDelete(DeleteBehavior.SetNull);
 
-                    b.HasOne("FinTrustFDManager.Model.Entities.Investment.FDIdentification", null)
+                    b.HasOne("FinTrustFDManager.Model.Entities.CoreData.InterestFrequency", "CompoundingFrequencyNavigation")
+                        .WithMany()
+                        .HasForeignKey("CompoundingFrequencyId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("FinTrustFDManager.Model.Entities.CoreData.DayCountConvention", "DayCountConvention")
+                        .WithMany()
+                        .HasForeignKey("DayCountConventionId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("FinTrustFDManager.Model.Entities.Investment.FDIdentification", "FDIdentification")
                         .WithOne()
                         .HasForeignKey("FinTrustFDManager.Model.Entities.Investment.FDInterest", "FdId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
+
+                    b.HasOne("FinTrustFDManager.Model.Entities.CoreData.InterestFrequency", "InterestFrequency")
+                        .WithMany()
+                        .HasForeignKey("InterestFrequencyId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("Benchmark");
+
+                    b.Navigation("CompoundingFrequencyNavigation");
+
+                    b.Navigation("DayCountConvention");
+
+                    b.Navigation("FDIdentification");
+
+                    b.Navigation("InterestFrequency");
                 });
 
             modelBuilder.Entity("FinTrustFDManager.Model.Entities.MasterData.Bank", b =>

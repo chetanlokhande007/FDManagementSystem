@@ -55,16 +55,12 @@ export class AuthService {
     if (res.name) {
       localStorage.setItem('userName', res.name);
     }
-    if (res.userId) {
-      localStorage.setItem('userId', res.userId.toString());
-    }
   }
 
   logout() {
     localStorage.removeItem('token');
     localStorage.removeItem('role');
     localStorage.removeItem('userName');
-    localStorage.removeItem('userId');
     sessionStorage.clear();
   }
 

@@ -1,4 +1,7 @@
 using System;
+using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
+using FinTrustFDManager.Model.Entities.MasterData;
 
 namespace FinTrustFDManager.Model.Entities.Investment
 {
@@ -6,13 +9,18 @@ namespace FinTrustFDManager.Model.Entities.Investment
     {
         public long FdId { get; set; }
 
+        [Required]
+        [MaxLength(20)]
         public string FdReferenceNo { get; set; } = string.Empty;
 
-        public long EntityId { get; set; }
+        // Entity FK (Our organization / investing legal entity)
+        public int EntityId { get; set; }
 
-        public long CounterpartyId { get; set; }
+        // CounterParty FK (External institution)
+        public int CounterpartyId { get; set; }
 
-        public string CurrencyCode { get; set; } = string.Empty;
+        // Currency FK
+        public int CurrencyId { get; set; }
 
         public decimal PrincipalAmount { get; set; }
 
@@ -22,10 +30,13 @@ namespace FinTrustFDManager.Model.Entities.Investment
 
         public DateTime? SettlementDate { get; set; }
 
-        public long? BankAccountId { get; set; }
+        // Bank FK
+        public int? BankId { get; set; }
 
+        [MaxLength(20)]
         public string Status { get; set; } = "DRAFT";
 
+        [MaxLength(500)]
         public string? Remarks { get; set; }
 
         public long? CreatedBy { get; set; }
@@ -35,5 +46,18 @@ namespace FinTrustFDManager.Model.Entities.Investment
         public long? ModifiedBy { get; set; }
 
         public DateTime? ModifiedDate { get; set; }
+
+        // Navigation properties
+        [ForeignKey(nameof(EntityId))]
+        public Entity? Entity { get; set; }
+
+        [ForeignKey(nameof(CounterpartyId))]
+        public CounterParty? CounterParty { get; set; }
+
+        [ForeignKey(nameof(CurrencyId))]
+        public Currency? CurrencyNavigation { get; set; }
+
+        [ForeignKey(nameof(BankId))]
+        public Bank? Bank { get; set; }
     }
 }

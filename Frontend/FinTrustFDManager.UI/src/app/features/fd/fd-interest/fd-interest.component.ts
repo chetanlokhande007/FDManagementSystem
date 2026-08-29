@@ -18,13 +18,9 @@ export class FdInterestComponent implements OnInit, OnChanges {
   @Input() fdId!: number;
   @Input() interestData: any = null;
   @Input() interestFrequencies: any[] = [];
+  @Input() dayCountConventions: any[] = [];
   @Input() benchmarks: Benchmark[] = [];
-  @Input() fdStatus: string = '';
   @Output() interestSaved = new EventEmitter<any>();
-
-  get isProtectedStatus(): boolean {
-    return this.fdStatus === 'APPROVED' || this.fdStatus === 'ACTIVE' || this.fdStatus === 'MATURED';
-  }
 
   /** Frequencies valid for compounding — excludes "At Maturity" */
   get compoundingFrequencies(): any[] {
@@ -56,10 +52,10 @@ export class FdInterestComponent implements OnInit, OnChanges {
       benchmarkName: [''],
       benchmarkRate: [0],
       margin: [0],
-      interestFrequency: ['', Validators.required],
-      compoundingFrequency: [''],
+      interestFrequencyId: [null, Validators.required],
+      compoundingFrequencyId: [null],
       isCompounding: [false],
-      calculationBasis: ['ACTUAL_365', Validators.required],
+      dayCountConventionId: [null, Validators.required],
       paymentConvention: ['']
     });
   }
@@ -141,14 +137,14 @@ export class FdInterestComponent implements OnInit, OnChanges {
       interestRateType: interest.interestRateType,
       interestRate: interest.interestRate,
       benchmarkId: interest.benchmarkId || null,
-      benchmarkName: interest.benchmarkName,
-      benchmarkRate: interest.benchmarkRate,
-      margin: interest.margin,
-      interestFrequency: interest.interestFrequency,
-      compoundingFrequency: interest.compoundingFrequency,
+      benchmarkName: interest.benchmarkName || '',
+      benchmarkRate: interest.benchmarkRate || 0,
+      margin: interest.margin || 0,
+      interestFrequencyId: interest.interestFrequencyId || null,
+      compoundingFrequencyId: interest.compoundingFrequencyId || null,
       isCompounding: interest.isCompounding || false,
-      calculationBasis: interest.calculationBasis,
-      paymentConvention: interest.paymentConvention
+      dayCountConventionId: interest.dayCountConventionId || null,
+      paymentConvention: interest.paymentConvention || ''
     }, { emitEvent: true });
     this.toggleCompoundingFrequency(interest.isCompounding || false);
     this.calculateEffectiveRate();
@@ -209,41 +205,32 @@ export class FdInterestComponent implements OnInit, OnChanges {
   }
 
   toggleCompoundingFrequency(isCompounding: boolean): void {
-    const compoundingControl = this.interestForm.get('compoundingFrequency');
+    const compoundingControl = this.interestForm.get('compoundingFrequencyId');
     if (!compoundingControl) return;
 
     if (isCompounding) {
       compoundingControl.enable();
       compoundingControl.setValidators([Validators.required]);
-      if (!compoundingControl.value || compoundingControl.value === 'NOT_APPLICABLE') {
-        const intFreq = this.interestForm.get('interestFrequency')?.value;
-        if (intFreq && intFreq !== 'AT_MATURITY') {
-          compoundingControl.setValue(intFreq);
+      if (!compoundingControl.value) {
+        const intFreqId = this.interestForm.get('interestFrequencyId')?.value;
+        const atMaturityFreq = this.interestFrequencies.find(f => f.frequencyName?.toUpperCase() === 'AT MATURITY');
+        if (intFreqId && intFreqId !== atMaturityFreq?.id) {
+          compoundingControl.setValue(intFreqId);
         } else {
           const defaultFreq = this.interestFrequencies.find(f => f.frequencyName?.toUpperCase() === 'QUARTERLY');
-          compoundingControl.setValue(defaultFreq ? defaultFreq.frequencyName : (this.interestFrequencies.length ? this.interestFrequencies[0].frequencyName : ''));
+          compoundingControl.setValue(defaultFreq ? defaultFreq.id : (this.interestFrequencies.length ? this.interestFrequencies[0].id : null));
         }
       }
     } else {
       compoundingControl.clearValidators();
       compoundingControl.disable();
-      compoundingControl.setValue('NOT_APPLICABLE');
+      compoundingControl.setValue(null);
     }
     compoundingControl.updateValueAndValidity();
   }
 
-  showApprovedWarning = false;
-
   edit(): void {
-    if (this.isProtectedStatus) {
-      this.showApprovedWarning = true;
-      return;
-    }
     this.isReadOnly = false;
-  }
-
-  closeApprovedWarning(): void {
-    this.showApprovedWarning = false;
   }
 
   cancelEdit(): void {
@@ -254,10 +241,6 @@ export class FdInterestComponent implements OnInit, OnChanges {
   }
 
   saveInterest(): void {
-    if (this.isProtectedStatus) {
-      this.showApprovedWarning = true;
-      return;
-    }
     if (this.interestForm.invalid || this.isSaving) {
       return;
     }

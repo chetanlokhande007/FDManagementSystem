@@ -193,10 +193,10 @@ namespace FinTrustFDManager.BAL.Services
                             FdId = fdId,
                             InterestRateType = GetStringValue(interestChanges, "interestRateType") ?? "FIXED",
                             InterestRate = GetDecimalValue(interestChanges, "interestRate"),
-                            InterestFrequency = GetStringValue(interestChanges, "interestFrequency") ?? "Monthly",
-                            CompoundingFrequency = GetStringValue(interestChanges, "compoundingFrequency"),
+                            InterestFrequencyId = GetIntValue(interestChanges, "interestFrequencyId"),
+                            CompoundingFrequencyId = GetNullableIntValue(interestChanges, "compoundingFrequencyId"),
                             IsCompounding = GetBoolValue(interestChanges, "isCompounding"),
-                            CalculationBasis = GetStringValue(interestChanges, "calculationBasis") ?? "ACTUAL_365",
+                            DayCountConventionId = GetIntValue(interestChanges, "dayCountConventionId"),
                             CreatedDate = DateTime.UtcNow
                         };
                         await _interestRepository.AddAsync(newInterest);
@@ -327,7 +327,7 @@ namespace FinTrustFDManager.BAL.Services
                 ["fdReferenceNo"] = fd.FdReferenceNo,
                 ["entityId"] = fd.EntityId,
                 ["counterpartyId"] = fd.CounterpartyId,
-                ["currencyCode"] = fd.Currency?.CurrencyCode ?? "INR",
+                ["currencyId"] = fd.CurrencyId,
                 ["principalAmount"] = fd.PrincipalAmount,
                 ["startDate"] = fd.StartDate,
                 ["endDate"] = fd.EndDate,
@@ -354,7 +354,7 @@ namespace FinTrustFDManager.BAL.Services
             if (requestedValues.ContainsKey("principalAmount"))
                 fd.PrincipalAmount = Convert.ToDecimal(ToObject(requestedValues["principalAmount"]));
             if (requestedValues.ContainsKey("currencyCode"))
-                fd.Currency?.CurrencyCode ?? "INR" = ToObject(requestedValues["currencyCode"]).ToString()!;
+                fd.CurrencyId = Convert.ToInt32(ToObject(requestedValues["currencyId"]));
             if (requestedValues.ContainsKey("startDate"))
                 fd.StartDate = DateTime.SpecifyKind(Convert.ToDateTime(ToObject(requestedValues["startDate"])), DateTimeKind.Utc);
             if (requestedValues.ContainsKey("endDate"))
@@ -362,9 +362,9 @@ namespace FinTrustFDManager.BAL.Services
             if (requestedValues.ContainsKey("settlementDate"))
                 fd.SettlementDate = DateTime.SpecifyKind(Convert.ToDateTime(ToObject(requestedValues["settlementDate"])), DateTimeKind.Utc);
             if (requestedValues.ContainsKey("counterpartyId"))
-                fd.CounterpartyId = Convert.ToInt64(ToObject(requestedValues["counterpartyId"]));
+                fd.CounterpartyId = Convert.ToInt32(ToObject(requestedValues["counterpartyId"]));
             if (requestedValues.ContainsKey("entityId"))
-                fd.EntityId = Convert.ToInt64(ToObject(requestedValues["entityId"]));
+                fd.EntityId = Convert.ToInt32(ToObject(requestedValues["entityId"]));
         }
 
         private static object ToObject(object value)
@@ -394,14 +394,14 @@ namespace FinTrustFDManager.BAL.Services
                 interest.BenchmarkId = Convert.ToInt32(changes["benchmarkId"]);
             if (changes.ContainsKey("margin"))
                 interest.Margin = Convert.ToDecimal(changes["margin"]);
-            if (changes.ContainsKey("interestFrequency"))
-                interest.InterestFrequencyId = changes["interestFrequency"].ToString()!;
+            if (changes.ContainsKey("interestFrequencyId"))
+                interest.InterestFrequencyId = Convert.ToInt32(changes["interestFrequencyId"]);
             if (changes.ContainsKey("isCompounding"))
                 interest.IsCompounding = Convert.ToBoolean(changes["isCompounding"]);
-            if (changes.ContainsKey("compoundingFrequency"))
-                interest.CompoundingFrequency = changes["compoundingFrequency"].ToString();
-            if (changes.ContainsKey("calculationBasis"))
-                interest.DayCountConvention?.ConventionName ?? "ACTUAL_365" = changes["calculationBasis"].ToString()!;
+            if (changes.ContainsKey("compoundingFrequencyId"))
+                interest.CompoundingFrequencyId = Convert.ToInt32(changes["compoundingFrequencyId"]);
+            if (changes.ContainsKey("dayCountConventionId"))
+                interest.DayCountConventionId = Convert.ToInt32(changes["dayCountConventionId"]);
         }
 
         private static string? GetStringValue(Dictionary<string, object> dict, string key)
@@ -417,6 +417,16 @@ namespace FinTrustFDManager.BAL.Services
         private static bool GetBoolValue(Dictionary<string, object> dict, string key)
         {
             return dict.ContainsKey(key) && Convert.ToBoolean(dict[key]);
+        }
+
+        private static int GetIntValue(Dictionary<string, object> dict, string key)
+        {
+            return dict.ContainsKey(key) ? Convert.ToInt32(dict[key]) : 0;
+        }
+
+        private static int? GetNullableIntValue(Dictionary<string, object> dict, string key)
+        {
+            return dict.ContainsKey(key) && dict[key] != null ? Convert.ToInt32(dict[key]) : null;
         }
     }
 }

@@ -25,6 +25,10 @@ namespace FinTrustFDManager.DAL.Repositories
         {
             return await _context.FDIdentifications
                 .AsNoTracking()
+                .Include(x => x.Entity)
+                .Include(x => x.CounterParty)
+                .Include(x => x.CurrencyNavigation)
+                .Include(x => x.Bank)
                 .ToListAsync();
         }
 
@@ -32,6 +36,10 @@ namespace FinTrustFDManager.DAL.Repositories
         {
             return await _context.FDIdentifications
                 .AsNoTracking()
+                .Include(x => x.Entity)
+                .Include(x => x.CounterParty)
+                .Include(x => x.CurrencyNavigation)
+                .Include(x => x.Bank)
                 .FirstOrDefaultAsync(x => x.FdId == id);
         }
 
@@ -99,12 +107,12 @@ namespace FinTrustFDManager.DAL.Repositories
             // DO NOT update FdReferenceNo since it's auto-generated and immutable
             existing.EntityId = model.EntityId;
             existing.CounterpartyId = model.CounterpartyId;
-            existing.CurrencyCode = model.CurrencyCode;
+            existing.CurrencyId = model.CurrencyId;
             existing.PrincipalAmount = model.PrincipalAmount;
             existing.StartDate = model.StartDate;
             existing.EndDate = model.EndDate;
             existing.SettlementDate = model.SettlementDate;
-            existing.BankAccountId = model.BankAccountId;
+            existing.BankId = model.BankId;
             existing.Status = model.Status;
             existing.Remarks = model.Remarks;
             existing.ModifiedBy = model.ModifiedBy;
@@ -166,7 +174,8 @@ namespace FinTrustFDManager.DAL.Repositories
                     EntityName = e != null ? e.EntityName : string.Empty,
                     fd.CounterpartyId,
                     CounterPartyName = c != null ? c.CounterPartyName : string.Empty,
-                    fd.CurrencyCode,
+                    fd.CurrencyId,
+                    CurrencyCode = _context.Currencies.Where(c => c.CurrencyId == fd.CurrencyId).Select(c => c.CurrencyCode).FirstOrDefault() ?? string.Empty,
                     fd.PrincipalAmount,
                     fd.StartDate,
                     fd.EndDate,
@@ -174,12 +183,12 @@ namespace FinTrustFDManager.DAL.Repositories
                     fd.Status,
                     InterestRate = i != null ? i.InterestRate : 0m,
                     InterestRateType = i != null ? i.InterestRateType : string.Empty,
-                    InterestFrequency = i != null ? i.InterestFrequency : string.Empty,
+                    InterestFrequency = i != null ? _context.InterestFrequencies.Where(f => f.Id == i.InterestFrequencyId).Select(f => f.FrequencyName).FirstOrDefault() ?? string.Empty : string.Empty,
                     IsCompounding = i != null && i.IsCompounding,
-                    CompoundingFrequency = i != null && i.IsCompounding
-                        ? (i.CompoundingFrequency ?? "Not Applicable")
+                    CompoundingFrequency = i != null && i.IsCompounding && i.CompoundingFrequencyId.HasValue
+                        ? (_context.InterestFrequencies.Where(f => f.Id == i.CompoundingFrequencyId.Value).Select(f => f.FrequencyName).FirstOrDefault() ?? "Not Applicable")
                         : "Not Applicable",
-                    CalculationBasis = i != null ? i.CalculationBasis : string.Empty
+                    CalculationBasis = i != null ? _context.DayCountConventions.Where(d => d.Id == i.DayCountConventionId).Select(d => d.ConventionName).FirstOrDefault() ?? string.Empty : string.Empty
                 }
             ).ToListAsync();
 
@@ -213,6 +222,7 @@ namespace FinTrustFDManager.DAL.Repositories
                     CounterpartyId = fd.CounterpartyId,
                     CounterPartyName = fd.CounterPartyName,
                     CurrencyCode = fd.CurrencyCode,
+                    CurrencyId = fd.CurrencyId,
                     PrincipalAmount = fd.PrincipalAmount,
                     StartDate = fd.StartDate,
                     EndDate = fd.EndDate,
@@ -248,6 +258,8 @@ namespace FinTrustFDManager.DAL.Repositories
                 from e in entGroup.DefaultIfEmpty()
                 join cp in _context.CounterParties on fd.CounterpartyId equals cp.CounterPartyId into cpGroup
                 from c in cpGroup.DefaultIfEmpty()
+                join cur in _context.Currencies on fd.CurrencyId equals cur.CurrencyId into curGroup
+                from cr in curGroup.DefaultIfEmpty()
                 join intEntry in _context.FDInterests
                     on fd.FdId equals intEntry.FdId into interestGroup
                 from i in interestGroup.DefaultIfEmpty()
@@ -263,22 +275,20 @@ namespace FinTrustFDManager.DAL.Repositories
                     EntityName = e != null ? e.EntityName : string.Empty,
                     CounterpartyId = fd.CounterpartyId,
                     CounterPartyName = c != null ? c.CounterPartyName : string.Empty,
-                    CurrencyCode = fd.CurrencyCode,
+                    CurrencyId = fd.CurrencyId,
+                    CurrencyCode = cr != null ? cr.CurrencyCode : string.Empty,
                     PrincipalAmount = fd.PrincipalAmount,
                     StartDate = fd.StartDate,
                     EndDate = fd.EndDate,
                     SettlementDate = fd.SettlementDate,
                     Status = fd.Status,
-                    RequestDate = fd.ModifiedDate ?? fd.CreatedDate,
-                    CreatedBy = u != null ? u.FullName : string.Empty,
-                    Type = "New FD", // Hardcoded for now since Amendment is not yet fully implemented
                     InterestRate = i != null ? i.InterestRate : 0m,
                     InterestRateType = i != null ? i.InterestRateType : string.Empty,
-                    InterestFrequency = i != null ? i.InterestFrequency : string.Empty,
-                    CompoundingFrequency = i != null && i.IsCompounding
-                        ? (i.CompoundingFrequency ?? "Not Applicable")
+                    InterestFrequency = i != null ? _context.InterestFrequencies.Where(f => f.Id == i.InterestFrequencyId).Select(f => f.FrequencyName).FirstOrDefault() ?? string.Empty : string.Empty,
+                    CompoundingFrequency = i != null && i.IsCompounding && i.CompoundingFrequencyId.HasValue
+                        ? (_context.InterestFrequencies.Where(f => f.Id == i.CompoundingFrequencyId.Value).Select(f => f.FrequencyName).FirstOrDefault() ?? "Not Applicable")
                         : "Not Applicable",
-                    CalculationBasis = i != null ? i.CalculationBasis : string.Empty,
+                    CalculationBasis = i != null ? _context.DayCountConventions.Where(d => d.Id == i.DayCountConventionId).Select(d => d.ConventionName).FirstOrDefault() ?? string.Empty : string.Empty,
                     TotalPrincipal = fd.PrincipalAmount,
                     TotalGrossInterest = 0,
                     TotalTds = 0,
@@ -341,6 +351,8 @@ namespace FinTrustFDManager.DAL.Repositories
                 from e in entGroup.DefaultIfEmpty()
                 join cp in _context.CounterParties on fd.CounterpartyId equals cp.CounterPartyId into cpGroup
                 from c in cpGroup.DefaultIfEmpty()
+                join cur in _context.Currencies on fd.CurrencyId equals cur.CurrencyId into curGroup
+                from cr in curGroup.DefaultIfEmpty()
                 join intEntry in _context.FDInterests
                     on fd.FdId equals intEntry.FdId into interestGroup
                 from i in interestGroup.DefaultIfEmpty()
@@ -352,7 +364,8 @@ namespace FinTrustFDManager.DAL.Repositories
                     EntityName = e != null ? e.EntityName : string.Empty,
                     CounterpartyId = fd.CounterpartyId,
                     CounterPartyName = c != null ? c.CounterPartyName : string.Empty,
-                    CurrencyCode = fd.CurrencyCode,
+                    CurrencyId = fd.CurrencyId,
+                    CurrencyCode = cr != null ? cr.CurrencyCode : string.Empty,
                     PrincipalAmount = fd.PrincipalAmount,
                     StartDate = fd.StartDate,
                     EndDate = fd.EndDate,
@@ -360,11 +373,11 @@ namespace FinTrustFDManager.DAL.Repositories
                     Status = fd.Status,
                     InterestRate = i != null ? i.InterestRate : 0m,
                     InterestRateType = i != null ? i.InterestRateType : string.Empty,
-                    InterestFrequency = i != null ? i.InterestFrequency : string.Empty,
-                    CompoundingFrequency = i != null && i.IsCompounding
-                        ? (i.CompoundingFrequency ?? "Not Applicable")
+                    InterestFrequency = i != null ? _context.InterestFrequencies.Where(f => f.Id == i.InterestFrequencyId).Select(f => f.FrequencyName).FirstOrDefault() ?? string.Empty : string.Empty,
+                    CompoundingFrequency = i != null && i.IsCompounding && i.CompoundingFrequencyId.HasValue
+                        ? (_context.InterestFrequencies.Where(f => f.Id == i.CompoundingFrequencyId.Value).Select(f => f.FrequencyName).FirstOrDefault() ?? "Not Applicable")
                         : "Not Applicable",
-                    CalculationBasis = i != null ? i.CalculationBasis : string.Empty,
+                    CalculationBasis = i != null ? _context.DayCountConventions.Where(d => d.Id == i.DayCountConventionId).Select(d => d.ConventionName).FirstOrDefault() ?? string.Empty : string.Empty,
                     TotalPrincipal = fd.PrincipalAmount,
                     TotalGrossInterest = 0,
                     TotalTds = 0,

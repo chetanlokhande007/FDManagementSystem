@@ -11,15 +11,13 @@ export interface FDLanding {
   entityName?: string;
   counterpartyId?: number;
   counterPartyName?: string;
+  currencyId?: number;
   currencyCode?: string;
   principalAmount?: number;
   startDate?: string;
   endDate?: string;
   settlementDate?: string;
   status?: string;
-  requestDate?: string;
-  createdBy?: string;
-  type?: string;
   interestRate?: number;
   interestRateType?: string;
   interestFrequency?: string;

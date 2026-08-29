@@ -75,7 +75,7 @@ namespace FinTrustFDManager.BAL.Tests
                 FdReferenceNo = $"FD-{fdId:D4}",
                 EntityId = 1,
                 CounterpartyId = 1,
-                CurrencyCode = "INR",
+                CurrencyId = 1,
                 PrincipalAmount = principal,
                 StartDate = startDate ?? new DateTime(2025, 1, 1),
                 EndDate = endDate ?? new DateTime(2025, 12, 31),
@@ -101,10 +101,10 @@ namespace FinTrustFDManager.BAL.Tests
                 FdId = fd.FdId,
                 InterestRateType = "FIXED",
                 InterestRate = 8m,
-                InterestFrequency = "QUARTERLY",
-                CompoundingFrequency = "Not Applicable",
+                InterestFrequencyId = 2,
+                CompoundingFrequencyId = null,
                 IsCompounding = false,
-                CalculationBasis = "ACTUAL_365"
+                DayCountConventionId = 3
             };
 
             var result = await _interestService.CreateAsync(interest);
@@ -142,10 +142,10 @@ namespace FinTrustFDManager.BAL.Tests
                 FdId = fd.FdId,
                 InterestRateType = "FIXED",
                 InterestRate = 8m,
-                InterestFrequency = "QUARTERLY",
-                CompoundingFrequency = "Not Applicable",
+                InterestFrequencyId = 2,
+                CompoundingFrequencyId = null,
                 IsCompounding = false,
-                CalculationBasis = "ACTUAL_365"
+                DayCountConventionId = 3
             };
             await _interestService.CreateAsync(interest);
 
@@ -180,10 +180,10 @@ namespace FinTrustFDManager.BAL.Tests
                 FdId = fd.FdId,
                 InterestRateType = "FIXED",
                 InterestRate = 1m,
-                InterestFrequency = "HALF_YEARLY",
-                CompoundingFrequency = "Not Applicable",
+                InterestFrequencyId = 3,
+                CompoundingFrequencyId = null,
                 IsCompounding = false,
-                CalculationBasis = "ACTUAL_365"
+                DayCountConventionId = 3
             };
             await _interestService.CreateAsync(interest);
 
@@ -223,10 +223,10 @@ namespace FinTrustFDManager.BAL.Tests
                 FdId = fd.FdId,
                 InterestRateType = "FIXED",
                 InterestRate = 8m,
-                InterestFrequency = "QUARTERLY",
-                CompoundingFrequency = "QUARTERLY",
+                InterestFrequencyId = 2,
+                CompoundingFrequencyId = 2,
                 IsCompounding = true,
-                CalculationBasis = "ACTUAL_365"
+                DayCountConventionId = 3
             };
             await _interestService.CreateAsync(interest);
 
@@ -274,10 +274,10 @@ namespace FinTrustFDManager.BAL.Tests
                 FdId = fd.FdId,
                 InterestRateType = "FIXED",
                 InterestRate = 8m,
-                InterestFrequency = "HALF_YEARLY",
-                CompoundingFrequency = "Not Applicable",
+                InterestFrequencyId = 3,
+                CompoundingFrequencyId = null,
                 IsCompounding = false,
-                CalculationBasis = "ACTUAL_365"
+                DayCountConventionId = 3
             };
             await _interestService.CreateAsync(interest);
 
@@ -309,10 +309,10 @@ namespace FinTrustFDManager.BAL.Tests
                 FdId = fd.FdId,
                 InterestRateType = "FIXED",
                 InterestRate = 10m,
-                InterestFrequency = "MONTHLY",
-                CompoundingFrequency = "Not Applicable",
+                InterestFrequencyId = 1,
+                CompoundingFrequencyId = null,
                 IsCompounding = false,
-                CalculationBasis = "ACTUAL_365"
+                DayCountConventionId = 3
             };
             await _interestService.CreateAsync(interest);
 
@@ -443,14 +443,14 @@ namespace FinTrustFDManager.BAL.Tests
             var interest1 = new FDInterest
             {
                 FdId = 1, InterestRateType = "FIXED", InterestRate = 8m,
-                InterestFrequency = "MONTHLY", CompoundingFrequency = "Not Applicable",
-                IsCompounding = false, CalculationBasis = "ACTUAL_365"
+                InterestFrequencyId = 1, CompoundingFrequencyId = null,
+                IsCompounding = false, DayCountConventionId = 3
             };
             var interest2 = new FDInterest
             {
                 FdId = 2, InterestRateType = "FIXED", InterestRate = 6m,
-                InterestFrequency = "QUARTERLY", CompoundingFrequency = "Not Applicable",
-                IsCompounding = false, CalculationBasis = "ACTUAL_365"
+                InterestFrequencyId = 2, CompoundingFrequencyId = null,
+                IsCompounding = false, DayCountConventionId = 3
             };
 
             await _interestService.CreateAsync(interest1);
@@ -479,10 +479,10 @@ namespace FinTrustFDManager.BAL.Tests
                 FdId = fd.FdId,
                 InterestRateType = "FIXED",
                 InterestRate = 7m,
-                InterestFrequency = "MONTHLY",
-                CompoundingFrequency = "Not Applicable",
+                InterestFrequencyId = 1,
+                CompoundingFrequencyId = null,
                 IsCompounding = false,
-                CalculationBasis = "ACTUAL_365"
+                DayCountConventionId = 3
             };
             await _interestService.CreateAsync(interest);
 
@@ -510,10 +510,10 @@ namespace FinTrustFDManager.BAL.Tests
                 FdId = fd.FdId,
                 InterestRateType = "FIXED",
                 InterestRate = 8m,
-                InterestFrequency = "QUARTERLY",
-                CompoundingFrequency = "Not Applicable",
+                InterestFrequencyId = 2,
+                CompoundingFrequencyId = null,
                 IsCompounding = false,
-                CalculationBasis = "ACTUAL_365"
+                DayCountConventionId = 3
             };
             await _interestService.CreateAsync(interest);
 
@@ -543,10 +543,10 @@ namespace FinTrustFDManager.BAL.Tests
                 FdId = fd.FdId,
                 InterestRateType = "FIXED",
                 InterestRate = 5m,
-                InterestFrequency = "QUARTERLY",
-                CompoundingFrequency = "Not Applicable",
+                InterestFrequencyId = 2,
+                CompoundingFrequencyId = null,
                 IsCompounding = false,
-                CalculationBasis = "ACTUAL_365"
+                DayCountConventionId = 3
             };
             await _interestService.CreateAsync(interest);
 
@@ -561,10 +561,10 @@ namespace FinTrustFDManager.BAL.Tests
                 FdId = fd2.FdId,
                 InterestRateType = "FIXED",
                 InterestRate = 10m,
-                InterestFrequency = "QUARTERLY",
-                CompoundingFrequency = "Not Applicable",
+                InterestFrequencyId = 2,
+                CompoundingFrequencyId = null,
                 IsCompounding = false,
-                CalculationBasis = "ACTUAL_365"
+                DayCountConventionId = 3
             };
             await _interestService.CreateAsync(interest2);
 
@@ -589,10 +589,10 @@ namespace FinTrustFDManager.BAL.Tests
                 FdId = fd.FdId,
                 InterestRateType = "FIXED",
                 InterestRate = 8m,
-                InterestFrequency = "QUARTERLY",
-                CompoundingFrequency = "Not Applicable",
+                InterestFrequencyId = 2,
+                CompoundingFrequencyId = null,
                 IsCompounding = false,
-                CalculationBasis = "ACTUAL_365"
+                DayCountConventionId = 3
             };
             await _interestService.CreateAsync(interest);
 
@@ -623,10 +623,10 @@ namespace FinTrustFDManager.BAL.Tests
                 FdId = fd.FdId,
                 InterestRateType = "FIXED",
                 InterestRate = 8m,
-                InterestFrequency = "AT_MATURITY",
-                CompoundingFrequency = "Not Applicable",
+                InterestFrequencyId = 5,
+                CompoundingFrequencyId = null,
                 IsCompounding = false,
-                CalculationBasis = "ACTUAL_365"
+                DayCountConventionId = 3
             };
             await _interestService.CreateAsync(interest);
 

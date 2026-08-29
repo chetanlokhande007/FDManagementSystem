@@ -54,7 +54,7 @@ namespace FinTrustFDManager.BAL.Tests
                 FdReferenceNo = "FD-0001",
                 EntityId = 1,
                 CounterpartyId = 1,
-                CurrencyCode = "INR",
+                CurrencyId = 1,
                 PrincipalAmount = 100_000m,
                 StartDate = new DateTime(2025, 1, 1),
                 EndDate = new DateTime(2025, 12, 31),

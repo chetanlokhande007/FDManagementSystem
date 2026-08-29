@@ -17,8 +17,6 @@ export class SidebarComponent implements OnInit {
 
   isMasterDataOpen = false;
   isInvestmentsOpen = true; // Open by default
-  isAdminMasterDataOpen = false;
-
   userRole = '';
   isApprover = false;
   isAdmin = false;
@@ -32,7 +30,6 @@ export class SidebarComponent implements OnInit {
     this.isApprover = normalizedRole === 'approver';
     this.isAdmin = normalizedRole === 'admin';
     this.isCA = normalizedRole === 'ca';
-
     this.checkActiveRoute(this.router.url);
 
     this.router.events.pipe(
@@ -43,7 +40,7 @@ export class SidebarComponent implements OnInit {
   }
 
   checkActiveRoute(url: string) {
-    // Master Data (CA & Admin)
+    // Master Data
     if (
       url.includes('/entities') ||
       url.includes('/countries') ||
@@ -52,7 +49,6 @@ export class SidebarComponent implements OnInit {
       url.includes('/benchmarks')
     ) {
       this.isMasterDataOpen = true;
-      this.isAdminMasterDataOpen = true;
     }
 
     // Investments
@@ -67,10 +63,6 @@ export class SidebarComponent implements OnInit {
 
   toggleMasterData(): void {
     this.isMasterDataOpen = !this.isMasterDataOpen;
-  }
-
-  toggleAdminMasterData(): void {
-    this.isAdminMasterDataOpen = !this.isAdminMasterDataOpen;
   }
 
   toggleInvestments(): void {

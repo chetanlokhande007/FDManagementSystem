@@ -2,7 +2,6 @@ using FinTrustFDManager.BAL.DTOs;
 using FinTrustFDManager.BAL.Interfaces;
 using FinTrustFDManager.DAL.Interfaces;
 using FinTrustFDManager.Model.Entities.Investment;
-using FinTrustFDManager.Model.Enums;
 using Microsoft.Extensions.Logging;
 using System;
 using System.Collections.Generic;
@@ -134,10 +133,10 @@ namespace FinTrustFDManager.BAL.Services
                 PrincipalAmount = principal,
                 InterestRate = effectiveRate,
                 InterestRateType = interest?.InterestRateType ?? "FIXED",
-                InterestFrequency = interest?.InterestFrequency ?? "Monthly",
-                CompoundingFrequency = interest?.CompoundingFrequency ?? (isCompounding ? "Quarterly" : "Not Applicable"),
+                InterestFrequency = interest?.InterestFrequency?.FrequencyName ?? "Monthly",
+                CompoundingFrequency = interest?.CompoundingFrequencyNavigation?.FrequencyName ?? (isCompounding ? "Quarterly" : "Not Applicable"),
                 IsCompounding = isCompounding,
-                CalculationBasis = interest?.CalculationBasis ?? "ACTUAL_365",
+                CalculationBasis = interest?.DayCountConvention?.ConventionName ?? "Actual/365",
                 TotalTenorDays = totalDays,
                 TotalInterest = Math.Round(totalInterest, 2),
                 MaturityAmount = Math.Round(maturityAmount, 2),
@@ -187,12 +186,6 @@ namespace FinTrustFDManager.BAL.Services
             if (fd == null)
                 throw new InvalidOperationException($"FD with ID {dto.FdId} not found.");
 
-            if (FDStatus.IsProtected(fd.Status))
-            {
-                throw new InvalidOperationException(
-                    $"Cannot modify cash flows for FD '{fd.FdReferenceNo}' with status '{fd.Status}'. Approved records are read-only.");
-            }
-
             var interest = await _interestService.GetByFdIdAsync(dto.FdId);
             if (interest == null)
                 throw new InvalidOperationException($"Interest configuration not found for FD ID {dto.FdId}.");
@@ -223,16 +216,6 @@ namespace FinTrustFDManager.BAL.Services
         // DELETE
         public async Task<bool> DeleteAsync(long id)
         {
-            var existing = await _repository.GetByIdAsync(id);
-            if (existing != null)
-            {
-                var fd = await _fdRepository.GetByIdAsync(existing.FdId);
-                if (fd != null && FDStatus.IsProtected(fd.Status))
-                {
-                    throw new InvalidOperationException(
-                        $"Cannot delete cash flow for FD '{fd.FdReferenceNo}' with status '{fd.Status}'. Approved records are read-only.");
-                }
-            }
             return await _repository.DeleteAsync(id);
         }
 

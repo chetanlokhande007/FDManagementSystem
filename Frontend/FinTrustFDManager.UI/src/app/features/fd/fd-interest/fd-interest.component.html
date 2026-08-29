@@ -1,30 +1,22 @@
 <div class="interest-page">
 
-  <!-- APPROVED READ-ONLY BANNER -->
-  <div *ngIf="isProtectedStatus" class="approved-readonly-banner">
-    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-      <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
-    </svg>
-    <span><strong>APPROVED — READ ONLY</strong> &nbsp; Interest configuration is read-only. Editing is not permitted.</span>
-  </div>
-
   <!-- FORM VIEW -->
   <form [formGroup]="interestForm" (ngSubmit)="saveInterest()">
     <div class="form-grid">
       <div class="form-group">
         <label>Interest Rate Type</label>
-        <select formControlName="interestRateType" [disabled]="isReadOnly || isProtectedStatus">
+        <select formControlName="interestRateType">
           <option value="FIXED">FIXED</option>
           <option value="FLOATING">FLOATING</option>
         </select>
       </div>
       <div class="form-group" *ngIf="interestForm.get('interestRateType')?.value === 'FIXED'">
         <label>Interest Rate (%)</label>
-        <input type="number" formControlName="interestRate" [disabled]="isReadOnly || isProtectedStatus">
+        <input type="number" formControlName="interestRate">
       </div>
       <div class="form-group" *ngIf="interestForm.get('interestRateType')?.value === 'FLOATING'">
         <label>Benchmark Name *</label>
-        <select formControlName="benchmarkId" [disabled]="isReadOnly || isProtectedStatus">
+        <select formControlName="benchmarkId">
           <option [ngValue]="null">Select Benchmark</option>
           <option *ngFor="let b of benchmarks" [ngValue]="b.benchmarkId">
             {{ b.benchmarkName }}
@@ -37,7 +29,7 @@
       </div>
       <div class="form-group" *ngIf="interestForm.get('interestRateType')?.value === 'FLOATING'">
         <label>Margin (%)</label>
-        <input type="number" formControlName="margin" [disabled]="isReadOnly || isProtectedStatus">
+        <input type="number" formControlName="margin">
       </div>
       <div class="form-group" *ngIf="interestForm.get('interestRateType')?.value === 'FLOATING'">
         <label>Effective Rate (%)</label>
@@ -45,37 +37,39 @@
       </div>
       <div class="form-group">
         <label>Interest Frequency</label>
-        <select formControlName="interestFrequency" [disabled]="isReadOnly || isProtectedStatus">
-          <option value="">Select Frequency</option>
-          <option *ngFor="let freq of interestFrequencies" [value]="freq.frequencyName">
+        <select formControlName="interestFrequencyId">
+          <option [ngValue]="null">Select Frequency</option>
+          <option *ngFor="let freq of interestFrequencies" [ngValue]="freq.id">
             {{ freq.frequencyName }}
           </option>
         </select>
       </div>
       <div class="form-group">
         <label>Compounding Frequency</label>
-        <select formControlName="compoundingFrequency" [disabled]="isReadOnly || isProtectedStatus">
-          <option value="">Select Frequency</option>
-          <option *ngFor="let freq of compoundingFrequencies" [value]="freq.frequencyName">
+        <select formControlName="compoundingFrequencyId">
+          <option [ngValue]="null">Select Frequency</option>
+          <option *ngFor="let freq of compoundingFrequencies" [ngValue]="freq.id">
             {{ freq.frequencyName }}
           </option>
         </select>
       </div>
       <div class="form-group" style="display: flex; align-items: center; gap: 10px;">
-        <input type="checkbox" formControlName="isCompounding" id="isCompounding" [disabled]="isReadOnly || isProtectedStatus">
+        <input type="checkbox" formControlName="isCompounding" id="isCompounding">
         <label for="isCompounding" style="margin-bottom: 0;">Apply Compounding Interest</label>
       </div>
       <div class="form-group">
-        <label>Calculation Basis</label>
-        <select formControlName="calculationBasis" [disabled]="isReadOnly || isProtectedStatus">
-          <option value="ACTUAL_365">ACTUAL_365</option>
-          <option value="ACTUAL_360">ACTUAL_360</option>
+        <label>Calculation Basis (Day Count Convention)</label>
+        <select formControlName="dayCountConventionId">
+          <option [ngValue]="null">Select Day Count Convention</option>
+          <option *ngFor="let conv of dayCountConventions" [ngValue]="conv.id">
+            {{ conv.conventionName }}
+          </option>
         </select>
       </div>
 
       <div class="form-group">
         <label>Payment Convention</label>
-        <input type="text" formControlName="paymentConvention" [disabled]="isReadOnly || isProtectedStatus">
+        <input type="text" formControlName="paymentConvention">
       </div>
 
     </div>
@@ -83,55 +77,9 @@
       {{ errorMessage }}
     </div>
     <div class="form-actions">
-      <!-- Show Edit button when in read-only mode and NOT protected -->
-      <button *ngIf="isReadOnly && !isProtectedStatus" type="button" class="save-btn" (click)="edit()">
-        Edit Interest
-      </button>
-      <!-- Show Update/Save button when in edit mode and NOT protected -->
-      <button *ngIf="!isReadOnly && !isProtectedStatus" type="submit" class="save-btn" [disabled]="isSaving">
+      <button type="submit" class="save-btn" [disabled]="isSaving">
         {{ isEdit ? 'Update Interest' : 'Save Interest' }}
-      </button>
-      <!-- Show disabled read-only button for protected records -->
-      <button *ngIf="isProtectedStatus" type="button" class="save-btn" disabled style="background-color: #9ca3af; cursor: not-allowed;">
-        {{ isEdit ? 'Update Interest (Read Only)' : 'Save Interest (Read Only)' }}
-      </button>
-      <!-- Show Cancel when editing (and not protected) -->
-      <button *ngIf="!isReadOnly && !isProtectedStatus && isEdit" type="button" class="cancel-btn" (click)="cancelEdit()">
-        Cancel
       </button>
     </div>
   </form>
-
-  <!-- APPROVED RECORD WARNING MODAL -->
-  <div class="status-modal-overlay" *ngIf="showApprovedWarning">
-    <div class="status-modal">
-      <div class="status-modal-header" style="background: #fee2e2; border-bottom: 2px solid #fca5a5;">
-        <h3 style="color: #991b1b;">Record Already Approved</h3>
-        <button class="close-btn" (click)="closeApprovedWarning()">×</button>
-      </div>
-      <div class="status-modal-body" style="padding: 24px;">
-        <div style="display: flex; align-items: flex-start; gap: 12px;">
-          <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#dc2626" stroke-width="1.5" style="flex-shrink: 0;">
-            <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
-          </svg>
-          <div>
-            <p style="font-size: 15px; color: #374151; margin: 0 0 8px;">
-              This record has already been approved and is <strong>read-only</strong>.
-            </p>
-            <p style="font-size: 14px; color: #6b7280; margin: 0 0 8px;">
-              Editing or updating an approved record is not permitted.
-            </p>
-            <p style="font-size: 14px; color: #6b7280; margin: 0;">
-              Please create a new transaction if a change is required.
-            </p>
-          </div>
-        </div>
-      </div>
-      <div class="status-modal-footer">
-        <button class="btn-confirm" style="background-color: #2563eb; color: white; padding: 8px 24px;" (click)="closeApprovedWarning()">
-          OK
-        </button>
-      </div>
-    </div>
-  </div>
 </div>

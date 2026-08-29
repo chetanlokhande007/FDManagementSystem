@@ -46,130 +46,8 @@
   <!-- Navigation -->
   <nav class="nav-menu">
 
-    <!-- =============================== -->
-    <!-- ADMIN SIDEBAR -->
-    <!-- =============================== -->
-    <ng-container *ngIf="isAdmin">
-
-      <!-- Dashboard -->
-      <a routerLink="/admin/dashboard" routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}" class="nav-item">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
-          <polyline points="9 22 9 12 15 12 15 22"></polyline>
-        </svg>
-        Dashboard
-      </a>
-
-      <!-- Master Data (expandable) -->
-      <div class="nav-section">
-        <div class="nav-section-header" (click)="toggleAdminMasterData()">
-          <small>MASTER DATA</small>
-          <svg class="arrow" [class.rotate]="isAdminMasterDataOpen" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <polyline points="6 9 12 15 18 9"></polyline>
-          </svg>
-        </div>
-        <div class="nav-items" *ngIf="isAdminMasterDataOpen">
-          <a routerLink="/entities" routerLinkActive="active" class="nav-item sub-item">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <rect x="4" y="2" width="16" height="20" rx="2" ry="2"></rect>
-              <path d="M9 22v-4h6v4"></path>
-              <path d="M8 6h.01"></path>
-              <path d="M16 6h.01"></path>
-              <path d="M12 6h.01"></path>
-              <path d="M12 10h.01"></path>
-              <path d="M12 14h.01"></path>
-            </svg>
-            Entities
-          </a>
-          <a routerLink="/counterparties" routerLinkActive="active" class="nav-item sub-item">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
-              <circle cx="9" cy="7" r="4"></circle>
-              <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
-              <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
-            </svg>
-            Counterparties
-          </a>
-          <a routerLink="/countries" routerLinkActive="active" class="nav-item sub-item">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <circle cx="12" cy="12" r="10"></circle>
-              <line x1="2" y1="12" x2="22" y2="12"></line>
-              <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path>
-            </svg>
-            Countries
-          </a>
-          <a routerLink="/currencies" routerLinkActive="active" class="nav-item sub-item">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <line x1="12" y1="1" x2="12" y2="23"></line>
-              <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path>
-            </svg>
-            Currencies
-          </a>
-          <a routerLink="/benchmarks" routerLinkActive="active" class="nav-item sub-item">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline>
-            </svg>
-            Benchmarks
-          </a>
-        </div>
-      </div>
-
-      <!-- FD Creation -->
-      <a routerLink="/fd-detail" routerLinkActive="active" class="nav-item">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
-          <polyline points="14 2 14 8 20 8"></polyline>
-          <line x1="12" y1="18" x2="12" y2="12"></line>
-          <line x1="9" y1="15" x2="15" y2="15"></line>
-        </svg>
-        FD Creation
-      </a>
-
-      <!-- Reset Configuration -->
-      <a routerLink="/admin/reset-configuration" routerLinkActive="active" class="nav-item">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <polyline points="23 4 23 10 17 10"></polyline>
-          <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path>
-        </svg>
-        Reset Configuration
-      </a>
-
-      <!-- Cash Flow Generation -->
-      <a routerLink="/admin/cash-flow-generation" routerLinkActive="active" class="nav-item">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <line x1="12" y1="1" x2="12" y2="23"></line>
-          <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path>
-        </svg>
-        Cash Flow Generation
-      </a>
-
-      <!-- FD Approval -->
-      <a routerLink="/admin/approvals" routerLinkActive="active" class="nav-item">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
-        </svg>
-        FD Approval
-      </a>
-
-    </ng-container>
-
-    <!-- =============================== -->
-    <!-- APPROVER SIDEBAR -->
-    <!-- =============================== -->
-    <a *ngIf="isApprover" routerLink="/approver/dashboard" routerLinkActive="active" class="nav-item">
-      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-        <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
-        <polyline points="9 22 9 12 15 12 15 22"></polyline>
-      </svg>
-      Approver Dashboard
-    </a>
-
-    <!-- =============================== -->
-    <!-- CA SIDEBAR -->
-    <!-- =============================== -->
-
-    <!-- Dashboard (CA only) -->
-    <a *ngIf="isCA" routerLink="/dashboard" routerLinkActive="active" class="nav-item">
+    <!-- Dashboard -->
+    <a routerLink="/dashboard" routerLinkActive="active" class="nav-item">
       <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
         <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
         <polyline points="9 22 9 12 15 12 15 22"></polyline>
@@ -177,14 +55,16 @@
       Dashboard
     </a>
 
-    <!-- INVESTMENTS (CA only) -->
-    <div class="nav-section" *ngIf="isCA">
+    <!-- INVESTMENTS -->
+    <div class="nav-section">
       <div class="nav-section-header" (click)="toggleInvestments()">
         <small>INVESTMENTS</small>
         <svg class="arrow" [class.rotate]="isInvestmentsOpen" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
           <polyline points="6 9 12 15 18 9"></polyline>
         </svg>
       </div>
+
+      <!-- Investments Sub-Menu -->
       <div class="nav-items" *ngIf="isInvestmentsOpen">
         <a routerLink="/fd" routerLinkActive="active" class="nav-item sub-item">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -196,15 +76,18 @@
       </div>
     </div>
 
-    <!-- MASTER DATA (CA only) -->
-    <div class="nav-section" *ngIf="isCA">
+    <!-- MASTER DATA -->
+    <div class="nav-section">
       <div class="nav-section-header" (click)="toggleMasterData()">
         <small>MASTER DATA</small>
         <svg class="arrow" [class.rotate]="isMasterDataOpen" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
           <polyline points="6 9 12 15 18 9"></polyline>
         </svg>
       </div>
+
+      <!-- Master Data Sub-Menu -->
       <div class="nav-items" *ngIf="isMasterDataOpen">
+        <!-- Entities -->
         <a routerLink="/entities" routerLinkActive="active" class="nav-item sub-item">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <rect x="4" y="2" width="16" height="20" rx="2" ry="2"></rect>
@@ -214,9 +97,15 @@
             <path d="M12 6h.01"></path>
             <path d="M12 10h.01"></path>
             <path d="M12 14h.01"></path>
+            <path d="M16 10h.01"></path>
+            <path d="M16 14h.01"></path>
+            <path d="M8 10h.01"></path>
+            <path d="M8 14h.01"></path>
           </svg>
           Entities
         </a>
+
+        <!-- Counterparties -->
         <a routerLink="/counterparties" routerLinkActive="active" class="nav-item sub-item">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
@@ -226,6 +115,8 @@
           </svg>
           Counterparties
         </a>
+
+        <!-- Countries -->
         <a routerLink="/countries" routerLinkActive="active" class="nav-item sub-item">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <circle cx="12" cy="12" r="10"></circle>
@@ -234,6 +125,8 @@
           </svg>
           Countries
         </a>
+
+        <!-- Currencies -->
         <a routerLink="/currencies" routerLinkActive="active" class="nav-item sub-item">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <line x1="12" y1="1" x2="12" y2="23"></line>
@@ -241,6 +134,8 @@
           </svg>
           Currencies
         </a>
+
+        <!-- Benchmarks -->
         <a routerLink="/benchmarks" routerLinkActive="active" class="nav-item sub-item">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline>

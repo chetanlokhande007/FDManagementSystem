@@ -8,20 +8,17 @@ namespace FinTrustFDManager.Model.DTOs.Investment
         // FD Identification
         public long FdId { get; set; }
         public string FdReferenceNo { get; set; } = string.Empty;
-        public long EntityId { get; set; }
+        public int EntityId { get; set; }
         public string EntityName { get; set; } = string.Empty;
-        public long CounterpartyId { get; set; }
+        public int CounterpartyId { get; set; }
         public string CounterPartyName { get; set; } = string.Empty;
+        public int CurrencyId { get; set; }
         public string CurrencyCode { get; set; } = string.Empty;
         public decimal PrincipalAmount { get; set; }
         public DateTime StartDate { get; set; }
         public DateTime EndDate { get; set; }
         public DateTime? SettlementDate { get; set; }
         public string Status { get; set; } = string.Empty;
-        
-        public DateTime RequestDate { get; set; }
-        public string CreatedBy { get; set; } = string.Empty;
-        public string Type { get; set; } = string.Empty;
 
         // Interest
         public decimal InterestRate { get; set; }

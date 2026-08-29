@@ -9,19 +9,14 @@ export interface FDInterest {
   interestRateType: string;
   interestRate: number;
   benchmarkId?: number;
-  benchmarkName: string;
-  benchmarkRate: number;
-  margin: number;
-  interestFrequency: string;
-  compoundingFrequency: string;
+  benchmarkName?: string;
+  benchmarkRate?: number;
+  margin?: number;
+  interestFrequencyId: number;
+  compoundingFrequencyId?: number;
   isCompounding: boolean;
-  calculationBasis: string;
-  calendarCode: string;
-  paymentConvention: string;
-  firstInterestDate: string;
-  firstCompoundingDate: string;
-  tdsApplicable: boolean;
-  tdsRate: number;
+  dayCountConventionId: number;
+  paymentConvention?: string;
   createdDate?: string;
 }
 

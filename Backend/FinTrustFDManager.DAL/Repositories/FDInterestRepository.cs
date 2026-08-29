@@ -19,6 +19,10 @@ namespace FinTrustFDManager.DAL.Repositories
         {
             return await _context.FDInterests
                 .AsNoTracking()
+                .Include(x => x.InterestFrequency)
+                .Include(x => x.DayCountConvention)
+                .Include(x => x.CompoundingFrequencyNavigation)
+                .Include(x => x.Benchmark)
                 .ToListAsync();
         }
 
@@ -26,6 +30,10 @@ namespace FinTrustFDManager.DAL.Repositories
         {
             return await _context.FDInterests
                 .AsNoTracking()
+                .Include(x => x.InterestFrequency)
+                .Include(x => x.DayCountConvention)
+                .Include(x => x.CompoundingFrequencyNavigation)
+                .Include(x => x.Benchmark)
                 .FirstOrDefaultAsync(x => x.FdInterestId == id);
         }
 
@@ -33,6 +41,10 @@ namespace FinTrustFDManager.DAL.Repositories
         {
             return await _context.FDInterests
                 .AsNoTracking()
+                .Include(x => x.InterestFrequency)
+                .Include(x => x.DayCountConvention)
+                .Include(x => x.CompoundingFrequencyNavigation)
+                .Include(x => x.Benchmark)
                 .FirstOrDefaultAsync(x => x.FdId == fdId);
         }
 
@@ -60,10 +72,10 @@ namespace FinTrustFDManager.DAL.Repositories
             existing.BenchmarkName = model.BenchmarkName;
             existing.BenchmarkRate = model.BenchmarkRate;
             existing.Margin = model.Margin;
-            existing.InterestFrequency = model.InterestFrequency;
-            existing.CompoundingFrequency = model.CompoundingFrequency;
+            existing.InterestFrequencyId = model.InterestFrequencyId;
+            existing.CompoundingFrequencyId = model.CompoundingFrequencyId;
             existing.IsCompounding = model.IsCompounding;
-            existing.CalculationBasis = model.CalculationBasis;
+            existing.DayCountConventionId = model.DayCountConventionId;
             existing.PaymentConvention = model.PaymentConvention;
 
             await _context.SaveChangesAsync();

@@ -65,10 +65,6 @@ namespace FinTrustFDManager.DAL.Data
         {
             base.OnModelCreating(modelBuilder);
 
-            modelBuilder.HasSequence<long>("fd_reference_seq")
-                .StartsAt(1)
-                .IncrementsBy(1);
-
             modelBuilder.Entity<User>()
                 .HasOne(u => u.Role)
                 .WithMany(r => r.Users)
@@ -156,6 +152,33 @@ namespace FinTrustFDManager.DAL.Data
                 .HasForeignKey(x => x.InvestmentId)
                 .OnDelete(DeleteBehavior.Cascade);
             // FD Primary Keys
+            // FD Identification Master FK relationships
+            modelBuilder.Entity<FDIdentification>()
+                .HasOne(x => x.Entity)
+                .WithMany()
+                .HasForeignKey(x => x.EntityId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            modelBuilder.Entity<FDIdentification>()
+                .HasOne(x => x.CounterParty)
+                .WithMany()
+                .HasForeignKey(x => x.CounterpartyId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            modelBuilder.Entity<FDIdentification>()
+                .HasOne(x => x.CurrencyNavigation)
+                .WithMany()
+                .HasForeignKey(x => x.CurrencyId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            modelBuilder.Entity<FDIdentification>()
+                .HasOne(x => x.Bank)
+                .WithMany()
+                .HasForeignKey(x => x.BankId)
+                .OnDelete(DeleteBehavior.Restrict)
+                .IsRequired(false);
+
+            // FD Primary Keys
             modelBuilder.Entity<FDIdentification>()
                 .HasKey(x => x.FdId);
 
@@ -168,7 +191,7 @@ namespace FinTrustFDManager.DAL.Data
 
             // FDIdentification -> FDInterest (1 : 1)
             modelBuilder.Entity<FDInterest>()
-                .HasOne<FDIdentification>()
+                .HasOne(x => x.FDIdentification)
                 .WithOne()
                 .HasForeignKey<FDInterest>(x => x.FdId)
                 .OnDelete(DeleteBehavior.Cascade);
@@ -176,6 +199,36 @@ namespace FinTrustFDManager.DAL.Data
             modelBuilder.Entity<FDInterest>()
                 .HasIndex(x => x.FdId)
                 .IsUnique();
+
+            // FDInterest -> InterestFrequency (Many : 1)
+            modelBuilder.Entity<FDInterest>()
+                .HasOne(x => x.InterestFrequency)
+                .WithMany()
+                .HasForeignKey(x => x.InterestFrequencyId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            // FDInterest -> InterestFrequency (Compounding, optional)
+            modelBuilder.Entity<FDInterest>()
+                .HasOne(x => x.CompoundingFrequencyNavigation)
+                .WithMany()
+                .HasForeignKey(x => x.CompoundingFrequencyId)
+                .OnDelete(DeleteBehavior.Restrict)
+                .IsRequired(false);
+
+            // FDInterest -> DayCountConvention (Many : 1)
+            modelBuilder.Entity<FDInterest>()
+                .HasOne(x => x.DayCountConvention)
+                .WithMany()
+                .HasForeignKey(x => x.DayCountConventionId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            // FDInterest -> Benchmark (optional, override existing)
+            modelBuilder.Entity<FDInterest>()
+                .HasOne(x => x.Benchmark)
+                .WithMany()
+                .HasForeignKey(x => x.BenchmarkId)
+                .OnDelete(DeleteBehavior.SetNull)
+                .IsRequired(false);
 
             // FDIdentification -> FDCashFlow (1 : Many)
             modelBuilder.Entity<FDCashFlow>()
@@ -210,13 +263,7 @@ namespace FinTrustFDManager.DAL.Data
                 .HasIndex(x => x.BenchmarkName)
                 .IsUnique();
 
-            // FDInterest -> Benchmark (optional FK)
-            modelBuilder.Entity<FDInterest>()
-                .HasOne<Benchmark>()
-                .WithMany()
-                .HasForeignKey(x => x.BenchmarkId)
-                .OnDelete(DeleteBehavior.SetNull)
-                .IsRequired(false);
+
 
             // FDAmendment -> FDIdentification (Many : 1)
             modelBuilder.Entity<FDAmendment>()

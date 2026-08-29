@@ -63,7 +63,7 @@ namespace FinTrustFDManager.BAL.Tests
             decimal principal,
             DateTime startDate,
             DateTime endDate,
-            string currency = "INR")
+            int currencyId = 1)
         {
             return new FDIdentification
             {
@@ -71,7 +71,7 @@ namespace FinTrustFDManager.BAL.Tests
                 FdReferenceNo = $"FD-{fdId:D4}",
                 EntityId = 1,
                 CounterpartyId = 1,
-                CurrencyCode = currency,
+                CurrencyId = currencyId,
                 PrincipalAmount = principal,
                 StartDate = startDate,
                 EndDate = endDate,
@@ -94,13 +94,31 @@ namespace FinTrustFDManager.BAL.Tests
                 FdId = fdId,
                 InterestRateType = "FIXED",
                 InterestRate = rate,
-                InterestFrequency = interestFreq,
-                CompoundingFrequency = compoundingFreq,
+                InterestFrequencyId = MapFrequencyToId(interestFreq),
+                CompoundingFrequencyId = string.Equals(compoundingFreq, "Not Applicable", StringComparison.OrdinalIgnoreCase) ? null : MapFrequencyToId(compoundingFreq),
                 IsCompounding = isCompounding,
-                CalculationBasis = calcBasis,
+                DayCountConventionId = MapDayCountToId(calcBasis),
                 CreatedDate = DateTime.UtcNow
             };
         }
+
+        private static int MapFrequencyToId(string freq) => freq?.Trim().ToUpperInvariant().Replace("-", "_").Replace(" ", "_") switch
+        {
+            "MONTHLY" or "MONTH" => 1,
+            "QUARTERLY" or "QUARTER" => 2,
+            "HALF_YEARLY" or "HALFYEARLY" or "SEMI_ANNUAL" or "SEMIANNUAL" or "SEMI_ANNUALLY" or "SEMIANNUALLY" or "YEARLY" or "ANNUALLY" or "ANNUAL" or "YEAR" or "YEAR" => 4,
+            "AT_MATURITY" or "ATMATURITY" => 5,
+            _ => 1
+        };
+
+        private static int MapDayCountToId(string basis) => basis?.Trim().ToUpperInvariant().Replace("/", "_") switch
+        {
+            "30_360" => 1,
+            "ACTUAL_360" => 2,
+            "ACTUAL_365" => 3,
+            "ACTUAL_ACTUAL" or "ACTUAL" => 4,
+            _ => 3
+        };
 
         /// <summary>
         /// Sets up the mock repositories and calls CreateAsync,
@@ -1244,7 +1262,7 @@ namespace FinTrustFDManager.BAL.Tests
                 new DateTime(2026, 1, 1));
             var interest = CreateInterest(1, 8m,
                 "QUARTERLY", null, false, "ACTUAL_365");
-            interest.CompoundingFrequency = null;
+            interest.CompoundingFrequencyId = null;
 
             var cf = await GenerateCashFlowsThroughService(fd, interest);
 
@@ -1345,10 +1363,10 @@ namespace FinTrustFDManager.BAL.Tests
                 FdId = 1,
                 InterestRateType = "FIXED",
                 InterestRate = 12m,
-                InterestFrequency = "QUARTERLY",
-                CompoundingFrequency = "QUARTERLY",
+                InterestFrequencyId = 2,
+                CompoundingFrequencyId = 2,
                 IsCompounding = true,
-                CalculationBasis = "ACTUAL_365",
+                DayCountConventionId = 3,
                 CreatedDate = DateTime.UtcNow
             };
 
@@ -1408,10 +1426,10 @@ namespace FinTrustFDManager.BAL.Tests
                 FdId = 1,
                 InterestRateType = "FIXED",
                 InterestRate = 8m,
-                InterestFrequency = "Yearly",
-                CompoundingFrequency = "Not Applicable",
+                InterestFrequencyId = 4,
+                CompoundingFrequencyId = null,
                 IsCompounding = false,
-                CalculationBasis = "ACTUAL_365",
+                DayCountConventionId = 3,
                 CreatedDate = DateTime.UtcNow
             };
 
@@ -1422,7 +1440,7 @@ namespace FinTrustFDManager.BAL.Tests
             var result = await _service.UpdateAsync(existingInterest.FdInterestId, updatedInterest);
 
             Assert.NotNull(result);
-            Assert.Equal("Yearly", result.InterestFrequency);
+            Assert.Equal(4, result.InterestFrequencyId);
             Assert.NotNull(capturedCashFlows);
         }
 
@@ -1573,10 +1591,10 @@ namespace FinTrustFDManager.BAL.Tests
                 BenchmarkName = benchmarkName,
                 BenchmarkRate = benchmarkRate,
                 Margin = margin,
-                InterestFrequency = interestFreq,
-                CompoundingFrequency = compoundingFreq,
+                InterestFrequencyId = MapFrequencyToId(interestFreq),
+                CompoundingFrequencyId = string.Equals(compoundingFreq, "Not Applicable", StringComparison.OrdinalIgnoreCase) ? null : MapFrequencyToId(compoundingFreq),
                 IsCompounding = isCompounding,
-                CalculationBasis = calcBasis,
+                DayCountConventionId = MapDayCountToId(calcBasis),
                 CreatedDate = DateTime.UtcNow
             };
         }

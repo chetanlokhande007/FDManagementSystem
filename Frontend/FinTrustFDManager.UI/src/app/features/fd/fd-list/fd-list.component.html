@@ -131,8 +131,8 @@
                   <button class="kebab-item" *ngIf="canCreateFD && (fd.status === 'DRAFT' || fd.status === 'REJECTED')" (click)="handleAction('edit', fd)">✏️ Edit</button>
                   <button class="kebab-item" *ngIf="fd.status !== 'DRAFT' && fd.status !== 'REJECTED'" (click)="handleAction('cashflow', fd)">💰 Cashflow</button>
                   <button class="kebab-item" *ngIf="canCreateFD && (fd.status === 'DRAFT' || fd.status === 'REJECTED')" (click)="handleAction('submit', fd)">📤 Submit</button>
-                  <button class="kebab-item" *ngIf="canApprove && fd.status === 'PENDING_APPROVAL'" (click)="handleAction('approve', fd)">✅ Approve</button>
-                  <button class="kebab-item" *ngIf="canApprove && fd.status === 'PENDING_APPROVAL'" (click)="handleAction('reject', fd)">❌ Reject</button>
+                  <button class="kebab-item" *ngIf="canApprove && (fd.status === 'PENDING_FD_ADMIN' || fd.status === 'PENDING_CA')" (click)="handleAction('approve', fd)">✅ Approve</button>
+                  <button class="kebab-item" *ngIf="canApprove && (fd.status === 'PENDING_FD_ADMIN' || fd.status === 'PENDING_CA')" (click)="handleAction('reject', fd)">❌ Reject</button>
                   <div class="kebab-divider"></div>
                   <button class="kebab-item danger" *ngIf="canCreateFD && (fd.status === 'DRAFT' || fd.status === 'REJECTED')" (click)="handleAction('delete', fd)">🗑️ Delete</button>
                 </div>
@@ -173,8 +173,8 @@
                 [class.approved]="fd.status === 'APPROVED'"
                 [class.draft]="fd.status === 'DRAFT'"
                 [class.rejected]="fd.status === 'REJECTED'"
-                [class.pending]="fd.status === 'PENDING_APPROVAL'"
-                [class.submitted]="fd.status === 'SUBMITTED'"
+                [class.pending]="fd.status === 'PENDING_FD_ADMIN' || fd.status === 'PENDING_CA'"
+                [class.submitted]="fd.status === 'PENDING_CA'"
                 [class.active-status]="fd.status === 'ACTIVE'">
                 {{ fd.status }}
               </span>

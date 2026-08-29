@@ -4,10 +4,10 @@ export interface FDIdentification {
   entityId: number;
   counterpartyId: number;
   counterpartyType?: string;
-  currencyCode: string;
+  currencyId: number;
   principalAmount: number;
   startDate: string;
   endDate: string;
   settlementDate: string;
-  bankAccountId?: number;
+  bankId?: number;
 }

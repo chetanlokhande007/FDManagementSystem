@@ -3,7 +3,6 @@ using FinTrustFDManager.BAL.Interfaces;
 using FinTrustFDManager.DAL.Interfaces;
 using FinTrustFDManager.Model.Entities.Investment;
 using FinTrustFDManager.Model.Entities.MasterData;
-using FinTrustFDManager.Model.Enums;
 using Microsoft.Extensions.Logging;
 using System;
 using System.Collections.Generic;
@@ -55,12 +54,9 @@ namespace FinTrustFDManager.BAL.Services
         public async Task<FDInterest> CreateAsync(FDInterest model)
         {
             ValidateInterestConfiguration(model);
+            await ResolveBenchmarkRateAsync(model);
 
             var fd = await _fdRepository.GetByIdAsync(model.FdId);
-            if (fd == null)
-                throw new KeyNotFoundException($"FD with ID {model.FdId} not found.");
-
-            await ResolveBenchmarkRateAsync(model, fd.StartDate);
             if (fd == null)
                 throw new KeyNotFoundException($"FD with ID {model.FdId} not found.");
 
@@ -94,6 +90,7 @@ namespace FinTrustFDManager.BAL.Services
         public async Task<FDInterest?> UpdateAsync(long id, FDInterest model)
         {
             ValidateInterestConfiguration(model);
+            await ResolveBenchmarkRateAsync(model);
 
             var existingInterest = await _interestRepository.GetByIdAsync(id);
             if (existingInterest == null) return null;
@@ -101,14 +98,6 @@ namespace FinTrustFDManager.BAL.Services
             var fd = await _fdRepository.GetByIdAsync(existingInterest.FdId);
             if (fd == null)
                 throw new KeyNotFoundException($"FD with ID {existingInterest.FdId} not found.");
-
-            if (FDStatus.IsProtected(fd.Status))
-            {
-                throw new InvalidOperationException(
-                    $"Cannot modify interest for FD '{fd.FdReferenceNo}' with status '{fd.Status}'. Approved records are read-only.");
-            }
-
-            await ResolveBenchmarkRateAsync(model, fd.StartDate);
 
             ValidateFdDates(fd);
 
@@ -147,13 +136,6 @@ namespace FinTrustFDManager.BAL.Services
             var existingInterest = await _interestRepository.GetByIdAsync(id);
             if (existingInterest == null) return false;
 
-            var fd = await _fdRepository.GetByIdAsync(existingInterest.FdId);
-            if (fd != null && FDStatus.IsProtected(fd.Status))
-            {
-                throw new InvalidOperationException(
-                    $"Cannot delete interest for FD '{fd.FdReferenceNo}' with status '{fd.Status}'. Approved records are read-only.");
-            }
-
             await using var transaction = await _unitOfWork.BeginTransactionAsync();
             try
             {
@@ -178,12 +160,6 @@ namespace FinTrustFDManager.BAL.Services
         {
             var fd = await _fdRepository.GetByIdAsync(fdId);
             if (fd == null) return false;
-
-            if (FDStatus.IsProtected(fd.Status))
-            {
-                throw new InvalidOperationException(
-                    $"Cannot regenerate cash flows for FD '{fd.FdReferenceNo}' with status '{fd.Status}'. Approved records are read-only.");
-            }
 
             var interest = await _interestRepository.GetByFdIdAsync(fdId);
             if (interest == null) return false;
@@ -277,10 +253,10 @@ namespace FinTrustFDManager.BAL.Services
                 PrincipalAmount = principal,
                 InterestRate = effectiveRate,
                 InterestRateType = interest?.InterestRateType ?? "FIXED",
-                InterestFrequency = interest?.InterestFrequency ?? "Monthly",
-                CompoundingFrequency = interest?.CompoundingFrequency ?? (isCompounding ? "Quarterly" : "Not Applicable"),
+                InterestFrequency = interest?.InterestFrequency?.FrequencyName ?? "Monthly",
+                CompoundingFrequency = interest?.CompoundingFrequencyNavigation?.FrequencyName ?? (isCompounding ? "Quarterly" : "Not Applicable"),
                 IsCompounding = isCompounding,
-                CalculationBasis = interest?.CalculationBasis ?? "ACTUAL_365",
+                CalculationBasis = interest?.DayCountConvention?.ConventionName ?? "Actual/365",
                 TotalTenorDays = totalDays,
                 TotalInterest = Math.Round(totalInterest, 2),
                 MaturityAmount = Math.Round(maturityAmount, 2),
@@ -297,7 +273,7 @@ namespace FinTrustFDManager.BAL.Services
             DateTime startDate = fd.StartDate.Date;
             DateTime maturityDate = fd.EndDate.Date;
             bool isCompounding = interest.IsCompounding;
-            bool isATM = IsATMaturity(interest.InterestFrequency?.FrequencyName ?? "MONTHLY");
+            bool isATM = IsATMaturity(interest.InterestFrequency?.FrequencyName ?? "At Maturity");
 
             // 1. Initial Deposit
             cashFlows.Add(new FDCashFlow
@@ -306,7 +282,7 @@ namespace FinTrustFDManager.BAL.Services
                 StartDate = startDate, EndDate = startDate, Days = 0,
                 InterestRate = initialRate, OpeningBalance = 0m, InterestAmount = 0m,
                 ClosingBalance = fd.PrincipalAmount, CashFlowAmount = fd.PrincipalAmount,
-                Direction = "OUTFLOW", CurrencyCode = fd.Currency?.CurrencyCode ?? "INR" ?? "INR",
+                Direction = "OUTFLOW", CurrencyCode = fd.CurrencyNavigation?.CurrencyCode ?? "INR" ?? "INR",
                 Status = "PENDING", ReferenceNo = fd.FdReferenceNo ?? "", CreatedDate = now
             });
 
@@ -336,7 +312,7 @@ namespace FinTrustFDManager.BAL.Services
                 StartDate = maturityDate, EndDate = maturityDate, Days = 0,
                 InterestRate = initialRate, OpeningBalance = balance, InterestAmount = 0m,
                 ClosingBalance = 0m, CashFlowAmount = balance,
-                Direction = "INFLOW", CurrencyCode = fd.Currency?.CurrencyCode ?? "INR" ?? "INR",
+                Direction = "INFLOW", CurrencyCode = fd.CurrencyNavigation?.CurrencyCode ?? "INR" ?? "INR",
                 Status = "PENDING", ReferenceNo = fd.FdReferenceNo ?? "", CreatedDate = now
             });
 
@@ -355,7 +331,7 @@ namespace FinTrustFDManager.BAL.Services
             decimal balance, decimal initialRate, bool isFloating,
             DateTime startDate, DateTime maturityDate, DateTime now)
         {
-            int compMonths = GetFrequencyMonths(interest.CompoundingFrequency) ?? 1;
+            int compMonths = GetFrequencyMonths(interest.CompoundingFrequencyNavigation?.FrequencyName ?? "Quarterly") ?? 1;
             DateTime compStart = startDate;
 
             while (compStart < maturityDate)
@@ -385,7 +361,7 @@ namespace FinTrustFDManager.BAL.Services
                     InterestRate = effectiveRate, OpeningBalance = balance,
                     InterestAmount = periodInterest, ClosingBalance = newBalance,
                     CashFlowAmount = 0m, Direction = "INFLOW",
-                    CurrencyCode = fd.Currency?.CurrencyCode ?? "INR" ?? "INR", Status = "PENDING",
+                    CurrencyCode = fd.CurrencyNavigation?.CurrencyCode ?? "INR" ?? "INR", Status = "PENDING",
                     ReferenceNo = fd.FdReferenceNo ?? "", CreatedDate = now
                 });
 
@@ -422,7 +398,7 @@ namespace FinTrustFDManager.BAL.Services
                 InterestRate = effectiveRate, OpeningBalance = balance,
                 InterestAmount = periodInterest, ClosingBalance = balance,
                 CashFlowAmount = periodInterest, Direction = "INFLOW",
-                CurrencyCode = fd.Currency?.CurrencyCode ?? "INR" ?? "INR", Status = "PENDING",
+                CurrencyCode = fd.CurrencyNavigation?.CurrencyCode ?? "INR" ?? "INR", Status = "PENDING",
                 ReferenceNo = fd.FdReferenceNo ?? "", CreatedDate = now
             });
         }
@@ -458,7 +434,7 @@ namespace FinTrustFDManager.BAL.Services
                     InterestRate = effectiveRate, OpeningBalance = balance,
                     InterestAmount = periodInterest, ClosingBalance = balance,
                     CashFlowAmount = periodInterest, Direction = "INFLOW",
-                    CurrencyCode = fd.Currency?.CurrencyCode ?? "INR" ?? "INR", Status = "PENDING",
+                    CurrencyCode = fd.CurrencyNavigation?.CurrencyCode ?? "INR" ?? "INR", Status = "PENDING",
                     ReferenceNo = fd.FdReferenceNo ?? "", CreatedDate = now
                 });
                 currentStart = periodEnd.AddDays(1);
@@ -471,7 +447,7 @@ namespace FinTrustFDManager.BAL.Services
             decimal balance, decimal initialRate, bool isFloating,
             DateTime startDate, DateTime maturityDate, DateTime now)
         {
-            int compMonths = GetFrequencyMonths(interest.CompoundingFrequency) ?? 1;
+            int compMonths = GetFrequencyMonths(interest.CompoundingFrequencyNavigation?.FrequencyName ?? "Quarterly") ?? 1;
             DateTime compStart = startDate;
             DateTime nextCompEnd = GetTargetFrequencyEndDate(startDate, compMonths, maturityDate);
             if (nextCompEnd > maturityDate) nextCompEnd = maturityDate;
@@ -510,7 +486,7 @@ namespace FinTrustFDManager.BAL.Services
                             InterestRate = effectiveRate, OpeningBalance = balance,
                             InterestAmount = periodInterest, ClosingBalance = newBalance,
                             CashFlowAmount = 0m, Direction = "INFLOW",
-                            CurrencyCode = fd.Currency?.CurrencyCode ?? "INR" ?? "INR", Status = "PENDING",
+                            CurrencyCode = fd.CurrencyNavigation?.CurrencyCode ?? "INR" ?? "INR", Status = "PENDING",
                             ReferenceNo = fd.FdReferenceNo ?? "", CreatedDate = now
                         });
                         balance = newBalance;
@@ -544,7 +520,7 @@ namespace FinTrustFDManager.BAL.Services
                         InterestRate = effectiveRate, OpeningBalance = balance,
                         InterestAmount = periodInterest, ClosingBalance = balance,
                         CashFlowAmount = 0m, Direction = "INFLOW",
-                        CurrencyCode = fd.Currency?.CurrencyCode ?? "INR" ?? "INR", Status = "PENDING",
+                        CurrencyCode = fd.CurrencyNavigation?.CurrencyCode ?? "INR" ?? "INR", Status = "PENDING",
                         ReferenceNo = fd.FdReferenceNo ?? "", CreatedDate = now
                     });
                     intStart = intEnd.AddDays(1);
@@ -627,27 +603,26 @@ namespace FinTrustFDManager.BAL.Services
             if (rateType != "FIXED" && rateType != "FLOATING")
                 throw new InvalidOperationException($"Unsupported Interest Rate Type '{model.InterestRateType}'.");
 
-            if (string.IsNullOrWhiteSpace(model.DayCountConvention?.ConventionName ?? "ACTUAL_365"))
-                throw new InvalidOperationException("Calculation Basis is required.");
+            if (model.InterestFrequencyId <= 0)
+                throw new InvalidOperationException("Interest Frequency is required.");
 
-            var basis = model.DayCountConvention?.ConventionName ?? "ACTUAL_365".Trim().ToUpperInvariant();
-            if (basis != "ACTUAL_360" && basis != "ACTUAL_365")
-                throw new InvalidOperationException($"Unsupported Calculation Basis '{model.DayCountConvention?.ConventionName ?? "ACTUAL_365"}'.");
+            if (model.DayCountConventionId <= 0)
+                throw new InvalidOperationException("Day Count Convention is required.");
 
             if (rateType == "FIXED" && model.InterestRate <= 0)
                 throw new InvalidOperationException("Interest Rate must be greater than 0 for FIXED deposits.");
 
-            if (model.IsCompounding)
+            if (rateType == "FLOATING")
             {
-                if (string.IsNullOrWhiteSpace(model.CompoundingFrequency) ||
-                    model.CompoundingFrequency.Equals("Not Applicable", StringComparison.OrdinalIgnoreCase))
-                {
-                    throw new InvalidOperationException("Compounding Frequency is required when compounding is enabled.");
-                }
+                if (!model.BenchmarkId.HasValue || model.BenchmarkId.Value <= 0)
+                    throw new InvalidOperationException("Benchmark is required for FLOATING rate type.");
+                if (!model.Margin.HasValue || model.Margin.Value < 0)
+                    throw new InvalidOperationException("Margin is required for FLOATING rate type.");
             }
-            else
+
+            if (model.IsCompounding && (!model.CompoundingFrequencyId.HasValue || model.CompoundingFrequencyId.Value <= 0))
             {
-                model.CompoundingFrequency = "Not Applicable";
+                throw new InvalidOperationException("Compounding Frequency is required when compounding is enabled.");
             }
         }
 
@@ -670,21 +645,20 @@ namespace FinTrustFDManager.BAL.Services
         }
 
         /// <summary>
-        /// Resolves the benchmark rate using the rate history effective for the FD's start date.
-        /// Falls back to Benchmark.CurrentRate if no history entry exists for the date.
+        /// Resolves the benchmark rate from the Benchmark Master if BenchmarkId is set.
+        /// This ensures the rate always comes from the authoritative master data.
         /// </summary>
-        private async Task ResolveBenchmarkRateAsync(FDInterest interest, DateTime asOfDate)
+        private async Task ResolveBenchmarkRateAsync(FDInterest interest)
         {
             if (interest.BenchmarkId.HasValue && interest.BenchmarkId.Value > 0)
             {
                 var benchmark = await _interestRepository.GetBenchmarkByIdAsync(interest.BenchmarkId.Value);
                 if (benchmark != null)
                 {
-                    interest.Benchmark?.BenchmarkName ?? "N/A" = benchmark.BenchmarkName;
-                    // Use the rate history effective for the FD's start date,
-                    // NOT the benchmark's CurrentRate which may differ.
-                    interest.BenchmarkRate = await _benchmarkRateHistoryService
-                        .GetEffectiveRateAsync(interest.BenchmarkId.Value, asOfDate);
+                    interest.BenchmarkName = benchmark.BenchmarkName;
+                    // Use the benchmark's current rate as the snapshot rate.
+                    // For floating rates, this gets recalculated at cash flow generation time.
+                    interest.BenchmarkRate = benchmark.CurrentRate;
                 }
             }
         }

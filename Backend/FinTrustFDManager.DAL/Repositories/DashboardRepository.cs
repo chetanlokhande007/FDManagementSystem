@@ -27,6 +27,8 @@ namespace FinTrustFDManager.DAL.Repositories
             // ── Active FD count & principal ──
             var activeFDs = await _context.FDIdentifications
                 .AsNoTracking()
+                .Include(f => f.Entity)
+                .Include(f => f.Bank)
                 .Where(f => f.Status == "APPROVED" || f.Status == "DRAFT")
                 .ToListAsync();
 
@@ -100,7 +102,7 @@ namespace FinTrustFDManager.DAL.Repositories
                 {
                     FdId = f.FdId,
                     FdReferenceNo = f.FdReferenceNo,
-                    BankName = "",  // FDIdentification has no direct Bank FK
+                    BankName = f.Bank?.BankName ?? "",
                     PrincipalAmount = f.PrincipalAmount,
                     MaturityDate = f.EndDate,
                     MaturityAmount = maturityAmt,
@@ -168,10 +170,10 @@ namespace FinTrustFDManager.DAL.Repositories
 
             // ── Portfolio distribution by entity ──
             var entityGroups = activeFDs
-                .GroupBy(f => f.EntityId)
+                .GroupBy(f => new { f.EntityId, EntityName = f.Entity?.EntityName ?? $"Entity {f.EntityId}" })
                 .Select(g => new ChartDataDto
                 {
-                    Label = $"Entity {g.Key}",
+                    Label = g.Key.EntityName,
                     Value = g.Sum(f => f.PrincipalAmount),
                     Count = g.Count()
                 })

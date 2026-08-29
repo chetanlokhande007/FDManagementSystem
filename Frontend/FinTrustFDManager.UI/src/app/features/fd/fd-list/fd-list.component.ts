@@ -263,7 +263,7 @@ export class FDListComponent implements OnInit {
     if (!confirmed) return;
 
     const oldStatus = fd.status;
-    fd.status = 'PENDING_APPROVAL';
+    fd.status = 'PENDING_FD_ADMIN';
     sessionStorage.setItem('FINTRUST_FD_LANDING_CACHE', JSON.stringify(this.fdList));
 
     this.fdService.submit(fd.fdId).subscribe({

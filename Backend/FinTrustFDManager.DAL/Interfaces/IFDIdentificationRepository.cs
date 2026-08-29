@@ -43,48 +43,5 @@ namespace FinTrustFDManager.DAL.Interfaces
         /// Gets approval history for an FD.
         /// </summary>
         Task<IEnumerable<FDApprovalHistory>> GetApprovalHistoryAsync(long fdId);
-
-        /// <summary>
-        /// Counts FDs with PENDING_APPROVAL status.
-        /// </summary>
-        Task<int> GetPendingCountAsync();
-
-        /// <summary>
-        /// Gets FD landing data for FDs with PENDING_APPROVAL status,
-        /// joined with entity and counterparty names, for the Approver Dashboard.
-        /// </summary>
-        Task<IEnumerable<FDLandingDto>> GetPendingApprovalsAsync();
-
-        /// <summary>
-        /// Counts FDs with PENDING_APPROVAL status whose principal amount
-        /// exceeds the given critical threshold.
-        /// </summary>
-        Task<int> GetCriticalPendingCountAsync(decimal criticalThreshold);
-
-        /// <summary>
-        /// Counts approval actions (APPROVE) performed by the given user today.
-        /// </summary>
-        Task<int> GetApprovedTodayCountAsync(long approverUserId);
-
-        /// <summary>
-        /// Gets the number of FDs in each status for admin dashboard summary.
-        /// </summary>
-        Task<Dictionary<string, int>> GetStatusCountsAsync();
-
-        /// <summary>
-        /// Counts rejection actions performed today.
-        /// </summary>
-        Task<int> GetRejectedTodayCountAsync();
-
-        /// <summary>
-        /// Gets all FDs for the admin approval list, with optional status filter,
-        /// ordered by CreatedDate descending.
-        /// </summary>
-        Task<IEnumerable<FDLandingDto>> GetAdminApprovalListAsync(string? statusFilter);
-
-        /// <summary>
-        /// Resolves a user ID to their full name.
-        /// </summary>
-        Task<string> GetUserNameAsync(long userId);
     }
 }

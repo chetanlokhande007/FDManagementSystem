@@ -49,7 +49,7 @@ namespace FinTrustFDManager.BAL.Tests.IntegrationTests
                 FdReferenceNo = $"FD-{fdId:D4}",
                 EntityId = 1,
                 CounterpartyId = 1,
-                CurrencyCode = "INR",
+                CurrencyId = 1,
                 PrincipalAmount = principal,
                 StartDate = start,
                 EndDate = end,
@@ -57,6 +57,24 @@ namespace FinTrustFDManager.BAL.Tests.IntegrationTests
                 Status = "DRAFT"
             };
         }
+
+        private static int MapFreq(string f) => f?.Trim().ToUpperInvariant().Replace("-", "_").Replace(" ", "_") switch
+        {
+            "MONTHLY" or "MONTH" => 1,
+            "QUARTERLY" or "QUARTER" => 2,
+            "HALF_YEARLY" or "HALFYEARLY" or "YEARLY" or "ANNUALLY" or "ANNUAL" or "YEAR" or "SEMI_ANNUAL" or "SEMIANNUAL" or "SEMI_ANNUALLY" or "SEMIANNUALLY" => 4,
+            "AT_MATURITY" or "ATMATURITY" => 5,
+            _ => 1
+        };
+
+        private static int MapDCC(string b) => b?.Trim().ToUpperInvariant().Replace("/", "_") switch
+        {
+            "30_360" => 1,
+            "ACTUAL_360" => 2,
+            "ACTUAL_365" => 3,
+            "ACTUAL_ACTUAL" or "ACTUAL" => 4,
+            _ => 3
+        };
 
         private static FDInterest CreateInterest(
             long fdId = 1,
@@ -71,10 +89,10 @@ namespace FinTrustFDManager.BAL.Tests.IntegrationTests
                 FdId = fdId,
                 InterestRateType = "FIXED",
                 InterestRate = rate,
-                InterestFrequency = interestFreq,
-                CompoundingFrequency = compoundingFreq,
+                InterestFrequencyId = MapFreq(interestFreq),
+                CompoundingFrequencyId = string.Equals(compoundingFreq, "Not Applicable", StringComparison.OrdinalIgnoreCase) ? null : MapFreq(compoundingFreq),
                 IsCompounding = isCompounding,
-                CalculationBasis = calcBasis,
+                DayCountConventionId = MapDCC(calcBasis),
                 CreatedDate = DateTime.UtcNow
             };
         }
@@ -128,7 +146,7 @@ namespace FinTrustFDManager.BAL.Tests.IntegrationTests
             var fromDb = await _context.FDIdentifications.FindAsync(result.FdId);
             Assert.NotNull(fromDb);
             Assert.Equal(100_000m, fromDb.PrincipalAmount);
-            Assert.Equal("INR", fromDb.CurrencyCode);
+            Assert.Equal(1, fromDb.CurrencyId);
         }
 
         [Fact]
@@ -255,7 +273,7 @@ namespace FinTrustFDManager.BAL.Tests.IntegrationTests
 
             var fromDb = await _context.FDInterests.FindAsync(interest.FdInterestId);
             Assert.NotNull(fromDb);
-            Assert.Equal("QUARTERLY", fromDb.InterestFrequency);
+            Assert.Equal(2, fromDb.InterestFrequencyId);
         }
 
         [Fact]
