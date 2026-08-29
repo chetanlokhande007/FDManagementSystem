@@ -201,5 +201,57 @@ namespace FinTrustFDManager.API.Controllers
                 return NotFound(new { success = false, message = ex.Message });
             }
         }
+
+        // GET: api/FDIdentification/pending-approvals
+        [HttpGet("pending-approvals")]
+        [Authorize(Roles = "Admin,Approver")]
+        public async Task<IActionResult> GetPendingApprovals()
+        {
+            var result = await _service.GetPendingApprovalsAsync();
+            return Ok(result);
+        }
+
+        // GET: api/FDIdentification/approver-dashboard
+        [HttpGet("approver-dashboard")]
+        [Authorize(Roles = "Admin,Approver")]
+        public async Task<IActionResult> GetApproverDashboard()
+        {
+            var userId = GetCurrentUserId();
+            var result = await _service.GetApproverDashboardSummaryAsync(userId);
+            return Ok(result);
+        }
+
+        // ═══════════════════════════════════════════
+        // ADMIN AUTHORITY ENDPOINTS
+        // ═══════════════════════════════════════════
+
+        // GET: api/FDIdentification/admin/dashboard
+        [HttpGet("admin/dashboard")]
+        [Authorize(Roles = "Admin")]
+        public async Task<IActionResult> GetAdminDashboard()
+        {
+            var result = await _service.GetAdminDashboardSummaryAsync();
+            return Ok(result);
+        }
+
+        // GET: api/FDIdentification/admin/approvals?status=PENDING_APPROVAL
+        [HttpGet("admin/approvals")]
+        [Authorize(Roles = "Admin")]
+        public async Task<IActionResult> GetAdminApprovalList([FromQuery] string? status)
+        {
+            var result = await _service.GetAdminApprovalListAsync(status);
+            return Ok(result);
+        }
+
+        // GET: api/FDIdentification/admin/approvals/{id}
+        [HttpGet("admin/approvals/{id:long}")]
+        [Authorize(Roles = "Admin")]
+        public async Task<IActionResult> GetAdminApprovalDetail(long id)
+        {
+            var result = await _service.GetAdminApprovalDetailAsync(id);
+            if (result == null)
+                return NotFound(new { message = "FD record not found." });
+            return Ok(result);
+        }
     }
 }

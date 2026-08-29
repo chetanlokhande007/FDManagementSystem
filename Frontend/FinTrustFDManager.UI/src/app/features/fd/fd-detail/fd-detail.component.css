@@ -915,3 +915,22 @@ table td {
     padding: 16px;
   }
 }
+
+/* ── Approved Read-Only Banner ── */
+.approved-readonly-banner {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 20px;
+  background: linear-gradient(135deg, #dcfce7, #bbf7d0);
+  border: 1px solid #86efac;
+  border-radius: 8px;
+  margin-bottom: 16px;
+  color: #065f46;
+  font-size: 14px;
+}
+
+.approved-readonly-banner svg {
+  flex-shrink: 0;
+  color: #059669;
+}

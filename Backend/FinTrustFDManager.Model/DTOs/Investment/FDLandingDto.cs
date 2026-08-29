@@ -18,6 +18,10 @@ namespace FinTrustFDManager.Model.DTOs.Investment
         public DateTime EndDate { get; set; }
         public DateTime? SettlementDate { get; set; }
         public string Status { get; set; } = string.Empty;
+        
+        public DateTime RequestDate { get; set; }
+        public string CreatedBy { get; set; } = string.Empty;
+        public string Type { get; set; } = string.Empty;
 
         // Interest
         public decimal InterestRate { get; set; }

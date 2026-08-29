@@ -8,6 +8,14 @@
     <button class="back-btn" (click)="goBack()">Go Back</button>
   </div>
 
+  <!-- APPROVED — READ ONLY BANNER -->
+  <div *ngIf="isApprovedStatus" class="approved-readonly-banner">
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+      <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
+    </svg>
+    <span><strong>APPROVED — READ ONLY</strong> &nbsp; This record has been approved and cannot be edited or modified.</span>
+  </div>
+
   <!-- CARD -->
   <div class="fd-card">
 
@@ -84,7 +92,9 @@
         </div>
         <div class="form-actions">
           <button type="button" class="save-btn" *ngIf="!isProtectedStatus" (click)="editGeneral()">Edit</button>
-          <button type="button" class="save-btn" *ngIf="isProtectedStatus" (click)="openAmendmentModal()" style="background-color: #d97706;">Request Amendment</button>
+          <button type="button" class="save-btn" *ngIf="fixedDeposit.status === 'DRAFT' || fixedDeposit.status === 'REJECTED'" (click)="submitForApproval()" style="background-color: #059669; margin-left: 8px;">Submit for Approval</button>
+          <button type="button" class="save-btn" *ngIf="isProtectedStatus && !isApprovedStatus" (click)="openAmendmentModal()" style="background-color: #d97706;">Request Amendment</button>
+          <button type="button" class="save-btn" *ngIf="isApprovedStatus" disabled style="background-color: #9ca3af; cursor: not-allowed;">Edit (Read Only)</button>
           <button type="button" class="cancel-btn" (click)="toggleAuditTab()">{{ showAuditTab ? 'Hide Audit' : 'View Audit History' }}</button>
         </div>
       </div>
@@ -209,7 +219,8 @@
     <!-- INTEREST TAB -->
     <div *ngIf="activeTab === 'interest'">
       <app-fd-interest *ngIf="!loading && fdId" [fdId]="fdId" [interestData]="interestData"
-        [interestFrequencies]="interestFrequencies" [benchmarks]="benchmarks" (interestSaved)="onInterestSaved($event)"></app-fd-interest>
+        [interestFrequencies]="interestFrequencies" [benchmarks]="benchmarks" [fdStatus]="fixedDeposit.status"
+        (interestSaved)="onInterestSaved($event)"></app-fd-interest>
       <div *ngIf="loading" class="tab-content skeleton-area">
         <div class="skeleton-grid">
           <div *ngFor="let s of [1,2,3,4,5,6]" class="skeleton-field">
@@ -322,4 +333,39 @@
       </tr>
     </tbody>
   </table>
+</div>
+
+<!-- =============================== -->
+<!-- APPROVED RECORD WARNING MODAL -->
+<!-- =============================== -->
+<div class="status-modal-overlay" *ngIf="showApprovedWarning">
+  <div class="status-modal">
+    <div class="status-modal-header" style="background: #fee2e2; border-bottom: 2px solid #fca5a5;">
+      <h3 style="color: #991b1b;">Record Already Approved</h3>
+      <button class="close-btn" (click)="closeApprovedWarning()">×</button>
+    </div>
+    <div class="status-modal-body" style="padding: 24px;">
+      <div style="display: flex; align-items: flex-start; gap: 12px;">
+        <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#dc2626" stroke-width="1.5" style="flex-shrink: 0;">
+          <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
+        </svg>
+        <div>
+          <p style="font-size: 15px; color: #374151; margin: 0 0 8px;">
+            This FD has already been approved and is <strong>read-only</strong>.
+          </p>
+          <p style="font-size: 14px; color: #6b7280; margin: 0 0 8px;">
+            Editing or updating an approved record is not permitted.
+          </p>
+          <p style="font-size: 14px; color: #6b7280; margin: 0;">
+            Please create a new transaction if a change is required.
+          </p>
+        </div>
+      </div>
+    </div>
+    <div class="status-modal-footer">
+      <button class="btn-confirm" style="background-color: #2563eb; color: white; padding: 8px 24px;" (click)="closeApprovedWarning()">
+        OK
+      </button>
+    </div>
+  </div>
 </div>

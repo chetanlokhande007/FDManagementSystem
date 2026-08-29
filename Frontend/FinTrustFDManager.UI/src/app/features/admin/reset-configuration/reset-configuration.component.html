@@ -1,0 +1,125 @@
+<div class="page-container">
+
+  <!-- HEADER -->
+  <div class="page-header">
+    <div>
+      <h2>Reset Configuration</h2>
+      <p>View and manage interest rate reset configurations for approved FDs</p>
+    </div>
+  </div>
+
+  <!-- SEARCH -->
+  <div class="filters-bar">
+    <div class="search-box">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <circle cx="11" cy="11" r="8"></circle>
+        <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+      </svg>
+      <input
+        type="text"
+        [(ngModel)]="searchText"
+        (ngModelChange)="applyFilter()"
+        placeholder="Search by reference, entity, counterparty..."
+        class="search-input">
+      <button *ngIf="searchText" class="clear-search" (click)="searchText = ''; applyFilter()">×</button>
+    </div>
+  </div>
+
+  <!-- TABLE -->
+  <div class="table-card">
+    <div class="table-header-row">
+      <h3>FD Reset Configurations</h3>
+      <button class="btn-refresh" (click)="loadFDs()">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <polyline points="23 4 23 10 17 10"></polyline>
+          <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path>
+        </svg>
+        Refresh
+      </button>
+    </div>
+
+    <div class="table-responsive">
+      <table class="fintrust-table">
+        <thead>
+          <tr>
+            <th>Reference No.</th>
+            <th>Entity</th>
+            <th>Counterparty</th>
+            <th>Currency</th>
+            <th>Principal Amount</th>
+            <th>Interest Rate</th>
+            <th>Start Date</th>
+            <th>Maturity Date</th>
+            <th>Status</th>
+            <th>Action</th>
+          </tr>
+        </thead>
+        <tbody>
+          <!-- SKELETON LOADING -->
+          <ng-container *ngIf="loading">
+            <tr *ngFor="let s of [1,2,3,4,5]" class="skeleton-row">
+              <td *ngFor="let c of [1,2,3,4,5,6,7,8,9,10]"><span class="skeleton-cell"></span></td>
+            </tr>
+          </ng-container>
+
+          <!-- EMPTY STATE -->
+          <tr *ngIf="!loading && filteredList.length === 0">
+            <td colspan="10" class="empty-state">
+              <div class="empty-content">
+                <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#6c757d" stroke-width="1.5">
+                  <polyline points="23 4 23 10 17 10"></polyline>
+                  <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path>
+                </svg>
+                <p>No approved or active FDs found for reset configuration.</p>
+              </div>
+            </td>
+          </tr>
+
+          <!-- DATA ROWS -->
+          <tr *ngFor="let fd of paginatedList">
+            <td>
+              <button class="fd-reference-btn" (click)="goToFD(fd)">
+                {{ fd.fdReferenceNo }}
+              </button>
+            </td>
+            <td>{{ fd.entityName || fd.entityId }}</td>
+            <td>{{ fd.counterPartyName || fd.counterpartyId }}</td>
+            <td>{{ fd.currencyCode }}</td>
+            <td class="amount-cell">{{ fd.principalAmount | currency:'INR':'symbol':'1.0-0' }}</td>
+            <td>{{ fd.interestRate ? (fd.interestRate | number:'1.2-2') + '%' : '—' }}</td>
+            <td>{{ fd.startDate | date:'dd-MMM-yyyy' }}</td>
+            <td>{{ fd.endDate | date:'dd-MMM-yyyy' }}</td>
+            <td>
+              <span class="status-badge" [ngClass]="getStatusClass(fd.status || '')">
+                {{ fd.status }}
+              </span>
+            </td>
+            <td>
+              <button class="action-btn view-btn" title="View Interest Configuration" (click)="goToFD(fd)">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                  <circle cx="12" cy="12" r="3"></circle>
+                </svg>
+              </button>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- PAGINATION -->
+    <div class="pagination-controls" *ngIf="filteredList.length > 0">
+      <div class="page-info">
+        Showing {{ ((currentPage - 1) * pageSize) + 1 }}–{{ currentPage * pageSize > filteredList.length ? filteredList.length : currentPage * pageSize }}
+        of {{ filteredList.length }}
+      </div>
+      <div class="page-navigation">
+        <button class="page-btn" [disabled]="currentPage === 1" (click)="prevPage()">‹</button>
+        <button class="page-btn" [class.active]="page === currentPage" *ngFor="let page of [].constructor(totalPages); let i = index"
+          (click)="currentPage = i + 1">{{ i + 1 }}</button>
+        <button class="page-btn" [disabled]="currentPage === totalPages" (click)="nextPage()">›</button>
+      </div>
+    </div>
+  </div>
+
+</div>

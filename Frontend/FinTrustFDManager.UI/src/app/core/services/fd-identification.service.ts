@@ -17,6 +17,9 @@ export interface FDLanding {
   endDate?: string;
   settlementDate?: string;
   status?: string;
+  requestDate?: string;
+  createdBy?: string;
+  type?: string;
   interestRate?: number;
   interestRateType?: string;
   interestFrequency?: string;

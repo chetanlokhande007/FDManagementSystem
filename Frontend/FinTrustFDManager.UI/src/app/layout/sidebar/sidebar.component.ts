@@ -17,10 +17,21 @@ export class SidebarComponent implements OnInit {
 
   isMasterDataOpen = false;
   isInvestmentsOpen = true; // Open by default
+  isAdminMasterDataOpen = false;
+
+  userRole = '';
+  isApprover = false;
+  isAdmin = false;
+  isCA = false;
 
   constructor(private router: Router, private authService: AuthService) {}
 
   ngOnInit() {
+    this.userRole = localStorage.getItem('role') || '';
+    this.isApprover = this.userRole === 'Approver';
+    this.isAdmin = this.userRole === 'Admin';
+    this.isCA = this.userRole === 'CA';
+
     this.checkActiveRoute(this.router.url);
 
     this.router.events.pipe(
@@ -31,7 +42,7 @@ export class SidebarComponent implements OnInit {
   }
 
   checkActiveRoute(url: string) {
-    // Master Data
+    // Master Data (CA & Admin)
     if (
       url.includes('/entities') ||
       url.includes('/countries') ||
@@ -40,6 +51,7 @@ export class SidebarComponent implements OnInit {
       url.includes('/benchmarks')
     ) {
       this.isMasterDataOpen = true;
+      this.isAdminMasterDataOpen = true;
     }
 
     // Investments
@@ -54,6 +66,10 @@ export class SidebarComponent implements OnInit {
 
   toggleMasterData(): void {
     this.isMasterDataOpen = !this.isMasterDataOpen;
+  }
+
+  toggleAdminMasterData(): void {
+    this.isAdminMasterDataOpen = !this.isAdminMasterDataOpen;
   }
 
   toggleInvestments(): void {

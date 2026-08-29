@@ -65,6 +65,10 @@ namespace FinTrustFDManager.DAL.Data
         {
             base.OnModelCreating(modelBuilder);
 
+            modelBuilder.HasSequence<long>("fd_reference_seq")
+                .StartsAt(1)
+                .IncrementsBy(1);
+
             modelBuilder.Entity<User>()
                 .HasOne(u => u.Role)
                 .WithMany(r => r.Users)

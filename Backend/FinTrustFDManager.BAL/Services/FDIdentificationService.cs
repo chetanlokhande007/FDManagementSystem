@@ -288,5 +288,176 @@ namespace FinTrustFDManager.BAL.Services
         {
             return await _repository.GetLandingDataAsync();
         }
+
+        public async Task<IEnumerable<FDLandingDto>> GetPendingApprovalsAsync()
+        {
+            return await _repository.GetPendingApprovalsAsync();
+        }
+
+        public async Task<ApproverDashboardDto> GetApproverDashboardSummaryAsync(long approverUserId)
+        {
+            // Critical threshold: read from configuration, fallback to 10M (1 Crore)
+            var criticalThreshold = 10_000_000m; // default
+
+            var totalPending = await _repository.GetPendingCountAsync();
+            var criticalPending = await _repository.GetCriticalPendingCountAsync(criticalThreshold);
+            var approvedToday = await _repository.GetApprovedTodayCountAsync(approverUserId);
+
+            return new ApproverDashboardDto
+            {
+                TotalPending = totalPending,
+                CriticalPending = criticalPending,
+                ApprovedToday = approvedToday
+            };
+        }
+
+        public async Task<AdminDashboardSummaryDto> GetAdminDashboardSummaryAsync()
+        {
+            var statusCounts = await _repository.GetStatusCountsAsync();
+            var criticalThreshold = 10_000_000m;
+            var criticalPending = await _repository.GetCriticalPendingCountAsync(criticalThreshold);
+            var rejectedToday = await _repository.GetRejectedTodayCountAsync();
+
+            return new AdminDashboardSummaryDto
+            {
+                TotalPending = statusCounts.GetValueOrDefault("PENDING_APPROVAL", 0),
+                TotalApproved = statusCounts.GetValueOrDefault("APPROVED", 0),
+                TotalRejected = statusCounts.GetValueOrDefault("REJECTED", 0),
+                TotalDraft = statusCounts.GetValueOrDefault("DRAFT", 0),
+                TotalSubmitted = statusCounts.GetValueOrDefault("SUBMITTED", 0),
+                TotalActive = statusCounts.GetValueOrDefault("ACTIVE", 0),
+                ApprovedToday = 0, // Will be populated by the caller's userId context if needed
+                RejectedToday = rejectedToday,
+                CriticalPending = criticalPending
+            };
+        }
+
+        public async Task<IEnumerable<FDLandingDto>> GetAdminApprovalListAsync(string? statusFilter)
+        {
+            return await _repository.GetAdminApprovalListAsync(statusFilter);
+        }
+
+        public async Task<AdminApprovalDetailDto?> GetAdminApprovalDetailAsync(long fdId)
+        {
+            var fd = await _repository.GetByIdAsync(fdId);
+            if (fd == null) return null;
+
+            var interest = await _interestRepository.GetByFdIdAsync(fdId);
+            var cashFlows = await _cashFlowRepository.GetByFdIdAsync(fdId);
+            var approvalHistory = await _repository.GetApprovalHistoryAsync(fdId);
+
+            var createdByName = fd.CreatedBy.HasValue
+                ? await _repository.GetUserNameAsync(fd.CreatedBy.Value)
+                : "System";
+
+            var modifiedByName = fd.ModifiedBy.HasValue
+                ? await _repository.GetUserNameAsync(fd.ModifiedBy.Value)
+                : "";
+
+            // Build interest DTO
+            AdminInterestDto? interestDto = null;
+            if (interest != null)
+            {
+                interestDto = new AdminInterestDto
+                {
+                    FdInterestId = interest.FdInterestId,
+                    InterestRateType = interest.InterestRateType,
+                    InterestRate = interest.InterestRate,
+                    BenchmarkId = interest.BenchmarkId,
+                    BenchmarkName = interest.BenchmarkName,
+                    BenchmarkRate = interest.BenchmarkRate,
+                    Margin = interest.Margin,
+                    InterestFrequency = interest.InterestFrequency,
+                    CompoundingFrequency = interest.CompoundingFrequency,
+                    IsCompounding = interest.IsCompounding,
+                    CalculationBasis = interest.CalculationBasis,
+                    PaymentConvention = interest.PaymentConvention,
+                    CreatedDate = interest.CreatedDate
+                };
+            }
+
+            // Build cash flow DTOs
+            var cashFlowDtos = cashFlows
+                .OrderBy(c => c.EndDate)
+                .ThenBy(c => c.Event)
+                .Select(cf => new AdminCashFlowDto
+                {
+                    CashFlowId = cf.CashFlowId,
+                    Event = cf.Event,
+                    StartDate = cf.StartDate,
+                    EndDate = cf.EndDate,
+                    Days = cf.Days,
+                    InterestRate = cf.InterestRate,
+                    OpeningBalance = cf.OpeningBalance,
+                    InterestAmount = cf.InterestAmount,
+                    ClosingBalance = cf.ClosingBalance,
+                    CashFlowAmount = cf.CashFlowAmount,
+                    Direction = cf.Direction,
+                    CurrencyCode = cf.CurrencyCode,
+                    Status = cf.Status,
+                    ReferenceNo = cf.ReferenceNo,
+                    CreatedDate = cf.CreatedDate
+                }).ToList();
+
+            // Build approval history DTOs
+            var historyDtos = new List<AdminApprovalHistoryEntryDto>();
+            foreach (var h in approvalHistory)
+            {
+                var actionByName = await _repository.GetUserNameAsync(h.ActionBy);
+                historyDtos.Add(new AdminApprovalHistoryEntryDto
+                {
+                    Id = h.Id,
+                    Action = h.Action,
+                    FromStatus = h.FromStatus,
+                    ToStatus = h.ToStatus,
+                    ActionByUserId = h.ActionBy,
+                    ActionByName = actionByName,
+                    ActionDate = h.ActionDate,
+                    Comments = h.Comments,
+                    OldValues = h.OldValues,
+                    NewValues = h.NewValues
+                });
+            }
+
+            // Cash flow summary
+            bool isCompounding = interest?.IsCompounding ?? false;
+            var maturityRow = cashFlows.FirstOrDefault(c => c.Event == "Maturity");
+            decimal maturityAmount = maturityRow?.CashFlowAmount ?? fd.PrincipalAmount;
+            decimal totalInterest = isCompounding
+                ? Math.Round(maturityAmount - fd.PrincipalAmount, 2, MidpointRounding.AwayFromZero)
+                : cashFlows.Where(c => c.Event == "Interest").Sum(c => c.InterestAmount);
+
+            int totalDays = (fd.EndDate.Date - fd.StartDate.Date).Days;
+
+            return new AdminApprovalDetailDto
+            {
+                FdId = fd.FdId,
+                FdReferenceNo = fd.FdReferenceNo,
+                EntityId = fd.EntityId,
+                EntityName = "", // resolved by frontend or a join
+                CounterpartyId = fd.CounterpartyId,
+                CounterPartyName = "", // resolved by frontend or a join
+                CurrencyCode = fd.CurrencyCode,
+                PrincipalAmount = fd.PrincipalAmount,
+                StartDate = fd.StartDate,
+                EndDate = fd.EndDate,
+                SettlementDate = fd.SettlementDate,
+                Status = fd.Status,
+                Remarks = fd.Remarks,
+                CreatedByUserId = fd.CreatedBy,
+                CreatedByName = createdByName,
+                CreatedDate = fd.CreatedDate,
+                ModifiedByUserId = fd.ModifiedBy,
+                ModifiedByName = modifiedByName,
+                ModifiedDate = fd.ModifiedDate,
+                Interest = interestDto,
+                CashFlows = cashFlowDtos,
+                TotalPrincipal = fd.PrincipalAmount,
+                TotalInterest = totalInterest,
+                MaturityAmount = maturityAmount,
+                TotalTenorDays = totalDays,
+                ApprovalHistory = historyDtos
+            };
+        }
     }
 }

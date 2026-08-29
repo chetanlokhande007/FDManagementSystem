@@ -3,6 +3,7 @@ using FinTrustFDManager.BAL.Interfaces;
 using FinTrustFDManager.DAL.Interfaces;
 using FinTrustFDManager.Model.Entities.Investment;
 using FinTrustFDManager.Model.Entities.MasterData;
+using FinTrustFDManager.Model.Enums;
 using Microsoft.Extensions.Logging;
 using System;
 using System.Collections.Generic;
@@ -54,9 +55,12 @@ namespace FinTrustFDManager.BAL.Services
         public async Task<FDInterest> CreateAsync(FDInterest model)
         {
             ValidateInterestConfiguration(model);
-            await ResolveBenchmarkRateAsync(model);
 
             var fd = await _fdRepository.GetByIdAsync(model.FdId);
+            if (fd == null)
+                throw new KeyNotFoundException($"FD with ID {model.FdId} not found.");
+
+            await ResolveBenchmarkRateAsync(model, fd.StartDate);
             if (fd == null)
                 throw new KeyNotFoundException($"FD with ID {model.FdId} not found.");
 
@@ -90,7 +94,6 @@ namespace FinTrustFDManager.BAL.Services
         public async Task<FDInterest?> UpdateAsync(long id, FDInterest model)
         {
             ValidateInterestConfiguration(model);
-            await ResolveBenchmarkRateAsync(model);
 
             var existingInterest = await _interestRepository.GetByIdAsync(id);
             if (existingInterest == null) return null;
@@ -98,6 +101,14 @@ namespace FinTrustFDManager.BAL.Services
             var fd = await _fdRepository.GetByIdAsync(existingInterest.FdId);
             if (fd == null)
                 throw new KeyNotFoundException($"FD with ID {existingInterest.FdId} not found.");
+
+            if (FDStatus.IsProtected(fd.Status))
+            {
+                throw new InvalidOperationException(
+                    $"Cannot modify interest for FD '{fd.FdReferenceNo}' with status '{fd.Status}'. Approved records are read-only.");
+            }
+
+            await ResolveBenchmarkRateAsync(model, fd.StartDate);
 
             ValidateFdDates(fd);
 
@@ -136,6 +147,13 @@ namespace FinTrustFDManager.BAL.Services
             var existingInterest = await _interestRepository.GetByIdAsync(id);
             if (existingInterest == null) return false;
 
+            var fd = await _fdRepository.GetByIdAsync(existingInterest.FdId);
+            if (fd != null && FDStatus.IsProtected(fd.Status))
+            {
+                throw new InvalidOperationException(
+                    $"Cannot delete interest for FD '{fd.FdReferenceNo}' with status '{fd.Status}'. Approved records are read-only.");
+            }
+
             await using var transaction = await _unitOfWork.BeginTransactionAsync();
             try
             {
@@ -160,6 +178,12 @@ namespace FinTrustFDManager.BAL.Services
         {
             var fd = await _fdRepository.GetByIdAsync(fdId);
             if (fd == null) return false;
+
+            if (FDStatus.IsProtected(fd.Status))
+            {
+                throw new InvalidOperationException(
+                    $"Cannot regenerate cash flows for FD '{fd.FdReferenceNo}' with status '{fd.Status}'. Approved records are read-only.");
+            }
 
             var interest = await _interestRepository.GetByFdIdAsync(fdId);
             if (interest == null) return false;
@@ -646,10 +670,10 @@ namespace FinTrustFDManager.BAL.Services
         }
 
         /// <summary>
-        /// Resolves the benchmark rate from the Benchmark Master if BenchmarkId is set.
-        /// This ensures the rate always comes from the authoritative master data.
+        /// Resolves the benchmark rate using the rate history effective for the FD's start date.
+        /// Falls back to Benchmark.CurrentRate if no history entry exists for the date.
         /// </summary>
-        private async Task ResolveBenchmarkRateAsync(FDInterest interest)
+        private async Task ResolveBenchmarkRateAsync(FDInterest interest, DateTime asOfDate)
         {
             if (interest.BenchmarkId.HasValue && interest.BenchmarkId.Value > 0)
             {
@@ -657,7 +681,10 @@ namespace FinTrustFDManager.BAL.Services
                 if (benchmark != null)
                 {
                     interest.BenchmarkName = benchmark.BenchmarkName;
-                    interest.BenchmarkRate = benchmark.CurrentRate;
+                    // Use the rate history effective for the FD's start date,
+                    // NOT the benchmark's CurrentRate which may differ.
+                    interest.BenchmarkRate = await _benchmarkRateHistoryService
+                        .GetEffectiveRateAsync(interest.BenchmarkId.Value, asOfDate);
                 }
             }
         }

@@ -19,7 +19,12 @@ export class FdInterestComponent implements OnInit, OnChanges {
   @Input() interestData: any = null;
   @Input() interestFrequencies: any[] = [];
   @Input() benchmarks: Benchmark[] = [];
+  @Input() fdStatus: string = '';
   @Output() interestSaved = new EventEmitter<any>();
+
+  get isProtectedStatus(): boolean {
+    return this.fdStatus === 'APPROVED' || this.fdStatus === 'ACTIVE' || this.fdStatus === 'MATURED';
+  }
 
   /** Frequencies valid for compounding — excludes "At Maturity" */
   get compoundingFrequencies(): any[] {
@@ -227,8 +232,18 @@ export class FdInterestComponent implements OnInit, OnChanges {
     compoundingControl.updateValueAndValidity();
   }
 
+  showApprovedWarning = false;
+
   edit(): void {
+    if (this.isProtectedStatus) {
+      this.showApprovedWarning = true;
+      return;
+    }
     this.isReadOnly = false;
+  }
+
+  closeApprovedWarning(): void {
+    this.showApprovedWarning = false;
   }
 
   cancelEdit(): void {
@@ -239,6 +254,10 @@ export class FdInterestComponent implements OnInit, OnChanges {
   }
 
   saveInterest(): void {
+    if (this.isProtectedStatus) {
+      this.showApprovedWarning = true;
+      return;
+    }
     if (this.interestForm.invalid || this.isSaving) {
       return;
     }

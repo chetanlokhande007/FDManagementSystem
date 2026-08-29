@@ -230,5 +230,161 @@ namespace FinTrustFDManager.DAL.Repositories
                 };
             }).ToList();
         }
+
+        public async Task<int> GetPendingCountAsync()
+        {
+            return await _context.FDIdentifications
+                .AsNoTracking()
+                .CountAsync(fd => fd.Status == "PENDING_APPROVAL");
+        }
+
+        public async Task<IEnumerable<FDLandingDto>> GetPendingApprovalsAsync()
+        {
+            var pendingFDs = await (
+                from fd in _context.FDIdentifications.AsNoTracking()
+                    .Where(fd => fd.Status == "PENDING_APPROVAL")
+                join ent in _context.Entities on fd.EntityId equals ent.EntityId into entGroup
+                from e in entGroup.DefaultIfEmpty()
+                join cp in _context.CounterParties on fd.CounterpartyId equals cp.CounterPartyId into cpGroup
+                from c in cpGroup.DefaultIfEmpty()
+                join intEntry in _context.FDInterests
+                    on fd.FdId equals intEntry.FdId into interestGroup
+                from i in interestGroup.DefaultIfEmpty()
+                join user in _context.Users
+                    on fd.CreatedBy equals user.Id into userGroup
+                from u in userGroup.DefaultIfEmpty()
+                orderby fd.CreatedDate descending
+                select new FDLandingDto
+                {
+                    FdId = fd.FdId,
+                    FdReferenceNo = fd.FdReferenceNo,
+                    EntityId = fd.EntityId,
+                    EntityName = e != null ? e.EntityName : string.Empty,
+                    CounterpartyId = fd.CounterpartyId,
+                    CounterPartyName = c != null ? c.CounterPartyName : string.Empty,
+                    CurrencyCode = fd.CurrencyCode,
+                    PrincipalAmount = fd.PrincipalAmount,
+                    StartDate = fd.StartDate,
+                    EndDate = fd.EndDate,
+                    SettlementDate = fd.SettlementDate,
+                    Status = fd.Status,
+                    RequestDate = fd.ModifiedDate ?? fd.CreatedDate,
+                    CreatedBy = u != null ? u.FullName : string.Empty,
+                    Type = "New FD", // Hardcoded for now since Amendment is not yet fully implemented
+                    InterestRate = i != null ? i.InterestRate : 0m,
+                    InterestRateType = i != null ? i.InterestRateType : string.Empty,
+                    InterestFrequency = i != null ? i.InterestFrequency : string.Empty,
+                    CompoundingFrequency = i != null && i.IsCompounding
+                        ? (i.CompoundingFrequency ?? "Not Applicable")
+                        : "Not Applicable",
+                    CalculationBasis = i != null ? i.CalculationBasis : string.Empty,
+                    TotalPrincipal = fd.PrincipalAmount,
+                    TotalGrossInterest = 0,
+                    TotalTds = 0,
+                    TotalNetInterest = 0,
+                    TotalAmount = fd.PrincipalAmount
+                }
+            ).ToListAsync();
+
+            return pendingFDs;
+        }
+
+        public async Task<int> GetCriticalPendingCountAsync(decimal criticalThreshold)
+        {
+            return await _context.FDIdentifications
+                .AsNoTracking()
+                .Where(fd => fd.Status == "PENDING_APPROVAL" && fd.PrincipalAmount >= criticalThreshold)
+                .CountAsync();
+        }
+
+        public async Task<int> GetApprovedTodayCountAsync(long approverUserId)
+        {
+            var today = DateTime.UtcNow.Date;
+            var tomorrow = today.AddDays(1);
+
+            return await _context.FDApprovalHistories
+                .AsNoTracking()
+                .Where(h => h.ActionBy == approverUserId
+                    && h.Action == "APPROVE"
+                    && h.ActionDate >= today
+                    && h.ActionDate < tomorrow)
+                .CountAsync();
+        }
+
+        public async Task<Dictionary<string, int>> GetStatusCountsAsync()
+        {
+            return await _context.FDIdentifications
+                .AsNoTracking()
+                .GroupBy(fd => fd.Status)
+                .Select(g => new { Status = g.Key, Count = g.Count() })
+                .ToDictionaryAsync(x => x.Status, x => x.Count);
+        }
+
+        public async Task<int> GetRejectedTodayCountAsync()
+        {
+            var today = DateTime.UtcNow.Date;
+            var tomorrow = today.AddDays(1);
+
+            return await _context.FDApprovalHistories
+                .AsNoTracking()
+                .Where(h => h.Action == "REJECT"
+                    && h.ActionDate >= today
+                    && h.ActionDate < tomorrow)
+                .CountAsync();
+        }
+
+        public async Task<IEnumerable<FDLandingDto>> GetAdminApprovalListAsync(string? statusFilter)
+        {
+            var query = from fd in _context.FDIdentifications.AsNoTracking()
+                join ent in _context.Entities on fd.EntityId equals ent.EntityId into entGroup
+                from e in entGroup.DefaultIfEmpty()
+                join cp in _context.CounterParties on fd.CounterpartyId equals cp.CounterPartyId into cpGroup
+                from c in cpGroup.DefaultIfEmpty()
+                join intEntry in _context.FDInterests
+                    on fd.FdId equals intEntry.FdId into interestGroup
+                from i in interestGroup.DefaultIfEmpty()
+                select new FDLandingDto
+                {
+                    FdId = fd.FdId,
+                    FdReferenceNo = fd.FdReferenceNo,
+                    EntityId = fd.EntityId,
+                    EntityName = e != null ? e.EntityName : string.Empty,
+                    CounterpartyId = fd.CounterpartyId,
+                    CounterPartyName = c != null ? c.CounterPartyName : string.Empty,
+                    CurrencyCode = fd.CurrencyCode,
+                    PrincipalAmount = fd.PrincipalAmount,
+                    StartDate = fd.StartDate,
+                    EndDate = fd.EndDate,
+                    SettlementDate = fd.SettlementDate,
+                    Status = fd.Status,
+                    InterestRate = i != null ? i.InterestRate : 0m,
+                    InterestRateType = i != null ? i.InterestRateType : string.Empty,
+                    InterestFrequency = i != null ? i.InterestFrequency : string.Empty,
+                    CompoundingFrequency = i != null && i.IsCompounding
+                        ? (i.CompoundingFrequency ?? "Not Applicable")
+                        : "Not Applicable",
+                    CalculationBasis = i != null ? i.CalculationBasis : string.Empty,
+                    TotalPrincipal = fd.PrincipalAmount,
+                    TotalGrossInterest = 0,
+                    TotalTds = 0,
+                    TotalNetInterest = 0,
+                    TotalAmount = fd.PrincipalAmount
+                };
+
+            if (!string.IsNullOrEmpty(statusFilter))
+            {
+                query = query.Where(x => x.Status == statusFilter);
+            }
+
+            return await query.OrderByDescending(x => x.FdId).ToListAsync();
+        }
+
+        public async Task<string> GetUserNameAsync(long userId)
+        {
+            var user = await _context.Users
+                .AsNoTracking()
+                .FirstOrDefaultAsync(u => u.Id == userId);
+            return user?.FullName ?? $"User #{userId}";
+        }
     }
 }
