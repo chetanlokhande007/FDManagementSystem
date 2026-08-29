@@ -92,7 +92,7 @@
         </div>
         <div class="form-actions">
           <button type="button" class="save-btn" *ngIf="!isProtectedStatus" (click)="editGeneral()">Edit</button>
-          <button type="button" class="save-btn" *ngIf="fixedDeposit.status === 'DRAFT' || fixedDeposit.status === 'REJECTED'" (click)="submitForApproval()" style="background-color: #059669; margin-left: 8px;">Submit for Approval</button>
+          <button type="button" class="save-btn" *ngIf="canSubmitForApproval && (fixedDeposit.status === 'DRAFT' || fixedDeposit.status === 'REJECTED')" (click)="submitForApproval()" style="background-color: #059669; margin-left: 8px;">Submit for Approval</button>
           <button type="button" class="save-btn" *ngIf="isProtectedStatus && !isApprovedStatus" (click)="openAmendmentModal()" style="background-color: #d97706;">Request Amendment</button>
           <button type="button" class="save-btn" *ngIf="isApprovedStatus" disabled style="background-color: #9ca3af; cursor: not-allowed;">Edit (Read Only)</button>
           <button type="button" class="cancel-btn" (click)="toggleAuditTab()">{{ showAuditTab ? 'Hide Audit' : 'View Audit History' }}</button>

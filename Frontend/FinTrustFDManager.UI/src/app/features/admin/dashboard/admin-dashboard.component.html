@@ -1,4 +1,4 @@
-<div class="admin-dashboard">
+<div class="admin-dashboard" (click)="closeDropdowns()">
 
   <!-- HEADER -->
   <div class="dashboard-header">
@@ -224,23 +224,32 @@
               </span>
             </td>
             <td class="actions-cell">
-              <button class="action-btn view-btn" title="Review Details" (click)="viewDetails(fd)">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                  <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
-                  <circle cx="12" cy="12" r="3"></circle>
-                </svg>
-              </button>
-              <button *ngIf="canApprove(fd)" class="action-btn approve-btn" title="Approve" (click)="openApproveModal(fd)">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                  <polyline points="20 6 9 17 4 12"></polyline>
-                </svg>
-              </button>
-              <button *ngIf="canApprove(fd)" class="action-btn reject-btn" title="Reject" (click)="openRejectModal(fd)">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                  <line x1="18" y1="6" x2="6" y2="18"></line>
-                  <line x1="6" y1="6" x2="18" y2="18"></line>
-                </svg>
-              </button>
+              <div class="dropdown-container">
+                <button class="action-btn-more" (click)="toggleDropdown(fd.fdId, $event)" title="Actions">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <circle cx="12" cy="12" r="1"></circle>
+                    <circle cx="12" cy="5" r="1"></circle>
+                    <circle cx="12" cy="19" r="1"></circle>
+                  </svg>
+                </button>
+                <div class="dropdown-menu" *ngIf="activeDropdown === fd.fdId">
+                  <button class="dropdown-item" (click)="viewDetails(fd)">
+                    View Details
+                  </button>
+                  <button class="dropdown-item" *ngIf="canApprove(fd)" (click)="openApproveModal(fd)">
+                    Approve
+                  </button>
+                  <button class="dropdown-item" *ngIf="canApprove(fd)" (click)="openRejectModal(fd)">
+                    Reject
+                  </button>
+                  <button class="dropdown-item" *ngIf="canApprove(fd)">
+                    Send Back
+                  </button>
+                  <button class="dropdown-item">
+                    Audit Trail
+                  </button>
+                </div>
+              </div>
             </td>
           </tr>
         </tbody>

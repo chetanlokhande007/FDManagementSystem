@@ -327,7 +327,7 @@ namespace FinTrustFDManager.BAL.Services
                 ["fdReferenceNo"] = fd.FdReferenceNo,
                 ["entityId"] = fd.EntityId,
                 ["counterpartyId"] = fd.CounterpartyId,
-                ["currencyCode"] = fd.CurrencyCode,
+                ["currencyCode"] = fd.Currency?.CurrencyCode ?? "INR",
                 ["principalAmount"] = fd.PrincipalAmount,
                 ["startDate"] = fd.StartDate,
                 ["endDate"] = fd.EndDate,
@@ -354,7 +354,7 @@ namespace FinTrustFDManager.BAL.Services
             if (requestedValues.ContainsKey("principalAmount"))
                 fd.PrincipalAmount = Convert.ToDecimal(ToObject(requestedValues["principalAmount"]));
             if (requestedValues.ContainsKey("currencyCode"))
-                fd.CurrencyCode = ToObject(requestedValues["currencyCode"]).ToString()!;
+                fd.Currency?.CurrencyCode ?? "INR" = ToObject(requestedValues["currencyCode"]).ToString()!;
             if (requestedValues.ContainsKey("startDate"))
                 fd.StartDate = DateTime.SpecifyKind(Convert.ToDateTime(ToObject(requestedValues["startDate"])), DateTimeKind.Utc);
             if (requestedValues.ContainsKey("endDate"))
@@ -395,13 +395,13 @@ namespace FinTrustFDManager.BAL.Services
             if (changes.ContainsKey("margin"))
                 interest.Margin = Convert.ToDecimal(changes["margin"]);
             if (changes.ContainsKey("interestFrequency"))
-                interest.InterestFrequency = changes["interestFrequency"].ToString()!;
+                interest.InterestFrequencyId = changes["interestFrequency"].ToString()!;
             if (changes.ContainsKey("isCompounding"))
                 interest.IsCompounding = Convert.ToBoolean(changes["isCompounding"]);
             if (changes.ContainsKey("compoundingFrequency"))
                 interest.CompoundingFrequency = changes["compoundingFrequency"].ToString();
             if (changes.ContainsKey("calculationBasis"))
-                interest.CalculationBasis = changes["calculationBasis"].ToString()!;
+                interest.DayCountConvention?.ConventionName ?? "ACTUAL_365" = changes["calculationBasis"].ToString()!;
         }
 
         private static string? GetStringValue(Dictionary<string, object> dict, string key)
@@ -420,3 +420,4 @@ namespace FinTrustFDManager.BAL.Services
         }
     }
 }
+

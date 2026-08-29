@@ -58,6 +58,7 @@ export class AdminDashboardComponent implements OnInit {
   isProcessing = false;
 
   // Detail review modal
+  activeDropdown: number | null = null;
   showDetailModal = false;
   detailFd: FDLanding | null = null;
   detailData: AdminApprovalDetail | null = null;
@@ -433,6 +434,20 @@ export class AdminDashboardComponent implements OnInit {
   }
 
   canApprove(fd: FDLanding): boolean {
-    return fd.status === 'PENDING_APPROVAL';
+    // Basic logic for now until full backend workflow is implemented
+    return fd.status === 'PENDING_APPROVAL' || fd.status === 'PENDING_FD_ADMIN' || fd.status === 'PENDING_CA';
+  }
+
+  toggleDropdown(fdId: number, event: Event): void {
+    event.stopPropagation();
+    if (this.activeDropdown === fdId) {
+      this.activeDropdown = null;
+    } else {
+      this.activeDropdown = fdId;
+    }
+  }
+
+  closeDropdowns(): void {
+    this.activeDropdown = null;
   }
 }

@@ -42,15 +42,16 @@ export class LoginComponent {
         // Save session
         this.authService.setSession(res);
 
-        // Redirect based on role
-        if (res.role === 'Admin') {
+        // Redirect based on role (case-insensitive)
+        const role = (res.role || '').toLowerCase();
+        if (role === 'admin') {
           this.router.navigate(['/admin/dashboard']);
-        } else if (res.role === 'CA') {
+        } else if (role === 'ca') {
           this.router.navigate(['/ca/dashboard']);
-        } else if (res.role === 'Approver') {
+        } else if (role === 'approver') {
           this.router.navigate(['/approver/dashboard']);
         } else {
-          // Fallback
+          // Fallback for unknown roles
           this.router.navigate(['/dashboard']);
         }
       },

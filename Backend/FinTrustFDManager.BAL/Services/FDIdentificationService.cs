@@ -161,13 +161,13 @@ namespace FinTrustFDManager.BAL.Services
             var fd = await _repository.GetByIdAsync(fdId);
             if (fd == null) throw new KeyNotFoundException($"FD with ID {fdId} not found.");
 
-            var error = FDStatus.ValidateTransition(fd.Status, FDStatus.Submitted);
+            var error = FDStatus.ValidateTransition(fd.Status, FDStatus.PendingFdAdmin);
             if (error != null) throw new InvalidOperationException(error);
 
             await using var transaction = await _unitOfWork.BeginTransactionAsync();
             try
             {
-                fd.Status = FDStatus.PendingApproval;
+                fd.Status = FDStatus.PendingFdAdmin;
                 fd.ModifiedBy = userId;
                 fd.ModifiedDate = DateTime.UtcNow;
                 await _repository.UpdateAsync(fd);
@@ -177,7 +177,7 @@ namespace FinTrustFDManager.BAL.Services
                     FdId = fdId,
                     Action = FDAction.Submit,
                     FromStatus = FDStatus.Draft,
-                    ToStatus = FDStatus.PendingApproval,
+                    ToStatus = FDStatus.PendingFdAdmin,
                     ActionBy = userId,
                     ActionDate = DateTime.UtcNow,
                     Comments = "FD submitted for approval"
@@ -217,7 +217,7 @@ namespace FinTrustFDManager.BAL.Services
                 {
                     FdId = fdId,
                     Action = FDAction.Approve,
-                    FromStatus = FDStatus.PendingApproval,
+                    FromStatus = FDStatus.PendingFdAdmin, // Temp fix, will be proper in full workflow implementation
                     ToStatus = FDStatus.Approved,
                     ActionBy = approverUserId,
                     ActionDate = DateTime.UtcNow,
@@ -261,7 +261,7 @@ namespace FinTrustFDManager.BAL.Services
                 {
                     FdId = fdId,
                     Action = FDAction.Reject,
-                    FromStatus = FDStatus.PendingApproval,
+                    FromStatus = FDStatus.PendingFdAdmin, // Temp fix
                     ToStatus = FDStatus.Rejected,
                     ActionBy = approverUserId,
                     ActionDate = DateTime.UtcNow,

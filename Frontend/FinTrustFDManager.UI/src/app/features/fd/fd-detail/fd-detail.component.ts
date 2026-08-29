@@ -91,6 +91,13 @@ export class FDDetailComponent implements OnInit {
 
   isGeneralReadOnly = false;
 
+  // Role-based access control
+  userRole = localStorage.getItem('role') || '';
+  get canSubmitForApproval(): boolean {
+    const r = this.userRole.toLowerCase();
+    return r === 'admin' || r === 'ca';
+  }
+
   /* =========================
      CORE DATA
   ========================= */
@@ -794,8 +801,9 @@ export class FDDetailComponent implements OnInit {
   isAmendmentLoading = false;
 
   get isProtectedStatus(): boolean {
-    const s = this.fixedDeposit.status;
-    return s === 'APPROVED' || s === 'ACTIVE' || s === 'MATURED';
+    const s = (this.fixedDeposit.status || '').toUpperCase();
+    return s === 'APPROVED' || s === 'ACTIVE' || s === 'MATURED'
+        || s === 'PENDING_APPROVAL' || s === 'SUBMITTED';
   }
 
   get isApprovedStatus(): boolean {

@@ -211,13 +211,13 @@
                   </svg>
                 </button>
                 <div class="action-divider">|</div>
-                <button class="action-btn approve-btn" title="Approve" (click)="openApproveModal(fd)">
+                <button *ngIf="canApprove(fd)" class="action-btn approve-btn" title="Approve" (click)="openApproveModal(fd)">
                   <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                     <polyline points="20 6 9 17 4 12"></polyline>
                   </svg>
                 </button>
-                <div class="action-divider">|</div>
-                <button class="action-btn reject-btn" title="Reject" (click)="openRejectModal(fd)">
+                <div class="action-divider" *ngIf="canApprove(fd)">|</div>
+                <button *ngIf="canApprove(fd)" class="action-btn reject-btn" title="Reject" (click)="openRejectModal(fd)">
                   <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                     <line x1="18" y1="6" x2="6" y2="18"></line>
                     <line x1="6" y1="6" x2="18" y2="18"></line>
@@ -357,11 +357,18 @@
         </table>
       </div>
     </div>
-    <div class="modal-footer">
-      <button class="btn-cancel" (click)="closeDetailModal()">Close</button>
-      <button class="btn-view-full" *ngIf="detailFd" (click)="closeDetailModal(); openFdDetail(detailFd)">
-        Open Full View
-      </button>
+    <div class="modal-footer" style="justify-content: space-between; width: 100%;">
+      <div class="footer-actions-left">
+        <button class="btn-cancel" (click)="closeDetailModal()">Close</button>
+        <button class="btn-view-full" *ngIf="detailFd" (click)="closeDetailModal(); openFdDetail(detailFd)">
+          Full View
+        </button>
+      </div>
+      <div class="footer-actions-right" *ngIf="detailFd && canApprove(detailFd)">
+        <button class="btn-cancel" style="border-color: orange; color: orange; margin-right: 8px;">Request Changes</button>
+        <button class="btn-reject" style="background-color: #dc3545; color: white; border: none; padding: 8px 16px; border-radius: 4px; margin-right: 8px; cursor: pointer;" (click)="openRejectModal(detailFd)">Reject</button>
+        <button class="btn-approve" style="background-color: #28a745; color: white; border: none; padding: 8px 16px; border-radius: 4px; cursor: pointer;" (click)="openApproveModal(detailFd)">Approve</button>
+      </div>
     </div>
   </div>
 </div>

@@ -16,8 +16,8 @@ import { RouterModule } from '@angular/router';
 })
 export class DashboardComponent implements OnInit {
 
-  userName = 'Admin User';
-  role = 'Administrator';
+  userName = localStorage.getItem('userName') || 'User';
+  role = localStorage.getItem('role') || '';
 
   isLoading = true;
   hasError = false;

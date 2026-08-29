@@ -28,9 +28,10 @@ export class SidebarComponent implements OnInit {
 
   ngOnInit() {
     this.userRole = localStorage.getItem('role') || '';
-    this.isApprover = this.userRole === 'Approver';
-    this.isAdmin = this.userRole === 'Admin';
-    this.isCA = this.userRole === 'CA';
+    const normalizedRole = this.userRole.toLowerCase();
+    this.isApprover = normalizedRole === 'approver';
+    this.isAdmin = normalizedRole === 'admin';
+    this.isCA = normalizedRole === 'ca';
 
     this.checkActiveRoute(this.router.url);
 

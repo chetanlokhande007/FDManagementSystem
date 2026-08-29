@@ -376,6 +376,17 @@ export class ApproverDashboardComponent implements OnInit {
   // HELPERS
   // ==============================
 
+  canApprove(fd: FDLanding): boolean {
+    if (this.userRole === 'Approver' || this.userRole === 'CA') {
+      return fd.status === 'PENDING_CA' || fd.status === 'PENDING_APPROVAL';
+    }
+    // If we have an FD Admin role using this same dashboard
+    if (this.userRole === 'Admin') {
+      return fd.status === 'PENDING_FD_ADMIN' || fd.status === 'PENDING_APPROVAL';
+    }
+    return false;
+  }
+
   getStatusClass(status: string): string {
     switch (status) {
       case 'PENDING_APPROVAL': return 'status-pending';

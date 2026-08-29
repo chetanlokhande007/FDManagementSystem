@@ -3,6 +3,7 @@ using FinTrustFDManager.DAL.Interfaces;
 using FinTrustFDManager.Model.DTOs.Investment;
 using FinTrustFDManager.Model.Entities;
 using FinTrustFDManager.Model.Entities.Investment;
+using FinTrustFDManager.Model.Enums;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Storage;
 using System.Collections.Generic;
@@ -235,14 +236,14 @@ namespace FinTrustFDManager.DAL.Repositories
         {
             return await _context.FDIdentifications
                 .AsNoTracking()
-                .CountAsync(fd => fd.Status == "PENDING_APPROVAL");
+                .CountAsync(fd => fd.Status == FDStatus.PendingFdAdmin || fd.Status == FDStatus.PendingCa);
         }
 
         public async Task<IEnumerable<FDLandingDto>> GetPendingApprovalsAsync()
         {
             var pendingFDs = await (
                 from fd in _context.FDIdentifications.AsNoTracking()
-                    .Where(fd => fd.Status == "PENDING_APPROVAL")
+                    .Where(fd => fd.Status == FDStatus.PendingFdAdmin || fd.Status == FDStatus.PendingCa)
                 join ent in _context.Entities on fd.EntityId equals ent.EntityId into entGroup
                 from e in entGroup.DefaultIfEmpty()
                 join cp in _context.CounterParties on fd.CounterpartyId equals cp.CounterPartyId into cpGroup
@@ -293,7 +294,7 @@ namespace FinTrustFDManager.DAL.Repositories
         {
             return await _context.FDIdentifications
                 .AsNoTracking()
-                .Where(fd => fd.Status == "PENDING_APPROVAL" && fd.PrincipalAmount >= criticalThreshold)
+                .Where(fd => (fd.Status == FDStatus.PendingFdAdmin || fd.Status == FDStatus.PendingCa) && fd.PrincipalAmount >= criticalThreshold)
                 .CountAsync();
         }
 

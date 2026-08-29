@@ -18,6 +18,7 @@
 
 
     <button
+      *ngIf="canCreateFD"
       class="add-btn btn-primary"
       (click)="addFD()">
 
@@ -127,13 +128,13 @@
                 <button class="kebab-btn" (click)="toggleDropdown(fd.fdId, $event)">⋮</button>
                 <div class="kebab-dropdown" *ngIf="openDropdownId === fd.fdId">
                   <button class="kebab-item" (click)="handleAction('view', fd)">👁️ View</button>
-                  <button class="kebab-item" *ngIf="fd.status === 'DRAFT' || fd.status === 'REJECTED'" (click)="handleAction('edit', fd)">✏️ Edit</button>
+                  <button class="kebab-item" *ngIf="canCreateFD && (fd.status === 'DRAFT' || fd.status === 'REJECTED')" (click)="handleAction('edit', fd)">✏️ Edit</button>
                   <button class="kebab-item" *ngIf="fd.status !== 'DRAFT' && fd.status !== 'REJECTED'" (click)="handleAction('cashflow', fd)">💰 Cashflow</button>
-                  <button class="kebab-item" *ngIf="fd.status === 'DRAFT' || fd.status === 'REJECTED'" (click)="handleAction('submit', fd)">📤 Submit</button>
-                  <button class="kebab-item" *ngIf="fd.status === 'PENDING_APPROVAL'" (click)="handleAction('approve', fd)">✅ Approve</button>
-                  <button class="kebab-item" *ngIf="fd.status === 'PENDING_APPROVAL'" (click)="handleAction('reject', fd)">❌ Reject</button>
+                  <button class="kebab-item" *ngIf="canCreateFD && (fd.status === 'DRAFT' || fd.status === 'REJECTED')" (click)="handleAction('submit', fd)">📤 Submit</button>
+                  <button class="kebab-item" *ngIf="canApprove && fd.status === 'PENDING_APPROVAL'" (click)="handleAction('approve', fd)">✅ Approve</button>
+                  <button class="kebab-item" *ngIf="canApprove && fd.status === 'PENDING_APPROVAL'" (click)="handleAction('reject', fd)">❌ Reject</button>
                   <div class="kebab-divider"></div>
-                  <button class="kebab-item danger" *ngIf="fd.status === 'DRAFT' || fd.status === 'REJECTED'" (click)="handleAction('delete', fd)">🗑️ Delete</button>
+                  <button class="kebab-item danger" *ngIf="canCreateFD && (fd.status === 'DRAFT' || fd.status === 'REJECTED')" (click)="handleAction('delete', fd)">🗑️ Delete</button>
                 </div>
               </div>
             </td>
@@ -171,7 +172,10 @@
               <span class="status"
                 [class.approved]="fd.status === 'APPROVED'"
                 [class.draft]="fd.status === 'DRAFT'"
-                [class.rejected]="fd.status === 'REJECTED'">
+                [class.rejected]="fd.status === 'REJECTED'"
+                [class.pending]="fd.status === 'PENDING_APPROVAL'"
+                [class.submitted]="fd.status === 'SUBMITTED'"
+                [class.active-status]="fd.status === 'ACTIVE'">
                 {{ fd.status }}
               </span>
             </td>

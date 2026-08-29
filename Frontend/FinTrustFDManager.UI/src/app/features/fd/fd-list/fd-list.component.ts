@@ -43,6 +43,17 @@ export class FDListComponent implements OnInit {
   expandedFdId: number | null = null;
   openDropdownId: number | null = null;
 
+  // Role-based access control
+  userRole = '';
+  get canApprove(): boolean {
+    const r = this.userRole.toLowerCase();
+    return r === 'admin' || r === 'approver';
+  }
+  get canCreateFD(): boolean {
+    const r = this.userRole.toLowerCase();
+    return r === 'admin' || r === 'ca';
+  }
+
   constructor(
     private fdService: FDIdentificationService,
     private router: Router,
@@ -57,6 +68,7 @@ export class FDListComponent implements OnInit {
   }
 
   ngOnInit(): void {
+    this.userRole = localStorage.getItem('role') || '';
     this.loadFDs();
   }
 
@@ -256,6 +268,8 @@ export class FDListComponent implements OnInit {
 
     this.fdService.submit(fd.fdId).subscribe({
       next: () => {
+        // Invalidate all FD caches to ensure approver dashboards refresh
+        sessionStorage.removeItem('FINTRUST_FD_LANDING_CACHE');
         this.fdService.getLandingData().subscribe(data => {
           sessionStorage.setItem('FINTRUST_FD_LANDING_CACHE', JSON.stringify(data));
           this.fdList = data.sort((a: any, b: any) => b.fdId - a.fdId);
@@ -284,6 +298,8 @@ export class FDListComponent implements OnInit {
 
     this.fdService.approve(fd.fdId).subscribe({
       next: () => {
+        // Invalidate all FD caches to ensure approver dashboards refresh
+        sessionStorage.removeItem('FINTRUST_FD_LANDING_CACHE');
         this.fdService.getLandingData().subscribe(data => {
           sessionStorage.setItem('FINTRUST_FD_LANDING_CACHE', JSON.stringify(data));
           this.fdList = data.sort((a: any, b: any) => b.fdId - a.fdId);
@@ -333,6 +349,8 @@ export class FDListComponent implements OnInit {
 
     this.fdService.reject(fd.fdId, this.rejectComments).subscribe({
       next: () => {
+        // Invalidate all FD caches to ensure approver dashboards refresh
+        sessionStorage.removeItem('FINTRUST_FD_LANDING_CACHE');
         this.fdService.getLandingData().subscribe(data => {
           sessionStorage.setItem('FINTRUST_FD_LANDING_CACHE', JSON.stringify(data));
           this.fdList = data.sort((a: any, b: any) => b.fdId - a.fdId);

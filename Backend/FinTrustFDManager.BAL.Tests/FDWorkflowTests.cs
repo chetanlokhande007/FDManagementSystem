@@ -206,11 +206,11 @@ namespace FinTrustFDManager.BAL.Tests
             var result = await _service.SubmitAsync(fd.FdId, 101);
 
             Assert.True(result);
-            Assert.Equal(FDStatus.PendingApproval, fd.Status);
+            Assert.Equal(FDStatus.PendingFdAdmin, fd.Status);
             _fdRepo.Verify(r => r.AddApprovalHistoryAsync(It.Is<FDApprovalHistory>(
                 h => h.Action == FDAction.Submit
                 && h.FromStatus == FDStatus.Draft
-                && h.ToStatus == FDStatus.PendingApproval
+                && h.ToStatus == FDStatus.PendingFdAdmin
                 && h.ActionBy == 101)), Times.Once);
         }
 
@@ -223,7 +223,7 @@ namespace FinTrustFDManager.BAL.Tests
             var result = await _service.SubmitAsync(fd.FdId, 101);
 
             Assert.True(result);
-            Assert.Equal(FDStatus.PendingApproval, fd.Status);
+            Assert.Equal(FDStatus.PendingFdAdmin, fd.Status);
         }
 
         [Theory]
@@ -257,7 +257,7 @@ namespace FinTrustFDManager.BAL.Tests
             Assert.Equal(FDStatus.Approved, fd.Status);
             _fdRepo.Verify(r => r.AddApprovalHistoryAsync(It.Is<FDApprovalHistory>(
                 h => h.Action == FDAction.Approve
-                && h.FromStatus == FDStatus.PendingApproval
+                && h.FromStatus == FDStatus.PendingFdAdmin
                 && h.ToStatus == FDStatus.Approved
                 && h.ActionBy == 205)), Times.Once);
         }
@@ -305,7 +305,7 @@ namespace FinTrustFDManager.BAL.Tests
             Assert.Equal(FDStatus.Rejected, fd.Status);
             _fdRepo.Verify(r => r.AddApprovalHistoryAsync(It.Is<FDApprovalHistory>(
                 h => h.Action == FDAction.Reject
-                && h.FromStatus == FDStatus.PendingApproval
+                && h.FromStatus == FDStatus.PendingFdAdmin
                 && h.ToStatus == FDStatus.Rejected
                 && h.ActionBy == 205
                 && h.Comments == "Incorrect maturity date")), Times.Once);
@@ -360,7 +360,7 @@ namespace FinTrustFDManager.BAL.Tests
             // 2. Submit
             _fdRepo.Setup(r => r.GetByIdAsync(created.FdId)).ReturnsAsync(created);
             await _service.SubmitAsync(created.FdId, 101);
-            Assert.Equal(FDStatus.PendingApproval, created.Status);
+            Assert.Equal(FDStatus.PendingFdAdmin, created.Status);
 
             // 3. Approve (different user)
             await _service.ApproveAsync(created.FdId, 205);
@@ -380,7 +380,7 @@ namespace FinTrustFDManager.BAL.Tests
             // 2. Submit
             _fdRepo.Setup(r => r.GetByIdAsync(created.FdId)).ReturnsAsync(created);
             await _service.SubmitAsync(created.FdId, 101);
-            Assert.Equal(FDStatus.PendingApproval, created.Status);
+            Assert.Equal(FDStatus.PendingFdAdmin, created.Status);
 
             // 3. Reject
             await _service.RejectAsync(created.FdId, 205, "Incorrect maturity date, please fix");
@@ -388,7 +388,7 @@ namespace FinTrustFDManager.BAL.Tests
 
             // 4. Resubmit
             await _service.SubmitAsync(created.FdId, 101);
-            Assert.Equal(FDStatus.PendingApproval, created.Status);
+            Assert.Equal(FDStatus.PendingFdAdmin, created.Status);
 
             // 5. Approve
             await _service.ApproveAsync(created.FdId, 205);
@@ -499,7 +499,7 @@ namespace FinTrustFDManager.BAL.Tests
             var result = await _service.SubmitAsync(fd.FdId, 1); // Admin submits own FD
 
             Assert.True(result);
-            Assert.Equal(FDStatus.PendingApproval, fd.Status);
+            Assert.Equal(FDStatus.PendingFdAdmin, fd.Status);
         }
 
         [Fact]
@@ -635,12 +635,12 @@ namespace FinTrustFDManager.BAL.Tests
             // Admin UserId=1 submits → PENDING_APPROVAL
             _fdRepo.Setup(r => r.GetByIdAsync(created.FdId)).ReturnsAsync(created);
             await _service.SubmitAsync(created.FdId, 1);
-            Assert.Equal(FDStatus.PendingApproval, created.Status);
+            Assert.Equal(FDStatus.PendingFdAdmin, created.Status);
 
             // Admin UserId=1 tries to approve own FD → FAIL (maker-checker)
             await Assert.ThrowsAsync<InvalidOperationException>(
                 () => _service.ApproveAsync(created.FdId, 1));
-            Assert.Equal(FDStatus.PendingApproval, created.Status); // status unchanged
+            Assert.Equal(FDStatus.PendingFdAdmin, created.Status); // status unchanged
 
             // Admin UserId=2 approves → SUCCESS
             var result = await _service.ApproveAsync(created.FdId, 2);
@@ -665,7 +665,7 @@ namespace FinTrustFDManager.BAL.Tests
             // Maker submits
             _fdRepo.Setup(r => r.GetByIdAsync(created.FdId)).ReturnsAsync(created);
             await _service.SubmitAsync(created.FdId, 101);
-            Assert.Equal(FDStatus.PendingApproval, created.Status);
+            Assert.Equal(FDStatus.PendingFdAdmin, created.Status);
 
             // Maker tries to approve own FD → FAIL
             await Assert.ThrowsAsync<InvalidOperationException>(

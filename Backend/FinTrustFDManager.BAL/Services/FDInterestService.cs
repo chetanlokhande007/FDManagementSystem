@@ -297,7 +297,7 @@ namespace FinTrustFDManager.BAL.Services
             DateTime startDate = fd.StartDate.Date;
             DateTime maturityDate = fd.EndDate.Date;
             bool isCompounding = interest.IsCompounding;
-            bool isATM = IsATMaturity(interest.InterestFrequency);
+            bool isATM = IsATMaturity(interest.InterestFrequency?.FrequencyName ?? "MONTHLY");
 
             // 1. Initial Deposit
             cashFlows.Add(new FDCashFlow
@@ -306,7 +306,7 @@ namespace FinTrustFDManager.BAL.Services
                 StartDate = startDate, EndDate = startDate, Days = 0,
                 InterestRate = initialRate, OpeningBalance = 0m, InterestAmount = 0m,
                 ClosingBalance = fd.PrincipalAmount, CashFlowAmount = fd.PrincipalAmount,
-                Direction = "OUTFLOW", CurrencyCode = fd.CurrencyCode ?? "INR",
+                Direction = "OUTFLOW", CurrencyCode = fd.Currency?.CurrencyCode ?? "INR" ?? "INR",
                 Status = "PENDING", ReferenceNo = fd.FdReferenceNo ?? "", CreatedDate = now
             });
 
@@ -336,7 +336,7 @@ namespace FinTrustFDManager.BAL.Services
                 StartDate = maturityDate, EndDate = maturityDate, Days = 0,
                 InterestRate = initialRate, OpeningBalance = balance, InterestAmount = 0m,
                 ClosingBalance = 0m, CashFlowAmount = balance,
-                Direction = "INFLOW", CurrencyCode = fd.CurrencyCode ?? "INR",
+                Direction = "INFLOW", CurrencyCode = fd.Currency?.CurrencyCode ?? "INR" ?? "INR",
                 Status = "PENDING", ReferenceNo = fd.FdReferenceNo ?? "", CreatedDate = now
             });
 
@@ -374,7 +374,7 @@ namespace FinTrustFDManager.BAL.Services
                 }
 
                 decimal periodInterest = FinTrustFDManager.BAL.Common.FinancialCalculator.CalculateInterest(
-                    balance, effectiveRate, days, interest.CalculationBasis);
+                    balance, effectiveRate, days, interest.DayCountConvention?.ConventionName ?? "ACTUAL_365");
                 periodInterest = Math.Round(periodInterest, 2, MidpointRounding.AwayFromZero);
                 decimal newBalance = balance + periodInterest;
 
@@ -385,7 +385,7 @@ namespace FinTrustFDManager.BAL.Services
                     InterestRate = effectiveRate, OpeningBalance = balance,
                     InterestAmount = periodInterest, ClosingBalance = newBalance,
                     CashFlowAmount = 0m, Direction = "INFLOW",
-                    CurrencyCode = fd.CurrencyCode ?? "INR", Status = "PENDING",
+                    CurrencyCode = fd.Currency?.CurrencyCode ?? "INR" ?? "INR", Status = "PENDING",
                     ReferenceNo = fd.FdReferenceNo ?? "", CreatedDate = now
                 });
 
@@ -412,7 +412,7 @@ namespace FinTrustFDManager.BAL.Services
             }
 
             decimal periodInterest = FinTrustFDManager.BAL.Common.FinancialCalculator.CalculateInterest(
-                balance, effectiveRate, days, interest.CalculationBasis);
+                balance, effectiveRate, days, interest.DayCountConvention?.ConventionName ?? "ACTUAL_365");
             periodInterest = Math.Round(periodInterest, 2, MidpointRounding.AwayFromZero);
 
             cashFlows.Add(new FDCashFlow
@@ -422,7 +422,7 @@ namespace FinTrustFDManager.BAL.Services
                 InterestRate = effectiveRate, OpeningBalance = balance,
                 InterestAmount = periodInterest, ClosingBalance = balance,
                 CashFlowAmount = periodInterest, Direction = "INFLOW",
-                CurrencyCode = fd.CurrencyCode ?? "INR", Status = "PENDING",
+                CurrencyCode = fd.Currency?.CurrencyCode ?? "INR" ?? "INR", Status = "PENDING",
                 ReferenceNo = fd.FdReferenceNo ?? "", CreatedDate = now
             });
         }
@@ -435,7 +435,7 @@ namespace FinTrustFDManager.BAL.Services
             DateTime currentStart = startDate;
             while (currentStart < maturityDate)
             {
-                DateTime periodEnd = GetNextInterestPeriodEnd(currentStart, interest.InterestFrequency, maturityDate);
+                DateTime periodEnd = GetNextInterestPeriodEnd(currentStart, interest.InterestFrequency?.FrequencyName ?? "MONTHLY", maturityDate);
                 int days = (periodEnd - currentStart).Days + 1;
                 decimal effectiveRate = initialRate;
                 if (isFloating && interest.BenchmarkId.HasValue)
@@ -448,7 +448,7 @@ namespace FinTrustFDManager.BAL.Services
                 if (days > 0)
                 {
                     periodInterest = FinTrustFDManager.BAL.Common.FinancialCalculator.CalculateInterest(
-                        balance, effectiveRate, days, interest.CalculationBasis);
+                        balance, effectiveRate, days, interest.DayCountConvention?.ConventionName ?? "ACTUAL_365");
                     periodInterest = Math.Round(periodInterest, 2, MidpointRounding.AwayFromZero);
                 }
                 cashFlows.Add(new FDCashFlow
@@ -458,7 +458,7 @@ namespace FinTrustFDManager.BAL.Services
                     InterestRate = effectiveRate, OpeningBalance = balance,
                     InterestAmount = periodInterest, ClosingBalance = balance,
                     CashFlowAmount = periodInterest, Direction = "INFLOW",
-                    CurrencyCode = fd.CurrencyCode ?? "INR", Status = "PENDING",
+                    CurrencyCode = fd.Currency?.CurrencyCode ?? "INR" ?? "INR", Status = "PENDING",
                     ReferenceNo = fd.FdReferenceNo ?? "", CreatedDate = now
                 });
                 currentStart = periodEnd.AddDays(1);
@@ -484,7 +484,7 @@ namespace FinTrustFDManager.BAL.Services
                 DateTime intEnd = maturityDate;
                 bool hasInt = intStart < maturityDate;
                 if (hasInt)
-                    intEnd = GetNextInterestPeriodEnd(intStart, interest.InterestFrequency, maturityDate);
+                    intEnd = GetNextInterestPeriodEnd(intStart, interest.InterestFrequency?.FrequencyName ?? "MONTHLY", maturityDate);
                 bool compFirst = hasComp && (!hasInt || effectiveCompEnd <= intEnd);
 
                 if (compFirst)
@@ -500,7 +500,7 @@ namespace FinTrustFDManager.BAL.Services
                             effectiveRate = benchmarkRate + (interest.Margin ?? 0m);
                         }
                         decimal periodInterest = FinTrustFDManager.BAL.Common.FinancialCalculator.CalculateInterest(
-                            balance, effectiveRate, days, interest.CalculationBasis);
+                            balance, effectiveRate, days, interest.DayCountConvention?.ConventionName ?? "ACTUAL_365");
                         periodInterest = Math.Round(periodInterest, 2, MidpointRounding.AwayFromZero);
                         decimal newBalance = balance + periodInterest;
                         cashFlows.Add(new FDCashFlow
@@ -510,7 +510,7 @@ namespace FinTrustFDManager.BAL.Services
                             InterestRate = effectiveRate, OpeningBalance = balance,
                             InterestAmount = periodInterest, ClosingBalance = newBalance,
                             CashFlowAmount = 0m, Direction = "INFLOW",
-                            CurrencyCode = fd.CurrencyCode ?? "INR", Status = "PENDING",
+                            CurrencyCode = fd.Currency?.CurrencyCode ?? "INR" ?? "INR", Status = "PENDING",
                             ReferenceNo = fd.FdReferenceNo ?? "", CreatedDate = now
                         });
                         balance = newBalance;
@@ -534,7 +534,7 @@ namespace FinTrustFDManager.BAL.Services
                     if (days > 0)
                     {
                         periodInterest = FinTrustFDManager.BAL.Common.FinancialCalculator.CalculateInterest(
-                            balance, effectiveRate, days, interest.CalculationBasis);
+                            balance, effectiveRate, days, interest.DayCountConvention?.ConventionName ?? "ACTUAL_365");
                         periodInterest = Math.Round(periodInterest, 2, MidpointRounding.AwayFromZero);
                     }
                     cashFlows.Add(new FDCashFlow
@@ -544,7 +544,7 @@ namespace FinTrustFDManager.BAL.Services
                         InterestRate = effectiveRate, OpeningBalance = balance,
                         InterestAmount = periodInterest, ClosingBalance = balance,
                         CashFlowAmount = 0m, Direction = "INFLOW",
-                        CurrencyCode = fd.CurrencyCode ?? "INR", Status = "PENDING",
+                        CurrencyCode = fd.Currency?.CurrencyCode ?? "INR" ?? "INR", Status = "PENDING",
                         ReferenceNo = fd.FdReferenceNo ?? "", CreatedDate = now
                     });
                     intStart = intEnd.AddDays(1);
@@ -627,12 +627,12 @@ namespace FinTrustFDManager.BAL.Services
             if (rateType != "FIXED" && rateType != "FLOATING")
                 throw new InvalidOperationException($"Unsupported Interest Rate Type '{model.InterestRateType}'.");
 
-            if (string.IsNullOrWhiteSpace(model.CalculationBasis))
+            if (string.IsNullOrWhiteSpace(model.DayCountConvention?.ConventionName ?? "ACTUAL_365"))
                 throw new InvalidOperationException("Calculation Basis is required.");
 
-            var basis = model.CalculationBasis.Trim().ToUpperInvariant();
+            var basis = model.DayCountConvention?.ConventionName ?? "ACTUAL_365".Trim().ToUpperInvariant();
             if (basis != "ACTUAL_360" && basis != "ACTUAL_365")
-                throw new InvalidOperationException($"Unsupported Calculation Basis '{model.CalculationBasis}'.");
+                throw new InvalidOperationException($"Unsupported Calculation Basis '{model.DayCountConvention?.ConventionName ?? "ACTUAL_365"}'.");
 
             if (rateType == "FIXED" && model.InterestRate <= 0)
                 throw new InvalidOperationException("Interest Rate must be greater than 0 for FIXED deposits.");
@@ -680,7 +680,7 @@ namespace FinTrustFDManager.BAL.Services
                 var benchmark = await _interestRepository.GetBenchmarkByIdAsync(interest.BenchmarkId.Value);
                 if (benchmark != null)
                 {
-                    interest.BenchmarkName = benchmark.BenchmarkName;
+                    interest.Benchmark?.BenchmarkName ?? "N/A" = benchmark.BenchmarkName;
                     // Use the rate history effective for the FD's start date,
                     // NOT the benchmark's CurrentRate which may differ.
                     interest.BenchmarkRate = await _benchmarkRateHistoryService
