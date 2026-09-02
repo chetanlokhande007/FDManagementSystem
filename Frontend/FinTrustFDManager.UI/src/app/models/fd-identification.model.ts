@@ -9,5 +9,4 @@ export interface FDIdentification {
   startDate: string;
   endDate: string;
   settlementDate: string;
-  bankId?: number;
 }

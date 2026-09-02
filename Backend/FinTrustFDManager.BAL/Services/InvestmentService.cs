@@ -11,7 +11,7 @@ namespace FinTrustFDManager.BAL.Services
         private readonly IEntityRepository _entityRepository;
         private readonly ICountryRepository _countryRepository;
         private readonly ICurrencyRepository _currencyRepository;
-        private readonly IBankRepository _bankRepository;
+
 
         private readonly IInterestFrequencyRepository _interestFrequencyRepository;
         private readonly IDayCountConventionRepository _dayCountConventionRepository;
@@ -21,7 +21,7 @@ namespace FinTrustFDManager.BAL.Services
             IEntityRepository entityRepository,
             ICountryRepository countryRepository,
             ICurrencyRepository currencyRepository,
-            IBankRepository bankRepository,
+
 
             IInterestFrequencyRepository interestFrequencyRepository,
             IDayCountConventionRepository dayCountConventionRepository)
@@ -30,7 +30,7 @@ namespace FinTrustFDManager.BAL.Services
             _entityRepository = entityRepository;
             _countryRepository = countryRepository;
             _currencyRepository = currencyRepository;
-            _bankRepository = bankRepository;
+
 
             _interestFrequencyRepository = interestFrequencyRepository;
             _dayCountConventionRepository = dayCountConventionRepository;
@@ -57,8 +57,6 @@ namespace FinTrustFDManager.BAL.Services
                 throw new InvalidOperationException($"Country with ID {dto.CountryId} does not exist.");
             if (await _currencyRepository.GetByIdAsync(dto.CurrencyId) == null)
                 throw new InvalidOperationException($"Currency with ID {dto.CurrencyId} does not exist.");
-            if (await _bankRepository.GetByIdAsync(dto.BankId) == null)
-                throw new InvalidOperationException($"Bank with ID {dto.BankId} does not exist.");
 
             if (await _interestFrequencyRepository.GetByIdAsync(dto.InterestFrequencyId) == null)
                 throw new InvalidOperationException($"InterestFrequency with ID {dto.InterestFrequencyId} does not exist.");
@@ -71,7 +69,7 @@ namespace FinTrustFDManager.BAL.Services
                 EntityId = dto.EntityId,
                 CountryId = dto.CountryId,
                 CurrencyId = dto.CurrencyId,
-                BankId = dto.BankId,
+
 
                 InterestFrequencyId = dto.InterestFrequencyId,
                 DayCountConventionId = dto.DayCountConventionId,
@@ -101,8 +99,6 @@ namespace FinTrustFDManager.BAL.Services
                 throw new InvalidOperationException($"Country with ID {dto.CountryId} does not exist.");
             if (await _currencyRepository.GetByIdAsync(dto.CurrencyId) == null)
                 throw new InvalidOperationException($"Currency with ID {dto.CurrencyId} does not exist.");
-            if (await _bankRepository.GetByIdAsync(dto.BankId) == null)
-                throw new InvalidOperationException($"Bank with ID {dto.BankId} does not exist.");
 
             if (await _interestFrequencyRepository.GetByIdAsync(dto.InterestFrequencyId) == null)
                 throw new InvalidOperationException($"InterestFrequency with ID {dto.InterestFrequencyId} does not exist.");
@@ -112,7 +108,7 @@ namespace FinTrustFDManager.BAL.Services
             entity.EntityId = dto.EntityId;
             entity.CountryId = dto.CountryId;
             entity.CurrencyId = dto.CurrencyId;
-            entity.BankId = dto.BankId;
+
 
             entity.InterestFrequencyId = dto.InterestFrequencyId;
             entity.DayCountConventionId = dto.DayCountConventionId;
@@ -147,8 +143,7 @@ namespace FinTrustFDManager.BAL.Services
                 CountryName = entity.Country?.CountryName,
                 CurrencyId = entity.CurrencyId,
                 CurrencyName = entity.Currency?.CurrencyName,
-                BankId = entity.BankId,
-                BankName = entity.Bank?.BankName,
+
 
                 InterestFrequencyId = entity.InterestFrequencyId,
                 InterestFrequencyName = entity.InterestFrequency?.FrequencyName,

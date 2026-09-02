@@ -145,18 +145,7 @@
             <small class="text-danger" *ngIf="errors.currencyId">{{ errors.currencyId }}</small>
           </div>
 
-          <!-- BANK -->
-          <div class="form-group">
-            <label>
-              Bank
-            </label>
-            <select [(ngModel)]="fixedDeposit.bankId">
-              <option [ngValue]="null">Select Bank</option>
-              <option *ngFor="let bank of banks" [ngValue]="bank.bankId">
-                {{ bank.bankCode }} - {{ bank.bankName }}
-              </option>
-            </select>
-          </div>
+
 
           <!-- AMOUNT -->
           <div class="form-group">

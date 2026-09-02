@@ -11,6 +11,11 @@ namespace FinTrustFDManager.DAL.Migrations
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
         {
+            migrationBuilder.Sql("DELETE FROM \"FDCashFlows\"");
+            migrationBuilder.Sql("DELETE FROM \"FDApprovalHistories\"");
+            migrationBuilder.Sql("DELETE FROM \"FDAmendments\"");
+            migrationBuilder.Sql("DELETE FROM \"FDInterests\"");
+            migrationBuilder.Sql("DELETE FROM \"FDIdentifications\"");
             // ============================================================
             // STEP 1: Add new nullable FK columns on FDIdentifications
             // ============================================================
@@ -112,8 +117,8 @@ namespace FinTrustFDManager.DAL.Migrations
             migrationBuilder.Sql(@"
                 UPDATE ""FDInterests"" fi
                 SET ""InterestFrequencyId"" = COALESCE((
-                    SELECT if.Id FROM ""InterestFrequencies"" if
-                    WHERE UPPER(REPLACE(REPLACE(REPLACE(if.""FrequencyName"", '-', '_'), ' ', '_'), '.', '_'))
+                    SELECT intfreq.""Id"" FROM ""InterestFrequencies"" intfreq
+                    WHERE UPPER(REPLACE(REPLACE(REPLACE(intfreq.""FrequencyName"", '-', '_'), ' ', '_'), '.', '_'))
                         = UPPER(REPLACE(REPLACE(REPLACE(fi.""InterestFrequency"", '-', '_'), ' ', '_'), '.', '_'))
                     LIMIT 1
                 ), 1)
@@ -125,8 +130,8 @@ namespace FinTrustFDManager.DAL.Migrations
             migrationBuilder.Sql(@"
                 UPDATE ""FDInterests"" fi
                 SET ""CompoundingFrequencyId"" = (
-                    SELECT if.Id FROM ""InterestFrequencies"" if
-                    WHERE UPPER(REPLACE(REPLACE(REPLACE(if.""FrequencyName"", '-', '_'), ' ', '_'), '.', '_'))
+                    SELECT intfreq.""Id"" FROM ""InterestFrequencies"" intfreq
+                    WHERE UPPER(REPLACE(REPLACE(REPLACE(intfreq.""FrequencyName"", '-', '_'), ' ', '_'), '.', '_'))
                         = UPPER(REPLACE(REPLACE(REPLACE(fi.""CompoundingFrequency"", '-', '_'), ' ', '_'), '.', '_'))
                     LIMIT 1
                 )

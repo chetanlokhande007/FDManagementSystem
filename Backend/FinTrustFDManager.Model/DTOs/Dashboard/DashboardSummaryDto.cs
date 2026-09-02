@@ -29,7 +29,7 @@ namespace FinTrustFDManager.Model.DTOs.Dashboard
     {
         public long FdId { get; set; }
         public string FdReferenceNo { get; set; } = string.Empty;
-        public string BankName { get; set; } = string.Empty;
+        public string CounterpartyName { get; set; } = string.Empty;
         public decimal PrincipalAmount { get; set; }
         public DateTime MaturityDate { get; set; }
         public decimal MaturityAmount { get; set; }

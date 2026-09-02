@@ -47,15 +47,24 @@ namespace FinTrustFDManager.BAL.Services
             return await _repository.GetByIdAsync(id);
         }
 
-        public async Task<FDIdentification> CreateAsync(FDIdentification model)
+        public async Task<FDIdentification> CreateAsync(CreateFDIdentificationDto dto, long userId)
         {
+            var model = new FDIdentification
+            {
+                EntityId = dto.EntityId,
+                CounterpartyId = dto.CounterpartyId,
+                CurrencyId = dto.CurrencyId,
+                PrincipalAmount = dto.PrincipalAmount,
+                Remarks = dto.Remarks,
+                CreatedBy = userId
+            };
+
             model.FdReferenceNo = await _repository.GetNextFdReferenceNoAsync();
             model.Status = FDStatus.Draft;
             model.CreatedDate = DateTime.UtcNow;
-            model.StartDate = DateTime.SpecifyKind(model.StartDate, DateTimeKind.Utc);
-            model.EndDate = DateTime.SpecifyKind(model.EndDate, DateTimeKind.Utc);
-            if (model.SettlementDate.HasValue)
-                model.SettlementDate = DateTime.SpecifyKind(model.SettlementDate.Value, DateTimeKind.Utc);
+            model.StartDate = DateTime.SpecifyKind(dto.StartDate, DateTimeKind.Utc);
+            model.EndDate = DateTime.SpecifyKind(dto.EndDate, DateTimeKind.Utc);
+            model.SettlementDate = DateTime.SpecifyKind(dto.SettlementDate, DateTimeKind.Utc);
 
             var result = await _repository.AddAsync(model);
 
@@ -65,7 +74,7 @@ namespace FinTrustFDManager.BAL.Services
                 Action = FDAction.Create,
                 FromStatus = null,
                 ToStatus = FDStatus.Draft,
-                ActionBy = model.CreatedBy ?? 0,
+                ActionBy = userId,
                 ActionDate = DateTime.UtcNow,
                 Comments = "FD created"
             });
@@ -73,7 +82,7 @@ namespace FinTrustFDManager.BAL.Services
             return result;
         }
 
-        public async Task<FDIdentification?> UpdateAsync(long id, FDIdentification model)
+        public async Task<FDIdentification?> UpdateAsync(long id, UpdateFDIdentificationDto dto, long userId)
         {
             var existing = await _repository.GetByIdAsync(id);
             if (existing == null) return null;
@@ -84,36 +93,42 @@ namespace FinTrustFDManager.BAL.Services
                     $"Cannot edit FD '{existing.FdReferenceNo}' with status '{existing.Status}'. Only DRAFT or REJECTED FDs can be modified directly.");
             }
 
-            model.FdId = id;
-            model.StartDate = DateTime.SpecifyKind(model.StartDate, DateTimeKind.Utc);
-            model.EndDate = DateTime.SpecifyKind(model.EndDate, DateTimeKind.Utc);
-            if (model.SettlementDate.HasValue)
-                model.SettlementDate = DateTime.SpecifyKind(model.SettlementDate.Value, DateTimeKind.Utc);
-            model.ModifiedDate = DateTime.UtcNow;
-            model.Status = existing.Status;
+            var oldValues = System.Text.Json.JsonSerializer.Serialize(new
+            {
+                existing.EntityId,
+                existing.CounterpartyId,
+                existing.CurrencyId,
+                existing.PrincipalAmount,
+                existing.StartDate,
+                existing.EndDate,
+                existing.SettlementDate
+            });
 
-            var result = await _repository.UpdateAsync(model);
+            var updateModel = new FDIdentification
+            {
+                FdId = id,
+                EntityId = dto.EntityId,
+                CounterpartyId = dto.CounterpartyId,
+                CurrencyId = dto.CurrencyId,
+                PrincipalAmount = dto.PrincipalAmount,
+                Remarks = dto.Remarks,
+                StartDate = DateTime.SpecifyKind(dto.StartDate, DateTimeKind.Utc),
+                EndDate = DateTime.SpecifyKind(dto.EndDate, DateTimeKind.Utc),
+                SettlementDate = DateTime.SpecifyKind(dto.SettlementDate, DateTimeKind.Utc),
+                ModifiedBy = userId,
+                ModifiedDate = DateTime.UtcNow,
+                Status = existing.Status
+            };
+
+            var result = await _repository.UpdateAsync(updateModel);
 
             if (result != null)
             {
-                // Capture old/new values for financial audit trail
-                var oldValues = System.Text.Json.JsonSerializer.Serialize(new
-                {
-                    existing.EntityId,
-                    existing.CounterpartyId,
-                    existing.CurrencyId,
-                    existing.BankId,
-                    existing.PrincipalAmount,
-                    existing.StartDate,
-                    existing.EndDate,
-                    existing.SettlementDate
-                });
                 var newValues = System.Text.Json.JsonSerializer.Serialize(new
                 {
                     result.EntityId,
                     result.CounterpartyId,
                     result.CurrencyId,
-                    result.BankId,
                     result.PrincipalAmount,
                     result.StartDate,
                     result.EndDate,
@@ -126,7 +141,7 @@ namespace FinTrustFDManager.BAL.Services
                     Action = FDAction.Edit,
                     FromStatus = existing.Status,
                     ToStatus = existing.Status,
-                    ActionBy = model.ModifiedBy ?? 0,
+                    ActionBy = userId,
                     ActionDate = DateTime.UtcNow,
                     Comments = "FD details updated",
                     OldValues = oldValues,

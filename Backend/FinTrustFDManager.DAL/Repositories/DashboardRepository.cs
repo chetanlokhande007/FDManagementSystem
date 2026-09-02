@@ -28,7 +28,8 @@ namespace FinTrustFDManager.DAL.Repositories
             var activeFDs = await _context.FDIdentifications
                 .AsNoTracking()
                 .Include(f => f.Entity)
-                .Include(f => f.Bank)
+                .Include(f => f.CounterParty)
+
                 .Where(f => f.Status == "APPROVED" || f.Status == "DRAFT")
                 .ToListAsync();
 
@@ -102,7 +103,7 @@ namespace FinTrustFDManager.DAL.Repositories
                 {
                     FdId = f.FdId,
                     FdReferenceNo = f.FdReferenceNo,
-                    BankName = f.Bank?.BankName ?? "",
+                    CounterpartyName = f.CounterParty?.CounterPartyName ?? "",
                     PrincipalAmount = f.PrincipalAmount,
                     MaturityDate = f.EndDate,
                     MaturityAmount = maturityAmt,

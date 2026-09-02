@@ -22,8 +22,7 @@ namespace FinTrustFDManager.Model.Entities.MasterData
         // One Country -> Many Entities
         public ICollection<Entity> Entities { get; set; } = new List<Entity>();
 
-        // One Country -> Many Banks
-        public ICollection<Bank> Banks { get; set; } = new List<Bank>();
+
 
         // One Country -> Many CounterParties
         public ICollection<CounterParty> CounterParties { get; set; } = new List<CounterParty>();

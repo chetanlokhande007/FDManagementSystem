@@ -12,7 +12,7 @@ export interface ChartDataDto {
 export interface FDUpcomingMaturityDto {
   fdId: number;
   fdReferenceNo: string;
-  bankName: string;
+  counterpartyName: string;
   principalAmount: number;
   maturityDate: string;
   maturityAmount: number;

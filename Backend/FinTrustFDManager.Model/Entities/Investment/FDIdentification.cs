@@ -30,8 +30,7 @@ namespace FinTrustFDManager.Model.Entities.Investment
 
         public DateTime? SettlementDate { get; set; }
 
-        // Bank FK
-        public int? BankId { get; set; }
+
 
         [MaxLength(20)]
         public string Status { get; set; } = "DRAFT";
@@ -57,7 +56,6 @@ namespace FinTrustFDManager.Model.Entities.Investment
         [ForeignKey(nameof(CurrencyId))]
         public Currency? CurrencyNavigation { get; set; }
 
-        [ForeignKey(nameof(BankId))]
-        public Bank? Bank { get; set; }
+
     }
 }

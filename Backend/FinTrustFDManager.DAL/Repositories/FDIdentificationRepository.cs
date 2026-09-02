@@ -28,7 +28,7 @@ namespace FinTrustFDManager.DAL.Repositories
                 .Include(x => x.Entity)
                 .Include(x => x.CounterParty)
                 .Include(x => x.CurrencyNavigation)
-                .Include(x => x.Bank)
+
                 .ToListAsync();
         }
 
@@ -39,7 +39,7 @@ namespace FinTrustFDManager.DAL.Repositories
                 .Include(x => x.Entity)
                 .Include(x => x.CounterParty)
                 .Include(x => x.CurrencyNavigation)
-                .Include(x => x.Bank)
+
                 .FirstOrDefaultAsync(x => x.FdId == id);
         }
 
@@ -112,7 +112,7 @@ namespace FinTrustFDManager.DAL.Repositories
             existing.StartDate = model.StartDate;
             existing.EndDate = model.EndDate;
             existing.SettlementDate = model.SettlementDate;
-            existing.BankId = model.BankId;
+
             existing.Status = model.Status;
             existing.Remarks = model.Remarks;
             existing.ModifiedBy = model.ModifiedBy;

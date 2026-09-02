@@ -16,7 +16,7 @@ namespace FinTrustFDManager.Model.Entities.CoreData
         public int EntityId { get; set; }
         public int CountryId { get; set; }
         public int CurrencyId { get; set; }
-        public int BankId { get; set; }
+
 
 
         public int InterestFrequencyId { get; set; }
@@ -52,7 +52,7 @@ namespace FinTrustFDManager.Model.Entities.CoreData
 
         public Currency Currency { get; set; } = null!;
 
-        public Bank Bank { get; set; } = null!;
+
 
 
 

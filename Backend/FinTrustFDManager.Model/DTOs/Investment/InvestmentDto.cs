@@ -12,8 +12,7 @@ namespace FinTrustFDManager.Model.DTOs.Investment
         public string? CountryName { get; set; }
         public int CurrencyId { get; set; }
         public string? CurrencyName { get; set; }
-        public int BankId { get; set; }
-        public string? BankName { get; set; }
+
 
         public int InterestFrequencyId { get; set; }
         public string? InterestFrequencyName { get; set; }

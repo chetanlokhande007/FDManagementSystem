@@ -20,7 +20,7 @@ namespace FinTrustFDManager.DAL.Repositories
                 .Include(x => x.Entity)
                 .Include(x => x.Country)
                 .Include(x => x.Currency)
-                .Include(x => x.Bank)
+
 
                 .Include(x => x.InterestFrequency)
                 .Include(x => x.DayCountConvention)
@@ -34,7 +34,7 @@ namespace FinTrustFDManager.DAL.Repositories
                 .Include(x => x.Entity)
                 .Include(x => x.Country)
                 .Include(x => x.Currency)
-                .Include(x => x.Bank)
+
 
                 .Include(x => x.InterestFrequency)
                 .Include(x => x.DayCountConvention)
@@ -49,7 +49,7 @@ namespace FinTrustFDManager.DAL.Repositories
                 .Include(x => x.Entity)
                 .Include(x => x.Country)
                 .Include(x => x.Currency)
-                .Include(x => x.Bank)
+
 
                 .Include(x => x.InterestFrequency)
                 .Include(x => x.DayCountConvention)

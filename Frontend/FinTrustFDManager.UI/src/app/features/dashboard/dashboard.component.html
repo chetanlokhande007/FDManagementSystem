@@ -178,7 +178,7 @@
               </tr>
               <tr *ngFor="let fd of dashboard.upcomingMaturities">
                 <td class="fw-medium text-dark">{{ fd.fdReferenceNo }}</td>
-                <td>{{ fd.bankName }}</td>
+                <td>{{ fd.counterpartyName }}</td>
                 <td>{{ fd.principalAmount | currency:'INR':'':'1.0-2' }}</td>
                 <td class="text-danger fw-bold">{{ fd.maturityDate | date:'dd MMM yyyy' }}</td>
                 <td>{{ fd.maturityAmount | currency:'INR':'':'1.0-2' }}</td>

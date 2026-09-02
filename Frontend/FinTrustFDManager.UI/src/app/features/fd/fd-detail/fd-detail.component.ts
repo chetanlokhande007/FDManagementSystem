@@ -34,7 +34,6 @@ import {
   BenchmarkService,
   Benchmark
 } from '../../../core/services/benchmark.service';import { DayCountConventionService, DayCountConvention } from '../../../core/services/day-count-convention.service';
-import { BankService } from '../../../core/services/bank.service';
 
 import {
   FDIdentificationService
@@ -105,7 +104,6 @@ export class FDDetailComponent implements OnInit {
   currencies: Currency[] = [];
 
   countries: Country[] = [];
-  banks: any[] = [];
 
   interestFrequencies: InterestFrequency[] = [];
 
@@ -126,7 +124,6 @@ export class FDDetailComponent implements OnInit {
     counterpartyId: null,
 
     currencyId: null,
-    bankId: null,
 
     principalAmount: null,
 
@@ -153,8 +150,8 @@ export class FDDetailComponent implements OnInit {
 
     private interestFrequencyService:
       InterestFrequencyService,
-    private benchmarkService: BenchmarkService,    private dayCountConventionService: DayCountConventionService,
-    private bankService: BankService,
+    private benchmarkService: BenchmarkService,
+    private dayCountConventionService: DayCountConventionService,
 
     private fdService:
       FDIdentificationService,
@@ -264,8 +261,7 @@ export class FDDetailComponent implements OnInit {
       countries: this.countryService.getAll().pipe(catchError((err) => { console.error('Country API Error:', err); return of([]); })),
       interestFrequencies: this.interestFrequencyService.getAll().pipe(catchError((err) => { console.error('Interest Frequency API Error:', err); return of([]); })),
       dayCountConventions: this.dayCountConventionService.getAll().pipe(catchError((err) => { console.error('Day Count API Error:', err); return of([]); })),
-      benchmarks: this.benchmarkService.getAll().pipe(catchError((err) => { console.error('Benchmark API Error:', err); return of([]); })),
-      banks: this.bankService.getBanks().pipe(catchError((err) => { console.error('Bank API Error:', err); return of([]); }))
+      benchmarks: this.benchmarkService.getAll().pipe(catchError((err) => { console.error('Benchmark API Error:', err); return of([]); }))
     }).pipe(
       tap(results => {
         cachedCoreData = results;
@@ -286,7 +282,6 @@ export class FDDetailComponent implements OnInit {
     this.interestFrequencies = cache.interestFrequencies;
     this.dayCountConventions = cache.dayCountConventions;
     this.benchmarks = (cache.benchmarks || []).filter((x: any) => x.isActive);
-    this.banks = (cache.banks || []).filter((x: any) => x.isActive);
   }
 
 
@@ -378,7 +373,6 @@ export class FDDetailComponent implements OnInit {
       entityId: fd?.entityId || fd?.EntityId || null,
       counterpartyId: fd?.counterpartyId || fd?.CounterpartyId || null,
       currencyId: fd?.currencyId || fd?.CurrencyId || null,
-      bankId: fd?.bankId || fd?.BankId || null,
       principalAmount: fd?.principalAmount || fd?.PrincipalAmount || null,
       startDate: this.formatDate(fd?.startDate || fd?.StartDate),
       endDate: this.formatDate(fd?.endDate || fd?.EndDate),
@@ -566,7 +560,6 @@ export class FDDetailComponent implements OnInit {
       entityId: Number(this.fixedDeposit.entityId),
       counterpartyId: Number(this.fixedDeposit.counterpartyId),
       currencyId: Number(this.fixedDeposit.currencyId),
-      bankId: this.fixedDeposit.bankId ? Number(this.fixedDeposit.bankId) : null,
 
       principalAmount:
         Number(this.fixedDeposit.principalAmount),

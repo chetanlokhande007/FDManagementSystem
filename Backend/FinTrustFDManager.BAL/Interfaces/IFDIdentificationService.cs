@@ -12,9 +12,9 @@ namespace FinTrustFDManager.BAL.Interfaces
 
         Task<FDIdentification?> GetByIdAsync(long id);
 
-        Task<FDIdentification> CreateAsync(FDIdentification model);
+        Task<FDIdentification> CreateAsync(CreateFDIdentificationDto dto, long userId);
 
-        Task<FDIdentification?> UpdateAsync(long id, FDIdentification model);
+        Task<FDIdentification?> UpdateAsync(long id, UpdateFDIdentificationDto dto, long userId);
 
         Task<bool> DeleteAsync(long id);
 

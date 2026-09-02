@@ -34,7 +34,7 @@ builder.Services.AddScoped<IEntityRepository, EntityRepository>();
 builder.Services.AddScoped<ICurrencyRepository, CurrencyRepository>();
 builder.Services.AddScoped<ICountryRepository, CountryRepository>();
 builder.Services.AddScoped<ICounterPartyRepository, CounterPartyRepository>();
-builder.Services.AddScoped<IBankRepository, BankRepository>();
+
 builder.Services.AddScoped<IInterestFrequencyRepository, InterestFrequencyRepository>();
 builder.Services.AddScoped<IDayCountConventionRepository, DayCountConventionRepository>();
 builder.Services.AddScoped<IInvestmentRepository, InvestmentRepository>();

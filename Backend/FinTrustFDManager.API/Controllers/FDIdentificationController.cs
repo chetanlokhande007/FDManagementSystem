@@ -1,5 +1,6 @@
 using FinTrustFDManager.BAL.Interfaces;
 using FinTrustFDManager.Model.DTOs;
+using FinTrustFDManager.Model.DTOs.Investment;
 using FinTrustFDManager.Model.Entities.Investment;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -56,33 +57,33 @@ namespace FinTrustFDManager.API.Controllers
             return Ok(result);
         }
 
-        private IActionResult? ValidateFD(FDIdentification model)
+        private IActionResult? ValidateFDDto(int entityId, int counterpartyId, int currencyId, decimal principalAmount, DateTime startDate, DateTime endDate, DateTime settlementDate)
         {
             var errors = new Dictionary<string, string>();
 
-            if (model.EntityId <= 0)
+            if (entityId <= 0)
                 errors["entityId"] = "Entity is required.";
 
-            if (model.CounterpartyId <= 0)
+            if (counterpartyId <= 0)
                 errors["counterpartyId"] = "Counterparty is required.";
 
-            if (model.CurrencyId <= 0)
+            if (currencyId <= 0)
                 errors["currencyId"] = "Transaction Currency is required.";
 
-            if (model.PrincipalAmount <= 0)
+            if (principalAmount <= 0)
                 errors["principalAmount"] = "Principal Amount must be greater than 0.";
 
-            if (model.StartDate == default)
+            if (startDate == default)
                 errors["startDate"] = "Start Date is required.";
 
-            if (model.EndDate == default)
+            if (endDate == default)
                 errors["endDate"] = "End Date is required.";
-            else if (model.EndDate <= model.StartDate)
+            else if (endDate <= startDate)
                 errors["endDate"] = "End Date must be after Start Date.";
 
-            if (model.SettlementDate == default)
+            if (settlementDate == default)
                 errors["settlementDate"] = "Settlement Date is required.";
-            else if (model.SettlementDate < model.EndDate)
+            else if (settlementDate < endDate)
                 errors["settlementDate"] = "Settlement Date must be on or after End Date.";
 
             if (errors.Any())
@@ -104,25 +105,26 @@ namespace FinTrustFDManager.API.Controllers
         // POST: api/FDIdentification
         [HttpPost]
         [Authorize(Roles = "Admin,CA")]
-        public async Task<IActionResult> Create([FromBody] FDIdentification model)
+        public async Task<IActionResult> Create([FromBody] CreateFDIdentificationDto dto)
         {
-            var validationResult = ValidateFD(model);
+            var validationResult = ValidateFDDto(dto.EntityId, dto.CounterpartyId, dto.CurrencyId, dto.PrincipalAmount, dto.StartDate, dto.EndDate, dto.SettlementDate);
             if (validationResult != null) return validationResult;
-            model.CreatedBy = GetCurrentUserId();
-            var result = await _service.CreateAsync(model);
+            
+            var userId = GetCurrentUserId();
+            var result = await _service.CreateAsync(dto, userId);
             return CreatedAtAction(nameof(GetById), new { id = result.FdId }, result);
         }
 
         // PUT: api/FDIdentification/1
         [HttpPut("{id}")]
         [Authorize(Roles = "Admin,CA")]
-        public async Task<IActionResult> Update(long id, [FromBody] FDIdentification model)
+        public async Task<IActionResult> Update(long id, [FromBody] UpdateFDIdentificationDto dto)
         {
-            if (id != model.FdId) return BadRequest(new { success = false, errors = new { global = "FD ID mismatch." } });
-            var validationResult = ValidateFD(model);
+            var validationResult = ValidateFDDto(dto.EntityId, dto.CounterpartyId, dto.CurrencyId, dto.PrincipalAmount, dto.StartDate, dto.EndDate, dto.SettlementDate);
             if (validationResult != null) return validationResult;
-            model.ModifiedBy = GetCurrentUserId();
-            var result = await _service.UpdateAsync(id, model);
+            
+            var userId = GetCurrentUserId();
+            var result = await _service.UpdateAsync(id, dto, userId);
             if (result == null) return NotFound("FD Identification not found.");
             return Ok(result);
         }
