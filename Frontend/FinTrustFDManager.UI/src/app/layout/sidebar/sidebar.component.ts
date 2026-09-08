@@ -17,6 +17,7 @@ export class SidebarComponent implements OnInit {
 
   isMasterDataOpen = false;
   isInvestmentsOpen = true; // Open by default
+  isApproverOpen = false;
   userRole = '';
   isApprover = false;
   isAdmin = false;
@@ -59,6 +60,11 @@ export class SidebarComponent implements OnInit {
     ) {
       this.isInvestmentsOpen = true;
     }
+
+    // Approver
+    if (url.includes('/approver')) {
+      this.isApproverOpen = true;
+    }
   }
 
   toggleMasterData(): void {
@@ -67,6 +73,10 @@ export class SidebarComponent implements OnInit {
 
   toggleInvestments(): void {
     this.isInvestmentsOpen = !this.isInvestmentsOpen;
+  }
+
+  toggleApprover(): void {
+    this.isApproverOpen = !this.isApproverOpen;
   }
 
   isCoreDataOpen = false;

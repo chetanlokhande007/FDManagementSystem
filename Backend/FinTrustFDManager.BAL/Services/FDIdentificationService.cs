@@ -47,6 +47,11 @@ namespace FinTrustFDManager.BAL.Services
             return await _repository.GetByIdAsync(id);
         }
 
+        public async Task<FDLandingDto?> GetDetailByIdAsync(long id)
+        {
+            return await _repository.GetDetailByIdAsync(id);
+        }
+
         public async Task<FDIdentification> CreateAsync(CreateFDIdentificationDto dto, long userId)
         {
             var model = new FDIdentification
@@ -181,6 +186,8 @@ namespace FinTrustFDManager.BAL.Services
             var error = FDStatus.ValidateTransition(fd.Status, FDStatus.PendingFdAdmin);
             if (error != null) throw new InvalidOperationException(error);
 
+            var fromStatus = fd.Status;
+
             await using var transaction = await _unitOfWork.BeginTransactionAsync();
             try
             {
@@ -193,7 +200,7 @@ namespace FinTrustFDManager.BAL.Services
                 {
                     FdId = fdId,
                     Action = FDAction.Submit,
-                    FromStatus = FDStatus.Draft,
+                    FromStatus = fromStatus,
                     ToStatus = FDStatus.PendingFdAdmin,
                     ActionBy = userId,
                     ActionDate = DateTime.UtcNow,
@@ -222,6 +229,8 @@ namespace FinTrustFDManager.BAL.Services
             if (fd.CreatedBy.HasValue && fd.CreatedBy.Value == approverUserId)
                 throw new InvalidOperationException($"Maker-Check violation: User {approverUserId} created this FD and cannot approve their own FD.");
 
+            var fromStatus = fd.Status;
+
             await using var transaction = await _unitOfWork.BeginTransactionAsync();
             try
             {
@@ -234,7 +243,7 @@ namespace FinTrustFDManager.BAL.Services
                 {
                     FdId = fdId,
                     Action = FDAction.Approve,
-                    FromStatus = FDStatus.PendingFdAdmin, // Temp fix, will be proper in full workflow implementation
+                    FromStatus = fromStatus,
                     ToStatus = FDStatus.Approved,
                     ActionBy = approverUserId,
                     ActionDate = DateTime.UtcNow,
@@ -266,6 +275,8 @@ namespace FinTrustFDManager.BAL.Services
             if (fd.CreatedBy.HasValue && fd.CreatedBy.Value == approverUserId)
                 throw new InvalidOperationException($"Maker-Check violation: User {approverUserId} created this FD and cannot reject their own FD.");
 
+            var fromStatus = fd.Status;
+
             await using var transaction = await _unitOfWork.BeginTransactionAsync();
             try
             {
@@ -278,7 +289,7 @@ namespace FinTrustFDManager.BAL.Services
                 {
                     FdId = fdId,
                     Action = FDAction.Reject,
-                    FromStatus = FDStatus.PendingFdAdmin, // Temp fix
+                    FromStatus = fromStatus,
                     ToStatus = FDStatus.Rejected,
                     ActionBy = approverUserId,
                     ActionDate = DateTime.UtcNow,
@@ -304,6 +315,62 @@ namespace FinTrustFDManager.BAL.Services
         public async Task<IEnumerable<FDLandingDto>> GetLandingDataAsync()
         {
             return await _repository.GetLandingDataAsync();
+        }
+
+        public async Task<Dictionary<string, int>> GetStatusCountsAsync()
+        {
+            return await _repository.GetStatusCountsAsync();
+        }
+
+        public async Task<IEnumerable<FDLandingDto>> GetFilteredAsync(string? status)
+        {
+            return await _repository.GetAdminApprovalListAsync(status);
+        }
+
+        public async Task<bool> ReturnToCreatorAsync(long fdId, long approverUserId, string comments)
+        {
+            if (string.IsNullOrWhiteSpace(comments) || comments.Length < 5)
+                throw new InvalidOperationException("Reason is required (minimum 5 characters).");
+
+            var fd = await _repository.GetByIdAsync(fdId);
+            if (fd == null) throw new KeyNotFoundException($"FD with ID {fdId} not found.");
+
+            var error = FDStatus.ValidateTransition(fd.Status, FDStatus.ReturnedToCreator);
+            if (error != null) throw new InvalidOperationException(error);
+
+            if (fd.CreatedBy.HasValue && fd.CreatedBy.Value == approverUserId)
+                throw new InvalidOperationException($"Maker-Check violation: User {approverUserId} created this FD and cannot return their own FD.");
+
+            var fromStatus = fd.Status;
+
+            await using var transaction = await _unitOfWork.BeginTransactionAsync();
+            try
+            {
+                fd.Status = FDStatus.ReturnedToCreator;
+                fd.ModifiedBy = approverUserId;
+                fd.ModifiedDate = DateTime.UtcNow;
+                await _repository.UpdateAsync(fd);
+
+                await _repository.AddApprovalHistoryAsync(new FDApprovalHistory
+                {
+                    FdId = fdId,
+                    Action = FDAction.RequestChanges,
+                    FromStatus = fromStatus,
+                    ToStatus = FDStatus.ReturnedToCreator,
+                    ActionBy = approverUserId,
+                    ActionDate = DateTime.UtcNow,
+                    Comments = comments
+                });
+
+                await _unitOfWork.CommitTransactionAsync();
+                _logger.LogInformation("FD {Ref} (ID={FdId}) returned to creator by User {UserId}.", fd.FdReferenceNo, fdId, approverUserId);
+                return true;
+            }
+            catch
+            {
+                await _unitOfWork.RollbackTransactionAsync();
+                throw;
+            }
         }
     }
 }

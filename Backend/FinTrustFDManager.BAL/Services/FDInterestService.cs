@@ -246,10 +246,10 @@ namespace FinTrustFDManager.BAL.Services
                 PrincipalAmount = principal,
                 InterestRate = effectiveRate,
                 InterestRateType = interest?.InterestRateType ?? "FIXED",
-                InterestFrequency = interest?.InterestFrequency ?? "Monthly",
-                CompoundingFrequency = interest?.CompoundingFrequency ?? "Not Applicable",
+                InterestFrequency = interest?.InterestFrequency?.FrequencyName ?? "Monthly",
+                CompoundingFrequency = interest?.CompoundingFrequencyNavigation?.FrequencyName ?? "Not Applicable",
                 IsCompounding = isCompounding,
-                CalculationBasis = interest?.CalculationBasis ?? "ACTUAL_365",
+                CalculationBasis = interest?.DayCountConvention?.ConventionName ?? "ACTUAL_365",
                 TotalTenorDays = totalDays,
                 TotalInterest = Math.Round(totalInterest, 2),
                 MaturityAmount = Math.Round(maturityAmount, 2),
@@ -280,7 +280,7 @@ namespace FinTrustFDManager.BAL.Services
                 ClosingBalance = fd.PrincipalAmount,
                 CashFlowAmount = fd.PrincipalAmount,
                 Direction = "OUTFLOW",
-                CurrencyCode = fd.CurrencyCode ?? "INR",
+                CurrencyCode = fd.CurrencyNavigation?.CurrencyCode ?? "INR",
                 Status = "PENDING",
                 ReferenceNo = fd.FdReferenceNo ?? "",
                 CreatedDate = now
@@ -292,16 +292,19 @@ namespace FinTrustFDManager.BAL.Services
             DateTime lastCompoundingStartDate = startDate;
 
             bool isCompounding = interest.IsCompounding;
-            int? compoundingMonths = isCompounding ? GetFrequencyMonths(interest.CompoundingFrequency) : null;
+            int? compoundingMonths = isCompounding ? GetFrequencyMonths(interest.CompoundingFrequencyNavigation?.FrequencyName) : null;
+            int compoundingIndex = 1;
             DateTime nextCompoundingDate = (isCompounding && compoundingMonths.HasValue)
-                ? GetTargetFrequencyEndDate(startDate, compoundingMonths.Value, maturityDate)
+                ? GetTargetFrequencyEndDate(startDate, compoundingMonths.Value * compoundingIndex, maturityDate)
                 : maturityDate;
+
+            int periodIndex = 1;
 
             // 2. Interest and Compounding Schedule
             while (currentPeriodStart < maturityDate)
             {
-                DateTime periodEnd = GetNextInterestPeriodEnd(currentPeriodStart, interest.InterestFrequency, maturityDate);
-                int days = (periodEnd - currentPeriodStart).Days + (periodEnd == maturityDate ? 0 : 1);
+                DateTime periodEnd = GetNextInterestPeriodEnd(startDate, interest.InterestFrequency?.FrequencyName ?? "MONTHLY", periodIndex, maturityDate);
+                int days = (periodEnd - currentPeriodStart).Days;
 
                 decimal periodInterest = 0m;
                 if (days > 0)
@@ -310,36 +313,39 @@ namespace FinTrustFDManager.BAL.Services
                         balance,
                         effectiveRate,
                         days,
-                        interest.CalculationBasis);
+                        interest.DayCountConvention?.ConventionName ?? "ACTUAL_365");
 
                     periodInterest = Math.Round(periodInterest, 2, MidpointRounding.AwayFromZero);
                     accumulatedAccrual += periodInterest;
                 }
 
-                cashFlows.Add(new FDCashFlow
+                if (days > 0)
                 {
-                    FdId = fd.FdId,
-                    Event = "Interest",
-                    StartDate = currentPeriodStart,
-                    EndDate = periodEnd,
-                    Days = days,
-                    InterestRate = effectiveRate,
-                    OpeningBalance = balance,
-                    InterestAmount = periodInterest,
-                    ClosingBalance = balance,
-                    CashFlowAmount = isCompounding ? 0m : periodInterest,
-                    Direction = "INFLOW",
-                    CurrencyCode = fd.CurrencyCode ?? "INR",
-                    Status = "PENDING",
-                    ReferenceNo = fd.FdReferenceNo ?? "",
-                    CreatedDate = now
-                });
+                    cashFlows.Add(new FDCashFlow
+                    {
+                        FdId = fd.FdId,
+                        Event = "Interest",
+                        StartDate = currentPeriodStart,
+                        EndDate = periodEnd,
+                        Days = days,
+                        InterestRate = effectiveRate,
+                        OpeningBalance = balance,
+                        InterestAmount = periodInterest,
+                        ClosingBalance = balance,
+                        CashFlowAmount = isCompounding ? 0m : periodInterest,
+                        Direction = "INFLOW",
+                        CurrencyCode = fd.CurrencyNavigation?.CurrencyCode ?? "INR",
+                        Status = "PENDING",
+                        ReferenceNo = fd.FdReferenceNo ?? "",
+                        CreatedDate = now
+                    });
+                }
 
-                DateTime nextPeriodStart = periodEnd.AddDays(1);
+                DateTime nextPeriodStart = periodEnd;
 
-                if (isCompounding && (periodEnd == nextCompoundingDate || nextPeriodStart > nextCompoundingDate) && periodEnd < maturityDate)
+                if (isCompounding && (periodEnd == nextCompoundingDate || nextPeriodStart >= nextCompoundingDate) && periodEnd < maturityDate)
                 {
-                    int compoundingDays = (periodEnd - lastCompoundingStartDate).Days + 1;
+                    int compoundingDays = (periodEnd - lastCompoundingStartDate).Days;
                     decimal compoundedAmount = accumulatedAccrual;
                     decimal newBalance = balance + compoundedAmount;
 
@@ -356,7 +362,7 @@ namespace FinTrustFDManager.BAL.Services
                         ClosingBalance = newBalance,
                         CashFlowAmount = 0m,
                         Direction = "INFLOW",
-                        CurrencyCode = fd.CurrencyCode ?? "INR",
+                        CurrencyCode = fd.CurrencyNavigation?.CurrencyCode ?? "INR",
                         Status = "PENDING",
                         ReferenceNo = fd.FdReferenceNo ?? "",
                         CreatedDate = now
@@ -368,7 +374,8 @@ namespace FinTrustFDManager.BAL.Services
 
                     if (compoundingMonths.HasValue)
                     {
-                        nextCompoundingDate = GetTargetFrequencyEndDate(nextPeriodStart, compoundingMonths.Value, maturityDate);
+                        compoundingIndex++;
+                        nextCompoundingDate = GetTargetFrequencyEndDate(startDate, compoundingMonths.Value * compoundingIndex, maturityDate);
                     }
                 }
                 else if (!isCompounding)
@@ -377,6 +384,7 @@ namespace FinTrustFDManager.BAL.Services
                 }
 
                 currentPeriodStart = nextPeriodStart;
+                periodIndex++;
             }
 
             // 3. Maturity Settlement
@@ -395,7 +403,7 @@ namespace FinTrustFDManager.BAL.Services
                 ClosingBalance = 0m,
                 CashFlowAmount = finalMaturityPayout,
                 Direction = "INFLOW",
-                CurrencyCode = fd.CurrencyCode ?? "INR",
+                CurrencyCode = fd.CurrencyNavigation?.CurrencyCode ?? "INR",
                 Status = "PENDING",
                 ReferenceNo = fd.FdReferenceNo ?? "",
                 CreatedDate = now
@@ -412,20 +420,18 @@ namespace FinTrustFDManager.BAL.Services
             return cashFlows;
         }
 
-        private static DateTime GetNextInterestPeriodEnd(DateTime periodStart, string frequency, DateTime maxDate)
+        private static DateTime GetNextInterestPeriodEnd(DateTime fdStartDate, string frequency, int periodIndex, DateTime maxDate)
         {
             var normalized = frequency?.Trim().ToUpperInvariant().Replace("-", "_").Replace(" ", "_");
             if (normalized == "AT_MATURITY") return maxDate;
 
             int months = GetFrequencyMonths(frequency) ?? 1;
-            return GetTargetFrequencyEndDate(periodStart, months, maxDate);
+            return GetTargetFrequencyEndDate(fdStartDate, months * periodIndex, maxDate);
         }
 
-        private static DateTime GetTargetFrequencyEndDate(DateTime windowStart, int months, DateTime maxDate)
+        private static DateTime GetTargetFrequencyEndDate(DateTime windowStart, int totalMonths, DateTime maxDate)
         {
-            DateTime targetMonth = windowStart.AddMonths(months - 1);
-            int daysInMonth = DateTime.DaysInMonth(targetMonth.Year, targetMonth.Month);
-            DateTime periodEnd = new DateTime(targetMonth.Year, targetMonth.Month, daysInMonth);
+            DateTime periodEnd = windowStart.AddMonths(totalMonths);
             return periodEnd > maxDate ? maxDate : periodEnd;
         }
 
@@ -457,27 +463,26 @@ namespace FinTrustFDManager.BAL.Services
             if (rateType != "FIXED" && rateType != "FLOATING")
                 throw new InvalidOperationException($"Unsupported Interest Rate Type '{model.InterestRateType}'.");
 
-            if (string.IsNullOrWhiteSpace(model.CalculationBasis))
-                throw new InvalidOperationException("Calculation Basis is required.");
+            if (model.InterestFrequencyId <= 0)
+                throw new InvalidOperationException("Interest Frequency is required.");
 
-            var basis = model.CalculationBasis.Trim().ToUpperInvariant();
-            if (basis != "ACTUAL_360" && basis != "ACTUAL_365")
-                throw new InvalidOperationException($"Unsupported Calculation Basis '{model.CalculationBasis}'.");
+            if (model.DayCountConventionId <= 0)
+                throw new InvalidOperationException("Day Count Convention is required.");
 
             if (rateType == "FIXED" && model.InterestRate <= 0)
                 throw new InvalidOperationException("Interest Rate must be greater than 0 for FIXED deposits.");
 
-            if (model.IsCompounding)
+            if (rateType == "FLOATING")
             {
-                if (string.IsNullOrWhiteSpace(model.CompoundingFrequency) ||
-                    model.CompoundingFrequency.Equals("Not Applicable", StringComparison.OrdinalIgnoreCase))
-                {
-                    throw new InvalidOperationException("Compounding Frequency is required when compounding is enabled.");
-                }
+                if (!model.BenchmarkId.HasValue || model.BenchmarkId.Value <= 0)
+                    throw new InvalidOperationException("Benchmark is required for FLOATING rate type.");
+                if (!model.Margin.HasValue || model.Margin.Value < 0)
+                    throw new InvalidOperationException("Margin is required for FLOATING rate type.");
             }
-            else
+
+            if (model.IsCompounding && (!model.CompoundingFrequencyId.HasValue || model.CompoundingFrequencyId.Value <= 0))
             {
-                model.CompoundingFrequency = "Not Applicable";
+                throw new InvalidOperationException("Compounding Frequency is required when compounding is enabled.");
             }
         }
 

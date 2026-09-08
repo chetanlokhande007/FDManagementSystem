@@ -1,0 +1,162 @@
+<div class="approver-dashboard">
+  <div class="dashboard-header">
+    <h2>Cash Flow Approval Dashboard</h2>
+    <p>Welcome back, {{ userName }}</p>
+  </div>
+
+  <!-- Loading -->
+  <div *ngIf="isLoading" class="loading-state">
+    <div class="spinner"></div>
+    <p>Loading dashboard...</p>
+  </div>
+
+  <!-- Error -->
+  <div *ngIf="hasError" class="error-state">
+    <p>Unable to load dashboard data.</p>
+    <button class="btn-primary" (click)="loadDashboard()">Retry</button>
+  </div>
+
+  <!-- Dashboard Content -->
+  <div *ngIf="!isLoading && !hasError" class="dashboard-content">
+    
+    <!-- KPI Cards -->
+    <div class="kpi-row">
+      <a routerLink="/approver/pending" class="kpi-card pending-card">
+        <div class="kpi-icon">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="12" r="10"></circle>
+            <polyline points="12 6 12 12 16 14"></polyline>
+          </svg>
+        </div>
+        <div class="kpi-data">
+          <span class="kpi-label">Pending Approval</span>
+          <span class="kpi-value">{{ pendingCount }}</span>
+          <span class="kpi-sub">Requires your action</span>
+        </div>
+      </a>
+
+      <a routerLink="/approver/list" [queryParams]="{status: 'APPROVED'}" class="kpi-card approved-card">
+        <div class="kpi-icon">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+            <polyline points="22 4 12 14.01 9 11.01"></polyline>
+          </svg>
+        </div>
+        <div class="kpi-data">
+          <span class="kpi-label">Approved</span>
+          <span class="kpi-value">{{ approvedCount }}</span>
+          <span class="kpi-sub">Total approved FDs</span>
+        </div>
+      </a>
+
+      <a routerLink="/approver/list" [queryParams]="{status: 'REJECTED'}" class="kpi-card rejected-card">
+        <div class="kpi-icon">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="12" r="10"></circle>
+            <line x1="15" y1="9" x2="9" y2="15"></line>
+            <line x1="9" y1="9" x2="15" y2="15"></line>
+          </svg>
+        </div>
+        <div class="kpi-data">
+          <span class="kpi-label">Rejected</span>
+          <span class="kpi-value">{{ rejectedCount }}</span>
+          <span class="kpi-sub">Total rejected FDs</span>
+        </div>
+      </a>
+
+      <a routerLink="/approver/list" [queryParams]="{status: 'RETURNED_TO_CREATOR'}" class="kpi-card returned-card">
+        <div class="kpi-icon">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <polyline points="1 4 1 10 7 10"></polyline>
+            <path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"></path>
+          </svg>
+        </div>
+        <div class="kpi-data">
+          <span class="kpi-label">Returned</span>
+          <span class="kpi-value">{{ returnedCount }}</span>
+          <span class="kpi-sub">Changes requested</span>
+        </div>
+      </a>
+    </div>
+
+    <!-- Recent Pending Approvals -->
+    <div class="section-card">
+      <div class="section-header">
+        <h3>Recent Pending Approvals</h3>
+        <a routerLink="/approver/pending" class="view-all">View All</a>
+      </div>
+
+      <div *ngIf="recentPending.length === 0" class="empty-state">
+        <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" stroke-width="1.5">
+          <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+          <polyline points="22 4 12 14.01 9 11.01"></polyline>
+        </svg>
+        <p>No pending approvals at this time.</p>
+      </div>
+
+      <div *ngIf="recentPending.length > 0" class="table-responsive">
+        <table class="approver-table">
+          <thead>
+            <tr>
+              <th>FD Reference</th>
+              <th>Entity</th>
+              <th>Counterparty</th>
+              <th>Principal</th>
+              <th>Status</th>
+              <th>Action</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let fd of recentPending">
+              <td class="fd-ref">{{ fd.fdReferenceNo }}</td>
+              <td>{{ fd.entityName }}</td>
+              <td>{{ fd.counterPartyName }}</td>
+              <td class="amount">{{ fd.principalAmount | currency:'INR':'symbol':'1.0-0' }}</td>
+              <td>
+                <span class="status-badge" [ngClass]="getStatusClass(fd.status || '')">
+                  {{ fd.status }}
+                </span>
+              </td>
+              <td>
+                <a [routerLink]="['/approver/detail', fd.fdId]" class="btn-action">Review</a>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Quick Actions -->
+    <div class="quick-actions">
+      <a routerLink="/approver/pending" class="action-card">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <circle cx="12" cy="12" r="10"></circle>
+          <polyline points="12 6 12 12 16 14"></polyline>
+        </svg>
+        Pending Approvals
+      </a>
+      <a routerLink="/approver/list" [queryParams]="{status: 'APPROVED'}" class="action-card">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+          <polyline points="22 4 12 14.01 9 11.01"></polyline>
+        </svg>
+        Approved List
+      </a>
+      <a routerLink="/approver/list" [queryParams]="{status: 'REJECTED'}" class="action-card">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <circle cx="12" cy="12" r="10"></circle>
+          <line x1="15" y1="9" x2="9" y2="15"></line>
+          <line x1="9" y1="9" x2="15" y2="15"></line>
+        </svg>
+        Rejected List
+      </a>
+      <a routerLink="/approver/list" class="action-card">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <circle cx="12" cy="12" r="10"></circle>
+          <polyline points="12 6 12 12 16 14"></polyline>
+        </svg>
+        All FDs
+      </a>
+    </div>
+  </div>
+</div>

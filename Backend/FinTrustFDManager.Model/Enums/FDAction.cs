@@ -11,5 +11,6 @@ namespace FinTrustFDManager.Model.Enums
         public const string AmendmentRequest = "AMENDMENT_REQUEST";
         public const string AmendmentApprove = "AMENDMENT_APPROVE";
         public const string AmendmentReject = "AMENDMENT_REJECT";
+        public const string RequestChanges = "REQUEST_CHANGES";
     }
 }

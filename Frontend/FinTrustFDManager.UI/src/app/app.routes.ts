@@ -12,6 +12,10 @@ import { FDListComponent } from './features/fd/fd-list/fd-list.component';
 import { FDDetailComponent } from './features/fd/fd-detail/fd-detail.component';
 
 import { CounterpartiesComponent } from './features/counterparties/counterparties.component';
+import { ApproverDashboardComponent } from './features/approver/approver-dashboard/approver-dashboard.component';
+import { ApproverPendingComponent } from './features/approver/approver-pending/approver-pending.component';
+import { ApproverListComponent } from './features/approver/approver-list/approver-list.component';
+import { ApproverDetailComponent } from './features/approver/approver-detail/approver-detail.component';
 
 export const routes: Routes = [
 
@@ -69,10 +73,34 @@ export const routes: Routes = [
 
   {
     path: 'approver/dashboard',
-    component: DashboardComponent,
+    component: ApproverDashboardComponent,
     canActivate: [authGuard],
     data: {
-      roles: ['Approver', 'Admin']
+      roles: ['Approver']
+    }
+  },
+  {
+    path: 'approver/pending',
+    component: ApproverPendingComponent,
+    canActivate: [authGuard],
+    data: {
+      roles: ['Approver']
+    }
+  },
+  {
+    path: 'approver/list',
+    component: ApproverListComponent,
+    canActivate: [authGuard],
+    data: {
+      roles: ['Approver']
+    }
+  },
+  {
+    path: 'approver/detail/:id',
+    component: ApproverDetailComponent,
+    canActivate: [authGuard],
+    data: {
+      roles: ['Approver']
     }
   },
 
@@ -147,25 +175,26 @@ export const routes: Routes = [
   {
     path: 'fd',
     component: FDListComponent,
-    canActivate: [authGuard]
+    canActivate: [authGuard],
+    data: { roles: ['Admin'] }
   },
-
   // ==============================
   // ADD FD
   // ==============================
   {
     path: 'fd-detail',
     component: FDDetailComponent,
-    canActivate: [authGuard]
+    canActivate: [authGuard],
+    data: { roles: ['Admin'] }
   },
-
   // ==============================
   // EDIT FD
   // ==============================
   {
     path: 'fd-detail/:id',
     component: FDDetailComponent,
-    canActivate: [authGuard]
+    canActivate: [authGuard],
+    data: { roles: ['Admin'] }
   }
 
 ];

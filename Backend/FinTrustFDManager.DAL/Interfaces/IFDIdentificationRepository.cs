@@ -14,6 +14,8 @@ namespace FinTrustFDManager.DAL.Interfaces
         Task<IEnumerable<FDIdentification>> GetAllAsync();
 
         Task<FDIdentification?> GetByIdAsync(long id);
+        
+        Task<FDLandingDto?> GetDetailByIdAsync(long id);
 
         Task<FDIdentification> AddAsync(FDIdentification model);
 
@@ -43,5 +45,15 @@ namespace FinTrustFDManager.DAL.Interfaces
         /// Gets approval history for an FD.
         /// </summary>
         Task<IEnumerable<FDApprovalHistory>> GetApprovalHistoryAsync(long fdId);
+
+        /// <summary>
+        /// Returns a dictionary of FD status → count.
+        /// </summary>
+        Task<Dictionary<string, int>> GetStatusCountsAsync();
+
+        /// <summary>
+        /// Returns FDs filtered by status for the approver list view.
+        /// </summary>
+        Task<IEnumerable<FDLandingDto>> GetAdminApprovalListAsync(string? statusFilter);
     }
 }

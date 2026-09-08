@@ -49,7 +49,7 @@ namespace FinTrustFDManager.API.Controllers
         [HttpGet("{id}")]
         public async Task<IActionResult> GetById(long id)
         {
-            var result = await _service.GetByIdAsync(id);
+            var result = await _service.GetDetailByIdAsync(id);
 
             if (result == null)
                 return NotFound("FD Identification not found.");
@@ -162,7 +162,7 @@ namespace FinTrustFDManager.API.Controllers
 
         // POST: api/FDIdentification/1/approve
         [HttpPost("{id}/approve")]
-        [Authorize(Roles = "Admin,Approver")]
+        [Authorize(Roles = "Approver")]
         public async Task<IActionResult> Approve(long id, [FromBody] FDRejectRequest? body)
         {
             try
@@ -183,7 +183,7 @@ namespace FinTrustFDManager.API.Controllers
 
         // POST: api/FDIdentification/1/reject
         [HttpPost("{id}/reject")]
-        [Authorize(Roles = "Admin,Approver")]
+        [Authorize(Roles = "Approver")]
         public async Task<IActionResult> Reject(long id, [FromBody] FDRejectRequest body)
         {
             if (body == null || string.IsNullOrWhiteSpace(body.Comments))
@@ -202,6 +202,47 @@ namespace FinTrustFDManager.API.Controllers
             {
                 return NotFound(new { success = false, message = ex.Message });
             }
+        }
+
+        // POST: api/FDIdentification/1/return-to-creator
+        [HttpPost("{id}/return-to-creator")]
+        [Authorize(Roles = "Approver")]
+        public async Task<IActionResult> ReturnToCreator(long id, [FromBody] FDRejectRequest body)
+        {
+            if (body == null || string.IsNullOrWhiteSpace(body.Comments))
+                return BadRequest(new { success = false, message = "Reason for returning is required." });
+            try
+            {
+                var userId = GetCurrentUserId();
+                await _service.ReturnToCreatorAsync(id, userId, body.Comments);
+                return Ok(new { success = true, message = "FD returned to creator for changes." });
+            }
+            catch (InvalidOperationException ex)
+            {
+                return Conflict(new { success = false, message = ex.Message });
+            }
+            catch (KeyNotFoundException ex)
+            {
+                return NotFound(new { success = false, message = ex.Message });
+            }
+        }
+
+        // GET: api/FDIdentification/approver/summary
+        [HttpGet("approver/summary")]
+        [Authorize(Roles = "Approver")]
+        public async Task<IActionResult> GetApproverSummary()
+        {
+            var counts = await _service.GetStatusCountsAsync();
+            return Ok(counts);
+        }
+
+        // GET: api/FDIdentification/filtered?status=APPROVED
+        [HttpGet("filtered")]
+        [Authorize(Roles = "Approver")]
+        public async Task<IActionResult> GetFiltered([FromQuery] string? status)
+        {
+            var result = await _service.GetFilteredAsync(status);
+            return Ok(result);
         }
     }
 }

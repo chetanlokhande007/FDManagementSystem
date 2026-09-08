@@ -1,0 +1,273 @@
+<div class="detail-page">
+  <!-- Back Button -->
+  <div class="back-bar">
+    <button class="btn-back" (click)="goBack()">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <polyline points="15 18 9 12 15 6"></polyline>
+      </svg>
+      Back to Pending
+    </button>
+  </div>
+
+  <!-- Loading -->
+  <div *ngIf="loading" class="loading-state">
+    <div class="spinner"></div>
+    <p>Loading FD details...</p>
+  </div>
+
+  <!-- Error -->
+  <div *ngIf="hasError" class="error-state">
+    <p>Unable to load FD details.</p>
+    <button class="btn-primary" (click)="loadFDDetail()">Retry</button>
+  </div>
+
+  <!-- FD Detail Content -->
+  <div *ngIf="!loading && !hasError && fd" class="detail-content">
+    
+    <!-- Header Card -->
+    <div class="detail-header-card">
+      <div class="header-left">
+        <h2>{{ fd.fdReferenceNo }}</h2>
+        <span class="status-badge" [ngClass]="getStatusClass(fd.status || '')">
+          {{ formatStatus(fd.status || '') }}
+        </span>
+      </div>
+      <div class="header-actions" *ngIf="isPending">
+        <button class="btn-approve" (click)="openApproveConfirm()" [disabled]="isProcessing">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <polyline points="20 6 9 17 4 12"></polyline>
+          </svg>
+          Approve
+        </button>
+        <button class="btn-return" (click)="openReturnModal()" [disabled]="isProcessing">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <polyline points="1 4 1 10 7 10"></polyline>
+            <path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"></path>
+          </svg>
+          Request Changes
+        </button>
+        <button class="btn-reject" (click)="openRejectModal()" [disabled]="isProcessing">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="12" r="10"></circle>
+            <line x1="15" y1="9" x2="9" y2="15"></line>
+            <line x1="9" y1="9" x2="15" y2="15"></line>
+          </svg>
+          Reject
+        </button>
+      </div>
+    </div>
+
+    <!-- FD Information -->
+    <div class="info-grid">
+      <div class="info-card">
+        <h3>FD Identification</h3>
+        <div class="info-rows">
+          <div class="info-row">
+            <span class="info-label">FD Reference</span>
+            <span class="info-value">{{ fd.fdReferenceNo }}</span>
+          </div>
+          <div class="info-row">
+            <span class="info-label">Status</span>
+            <span class="info-value">
+              <span class="status-badge" [ngClass]="getStatusClass(fd.status || '')">
+                {{ formatStatus(fd.status || '') }}
+              </span>
+            </span>
+          </div>
+          <div class="info-row">
+            <span class="info-label">Entity</span>
+            <span class="info-value">{{ fd.entityName }}</span>
+          </div>
+          <div class="info-row">
+            <span class="info-label">Counterparty</span>
+            <span class="info-value">{{ fd.counterPartyName }}</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="info-card">
+        <h3>Financial Details</h3>
+        <div class="info-rows">
+          <div class="info-row">
+            <span class="info-label">Currency</span>
+            <span class="info-value">{{ fd.currencyCode }}</span>
+          </div>
+          <div class="info-row">
+            <span class="info-label">Principal Amount</span>
+            <span class="info-value highlight">{{ fd.principalAmount | currency:'INR':'symbol':'1.0-2' }}</span>
+          </div>
+          <div class="info-row">
+            <span class="info-label">Interest Rate</span>
+            <span class="info-value">{{ fd.interestRate ? (fd.interestRate | number:'1.2-2') + '%' : 'N/A' }}</span>
+          </div>
+          <div class="info-row">
+            <span class="info-label">Interest Type</span>
+            <span class="info-value">{{ fd.interestRateType || 'N/A' }}</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="info-card">
+        <h3>Dates</h3>
+        <div class="info-rows">
+          <div class="info-row">
+            <span class="info-label">Start Date</span>
+            <span class="info-value">{{ fd.startDate | date:'dd-MMM-yyyy' }}</span>
+          </div>
+          <div class="info-row">
+            <span class="info-label">End Date</span>
+            <span class="info-value">{{ fd.endDate | date:'dd-MMM-yyyy' }}</span>
+          </div>
+          <div class="info-row" *ngIf="fd.settlementDate">
+            <span class="info-label">Settlement Date</span>
+            <span class="info-value">{{ fd.settlementDate | date:'dd-MMM-yyyy' }}</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="info-card">
+        <h3>Interest Configuration</h3>
+        <div class="info-rows">
+          <div class="info-row">
+            <span class="info-label">Frequency</span>
+            <span class="info-value">{{ fd.interestFrequency || 'N/A' }}</span>
+          </div>
+          <div class="info-row">
+            <span class="info-label">Compounding</span>
+            <span class="info-value">{{ fd.compoundingFrequency || 'N/A' }}</span>
+          </div>
+          <div class="info-row">
+            <span class="info-label">Calculation Basis</span>
+            <span class="info-value">{{ fd.calculationBasis || 'N/A' }}</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Approval History -->
+    <div class="history-section">
+      <button class="history-toggle" (click)="toggleHistory()">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <circle cx="12" cy="12" r="10"></circle>
+          <polyline points="12 6 12 12 16 14"></polyline>
+        </svg>
+        Approval History
+        <svg class="arrow-icon" [class.rotated]="showHistory" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <polyline points="6 9 12 15 18 9"></polyline>
+        </svg>
+      </button>
+
+      <div *ngIf="showHistory" class="history-content">
+        <div *ngIf="loadingHistory" class="history-loading">
+          <div class="spinner-small"></div> Loading history...
+        </div>
+
+        <div *ngIf="!loadingHistory && history.length === 0" class="history-empty">
+          No approval history found.
+        </div>
+
+        <div *ngIf="!loadingHistory && history.length > 0" class="history-timeline">
+          <div *ngFor="let entry of history" class="history-entry">
+            <div class="history-dot" [ngClass]="getActionClass(entry.action)"></div>
+            <div class="history-details">
+              <div class="history-action">
+                <span class="action-label" [ngClass]="getActionClass(entry.action)">
+                  {{ getActionLabel(entry.action) }}
+                </span>
+                <span class="history-date">{{ entry.actionDate | date:'dd-MMM-yyyy HH:mm' }}</span>
+              </div>
+              <div class="history-transition" *ngIf="entry.fromStatus || entry.toStatus">
+                {{ formatStatus(entry.fromStatus || 'N/A') }} → {{ formatStatus(entry.toStatus || 'N/A') }}
+              </div>
+              <div class="history-comment" *ngIf="entry.comments">
+                "{{ entry.comments }}"
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ========== APPROVE CONFIRMATION ========== -->
+<div class="modal-overlay" *ngIf="showApproveConfirm" (click)="closeApproveConfirm()">
+  <div class="modal" (click)="$event.stopPropagation()">
+    <div class="modal-header">
+      <h3>Approve FD</h3>
+      <button class="close-btn" (click)="closeApproveConfirm()">×</button>
+    </div>
+    <div class="modal-body">
+      <p>Are you sure you want to approve <strong>{{ fd?.fdReferenceNo }}</strong>?</p>
+      <div class="modal-detail">
+        <span>Principal: {{ fd?.principalAmount | currency:'INR':'symbol':'1.0-2' }}</span>
+      </div>
+      <div class="form-group">
+        <label>Comments (optional)</label>
+        <textarea [(ngModel)]="approveComments" rows="2" placeholder="Add any comments..."></textarea>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-cancel" (click)="closeApproveConfirm()">Cancel</button>
+      <button class="btn-approve-confirm" (click)="confirmApprove()" [disabled]="isProcessing">
+        {{ isProcessing ? 'Processing...' : 'Approve' }}
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- ========== REJECT MODAL ========== -->
+<div class="modal-overlay" *ngIf="showRejectModal" (click)="closeRejectModal()">
+  <div class="modal" (click)="$event.stopPropagation()">
+    <div class="modal-header reject-header">
+      <h3>Reject FD</h3>
+      <button class="close-btn" (click)="closeRejectModal()">×</button>
+    </div>
+    <div class="modal-body">
+      <p>Provide a reason for rejecting <strong>{{ fd?.fdReferenceNo }}</strong>:</p>
+      <div class="form-group">
+        <label>Rejection Reason *</label>
+        <textarea [(ngModel)]="rejectComments" rows="3" 
+                  placeholder="Enter rejection reason (minimum 5 characters)"></textarea>
+        <small *ngIf="rejectComments && rejectComments.length < 5" class="validation-error">
+          Must be at least 5 characters ({{ rejectComments.length }}/5)
+        </small>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-cancel" (click)="closeRejectModal()">Cancel</button>
+      <button class="btn-reject-confirm" (click)="confirmReject()" 
+              [disabled]="isProcessing || !rejectComments || rejectComments.length < 5">
+        {{ isProcessing ? 'Processing...' : 'Reject FD' }}
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- ========== RETURN TO CREATOR / REQUEST CHANGES MODAL ========== -->
+<div class="modal-overlay" *ngIf="showReturnModal" (click)="closeReturnModal()">
+  <div class="modal" (click)="$event.stopPropagation()">
+    <div class="modal-header return-header">
+      <h3>Request Changes</h3>
+      <button class="close-btn" (click)="closeReturnModal()">×</button>
+    </div>
+    <div class="modal-body">
+      <p>Send <strong>{{ fd?.fdReferenceNo }}</strong> back to the creator for changes:</p>
+      <div class="form-group">
+        <label>Reason / Instructions *</label>
+        <textarea [(ngModel)]="returnComments" rows="3"
+                  placeholder="Describe the changes needed (minimum 5 characters)"></textarea>
+        <small *ngIf="returnComments && returnComments.length < 5" class="validation-error">
+          Must be at least 5 characters ({{ returnComments.length }}/5)
+        </small>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-cancel" (click)="closeReturnModal()">Cancel</button>
+      <button class="btn-return-confirm" (click)="confirmReturn()"
+              [disabled]="isProcessing || !returnComments || returnComments.length < 5">
+        {{ isProcessing ? 'Processing...' : 'Send Back' }}
+      </button>
+    </div>
+  </div>
+</div>

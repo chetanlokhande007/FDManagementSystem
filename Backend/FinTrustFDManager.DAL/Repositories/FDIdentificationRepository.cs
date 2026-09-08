@@ -43,6 +43,81 @@ namespace FinTrustFDManager.DAL.Repositories
                 .FirstOrDefaultAsync(x => x.FdId == id);
         }
 
+        public async Task<FDLandingDto?> GetDetailByIdAsync(long id)
+        {
+            var fdWithInterest = await (
+                from fd in _context.FDIdentifications.AsNoTracking()
+                where fd.FdId == id
+                join ent in _context.Entities on fd.EntityId equals ent.EntityId into entGroup
+                from e in entGroup.DefaultIfEmpty()
+                join cp in _context.CounterParties on fd.CounterpartyId equals cp.CounterPartyId into cpGroup
+                from c in cpGroup.DefaultIfEmpty()
+                join intEntry in _context.FDInterests on fd.FdId equals intEntry.FdId into interestGroup
+                from i in interestGroup.DefaultIfEmpty()
+                select new
+                {
+                    fd.FdId,
+                    fd.FdReferenceNo,
+                    fd.EntityId,
+                    EntityName = e != null ? e.EntityName : string.Empty,
+                    fd.CounterpartyId,
+                    CounterPartyName = c != null ? c.CounterPartyName : string.Empty,
+                    fd.CurrencyId,
+                    CurrencyCode = _context.Currencies.Where(c => c.CurrencyId == fd.CurrencyId).Select(c => c.CurrencyCode).FirstOrDefault() ?? string.Empty,
+                    fd.PrincipalAmount,
+                    fd.StartDate,
+                    fd.EndDate,
+                    fd.SettlementDate,
+                    fd.Status,
+                    InterestRate = i != null ? i.InterestRate : 0m,
+                    InterestRateType = i != null ? i.InterestRateType : string.Empty,
+                    InterestFrequency = i != null ? _context.InterestFrequencies.Where(f => f.Id == i.InterestFrequencyId).Select(f => f.FrequencyName).FirstOrDefault() ?? string.Empty : string.Empty,
+                    IsCompounding = i != null && i.IsCompounding,
+                    CompoundingFrequency = i != null && i.IsCompounding && i.CompoundingFrequencyId.HasValue
+                        ? (_context.InterestFrequencies.Where(f => f.Id == i.CompoundingFrequencyId.Value).Select(f => f.FrequencyName).FirstOrDefault() ?? "Not Applicable")
+                        : "Not Applicable",
+                    CalculationBasis = i != null ? _context.DayCountConventions.Where(d => d.Id == i.DayCountConventionId).Select(d => d.ConventionName).FirstOrDefault() ?? string.Empty : string.Empty
+                }
+            ).FirstOrDefaultAsync();
+
+            if (fdWithInterest == null)
+                return null;
+
+            var totalInflows = await _context.FDCashFlows
+                .AsNoTracking()
+                .Where(cf => cf.Direction == "INFLOW" && cf.FdId == id)
+                .SumAsync(cf => cf.CashFlowAmount);
+
+            var grossInterest = totalInflows > 0 ? totalInflows - fdWithInterest.PrincipalAmount : 0m;
+
+            return new FDLandingDto
+            {
+                FdId = fdWithInterest.FdId,
+                FdReferenceNo = fdWithInterest.FdReferenceNo,
+                EntityId = fdWithInterest.EntityId,
+                EntityName = fdWithInterest.EntityName,
+                CounterpartyId = fdWithInterest.CounterpartyId,
+                CounterPartyName = fdWithInterest.CounterPartyName,
+                CurrencyCode = fdWithInterest.CurrencyCode,
+                CurrencyId = fdWithInterest.CurrencyId,
+                PrincipalAmount = fdWithInterest.PrincipalAmount,
+                StartDate = fdWithInterest.StartDate,
+                EndDate = fdWithInterest.EndDate,
+                SettlementDate = fdWithInterest.SettlementDate,
+                Status = fdWithInterest.Status,
+                InterestRate = fdWithInterest.InterestRate,
+                InterestRateType = fdWithInterest.InterestRateType,
+                InterestFrequency = fdWithInterest.InterestFrequency,
+                CompoundingFrequency = fdWithInterest.CompoundingFrequency,
+                CalculationBasis = fdWithInterest.CalculationBasis,
+                TotalPrincipal = fdWithInterest.PrincipalAmount,
+                TotalGrossInterest = grossInterest,
+                TotalTds = 0,
+                TotalNetInterest = grossInterest,
+                TotalAmount = fdWithInterest.PrincipalAmount + grossInterest
+            };
+        }
+
         public async Task<FDIdentification> AddAsync(FDIdentification model)
         {
             _context.FDIdentifications.Add(model);
