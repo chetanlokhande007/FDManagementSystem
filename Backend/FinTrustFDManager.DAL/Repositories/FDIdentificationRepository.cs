@@ -462,7 +462,14 @@ namespace FinTrustFDManager.DAL.Repositories
 
             if (!string.IsNullOrEmpty(statusFilter))
             {
-                query = query.Where(x => x.Status == statusFilter);
+                if (statusFilter == FDStatus.Rejected)
+                {
+                    query = query.Where(x => x.Status == FDStatus.Rejected || x.Status == FDStatus.FdAdminRejected || x.Status == FDStatus.CaRejected);
+                }
+                else
+                {
+                    query = query.Where(x => x.Status == statusFilter);
+                }
             }
 
             return await query.OrderByDescending(x => x.FdId).ToListAsync();

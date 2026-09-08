@@ -269,7 +269,11 @@ namespace FinTrustFDManager.BAL.Services
             var fd = await _repository.GetByIdAsync(fdId);
             if (fd == null) throw new KeyNotFoundException($"FD with ID {fdId} not found.");
 
-            var error = FDStatus.ValidateTransition(fd.Status, FDStatus.Rejected);
+            var targetStatus = fd.Status == FDStatus.PendingFdAdmin ? FDStatus.FdAdminRejected :
+                               fd.Status == FDStatus.PendingCa ? FDStatus.CaRejected :
+                               FDStatus.Rejected;
+
+            var error = FDStatus.ValidateTransition(fd.Status, targetStatus);
             if (error != null) throw new InvalidOperationException(error);
 
             if (fd.CreatedBy.HasValue && fd.CreatedBy.Value == approverUserId)
@@ -280,7 +284,7 @@ namespace FinTrustFDManager.BAL.Services
             await using var transaction = await _unitOfWork.BeginTransactionAsync();
             try
             {
-                fd.Status = FDStatus.Rejected;
+                fd.Status = targetStatus;
                 fd.ModifiedBy = approverUserId;
                 fd.ModifiedDate = DateTime.UtcNow;
                 await _repository.UpdateAsync(fd);
@@ -290,7 +294,7 @@ namespace FinTrustFDManager.BAL.Services
                     FdId = fdId,
                     Action = FDAction.Reject,
                     FromStatus = fromStatus,
-                    ToStatus = FDStatus.Rejected,
+                    ToStatus = targetStatus,
                     ActionBy = approverUserId,
                     ActionDate = DateTime.UtcNow,
                     Comments = comments

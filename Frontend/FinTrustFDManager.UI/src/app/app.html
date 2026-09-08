@@ -1,16 +1,22 @@
-<div class="layout-container">
-  <app-sidebar 
-    [isOpen]="isSidebarOpen" 
-    (closeSidebar)="closeSidebar()">
-  </app-sidebar>
-  
-  <!-- Backdrop for mobile drawer -->
-  <div class="sidebar-backdrop" *ngIf="isSidebarOpen" (click)="closeSidebar()"></div>
+<ng-container *ngIf="isAuthRoute">
+  <router-outlet></router-outlet>
+</ng-container>
 
-  <div class="main-content-wrapper">
-    <app-header (toggleSidebar)="toggleSidebar()"></app-header>
-    <main class="main-content">
-      <router-outlet></router-outlet>
-    </main>
+<ng-container *ngIf="!isAuthRoute">
+  <div class="layout-container">
+    <app-sidebar 
+      [isOpen]="isSidebarOpen" 
+      (closeSidebar)="closeSidebar()">
+    </app-sidebar>
+    
+    <!-- Backdrop for mobile drawer -->
+    <div class="sidebar-backdrop" *ngIf="isSidebarOpen" (click)="closeSidebar()"></div>
+
+    <div class="main-content-wrapper">
+      <app-header (toggleSidebar)="toggleSidebar()"></app-header>
+      <main class="main-content">
+        <router-outlet></router-outlet>
+      </main>
+    </div>
   </div>
-</div>
+</ng-container>
