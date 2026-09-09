@@ -163,7 +163,7 @@ namespace FinTrustFDManager.API.Controllers
         // POST: api/FDIdentification/1/approve
         [HttpPost("{id}/approve")]
         [Authorize(Roles = "Approver")]
-        public async Task<IActionResult> Approve(long id, [FromBody] FDRejectRequest? body)
+        public async Task<IActionResult> Approve(long id, [FromBody] FDApproveRequest? body)
         {
             try
             {
