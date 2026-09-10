@@ -34,6 +34,50 @@ namespace FinTrustFDManager.BAL.Tests.IntegrationTests
             await Context.Database.OpenConnectionAsync();
             await cmd.ExecuteNonQueryAsync();
             await Context.Database.CloseConnectionAsync();
+
+            // Seed master data required by foreign keys
+            var country = new Model.Entities.MasterData.Country
+            {
+                CountryId = 1,
+                CountryCode = "IND",
+                CountryName = "India",
+                Description = "India"
+            };
+            var entity = new Model.Entities.Entity
+            {
+                EntityId = 1,
+                EntityCode = "ENT01",
+                EntityName = "Entity 1",
+                CountryId = 1
+            };
+            var cp = new Model.Entities.CounterParty
+            {
+                CounterPartyId = 1,
+                CounterPartyCode = "CP01",
+                CounterPartyName = "Counterparty 1",
+                CountryId = 1
+            };
+            var curr = new Model.Entities.Currency
+            {
+                CurrencyId = 1,
+                CurrencyCode = "INR",
+                CurrencyName = "Indian Rupee",
+                Symbol = "₹"
+            };
+
+            Context.Countries.Add(country);
+            Context.Entities.Add(entity);
+            Context.CounterParties.Add(cp);
+            Context.Currencies.Add(curr);
+            await Context.SaveChangesAsync();
+
+            // Synchronize PostgreSQL identity sequences so subsequent inserts don't collide
+            await Context.Database.ExecuteSqlRawAsync(@"
+                SELECT setval(pg_get_serial_sequence('""Countries""', 'CountryId'), COALESCE((SELECT MAX(""CountryId"") FROM ""Countries""), 1));
+                SELECT setval(pg_get_serial_sequence('""Entities""', 'EntityId'), COALESCE((SELECT MAX(""EntityId"") FROM ""Entities""), 1));
+                SELECT setval(pg_get_serial_sequence('""CounterParties""', 'CounterPartyId'), COALESCE((SELECT MAX(""CounterPartyId"") FROM ""CounterParties""), 1));
+                SELECT setval(pg_get_serial_sequence('""Currencies""', 'CurrencyId'), COALESCE((SELECT MAX(""CurrencyId"") FROM ""Currencies""), 1));
+            ");
         }
 
         public ApplicationDbContext CreateFreshContext()

@@ -4,6 +4,7 @@ using FinTrustFDManager.DAL.Data;
 using FinTrustFDManager.DAL.Interfaces;
 using FinTrustFDManager.DAL.Repositories;
 using FinTrustFDManager.Model.DTOs.Amendment;
+using FinTrustFDManager.Model.DTOs.Investment;
 using FinTrustFDManager.Model.Entities;
 using FinTrustFDManager.Model.Entities.Investment;
 using Microsoft.EntityFrameworkCore;
@@ -56,7 +57,7 @@ namespace FinTrustFDManager.BAL.Tests.IntegrationTests
 
             _interestService = new FDInterestService(
                 interestRepo, fdRepo, _cashFlowRepo,
-                _benchmarkService.Object, _unitOfWork, _interestLogger.Object);
+                _unitOfWork, _interestLogger.Object);
 
             _fdService = new FDIdentificationService(
                 fdRepo, interestRepo, _cashFlowRepo,
@@ -93,6 +94,31 @@ namespace FinTrustFDManager.BAL.Tests.IntegrationTests
                 CreatedDate = DateTime.UtcNow
             };
         }
+
+        // Map entity to the DTOs the service API now requires.
+        private static CreateFDIdentificationDto ToCreateDto(FDIdentification fd) => new()
+        {
+            EntityId = fd.EntityId,
+            CounterpartyId = fd.CounterpartyId,
+            CurrencyId = fd.CurrencyId,
+            PrincipalAmount = fd.PrincipalAmount,
+            StartDate = fd.StartDate,
+            EndDate = fd.EndDate,
+            SettlementDate = fd.SettlementDate ?? default,
+            Remarks = fd.Remarks
+        };
+
+        private static UpdateFDIdentificationDto ToUpdateDto(FDIdentification fd) => new()
+        {
+            EntityId = fd.EntityId,
+            CounterpartyId = fd.CounterpartyId,
+            CurrencyId = fd.CurrencyId,
+            PrincipalAmount = fd.PrincipalAmount,
+            StartDate = fd.StartDate,
+            EndDate = fd.EndDate,
+            SettlementDate = fd.SettlementDate ?? default,
+            Remarks = fd.Remarks
+        };
 
         private static int MapFreq(string f) => f?.Trim().ToUpperInvariant().Replace("-", "_").Replace(" ", "_") switch
         {
@@ -135,17 +161,18 @@ namespace FinTrustFDManager.BAL.Tests.IntegrationTests
         private async Task<FDIdentification> SeedApprovedFd(long fdId = 1, long createdBy = 1, long approvedBy = 2)
         {
             var fd = CreateFd(fdId, createdBy: createdBy);
-            await _fdService.CreateAsync(fd);
+            var created = await _fdService.CreateAsync(ToCreateDto(fd), fd.CreatedBy ?? 0);
+            var actualId = created.FdId;
 
-            var interest = CreateInterest(fdId);
+            var interest = CreateInterest(actualId);
             await _interestService.CreateAsync(interest);
 
-            await _fdService.SubmitAsync(fdId, createdBy);
-            await _fdService.ApproveAsync(fdId, approvedBy);
+            await _fdService.SubmitAsync(actualId, createdBy);
+            await _fdService.ApproveAsync(actualId, approvedBy);
 
             // Return a detached entity to avoid tracking conflicts
             using var ctx = _fixture.CreateFreshContext();
-            return (await ctx.FDIdentifications.AsNoTracking().FirstOrDefaultAsync(f => f.FdId == fdId))!;
+            return (await ctx.FDIdentifications.AsNoTracking().FirstOrDefaultAsync(f => f.FdId == actualId))!;
         }
 
         // ═══════════════════════════════════════════════════════
@@ -166,14 +193,15 @@ namespace FinTrustFDManager.BAL.Tests.IntegrationTests
         public async Task Migration_VerifyFDApprovalHistoryColumns()
         {
             // Create a real FD first to satisfy FK constraint
-            var fd = CreateFd(9998);
-            await _fdService.CreateAsync(fd);
+            var fd = CreateFd(1);
+            var created = await _fdService.CreateAsync(ToCreateDto(fd), fd.CreatedBy ?? 0);
+            var fdId = created.FdId;
 
             using var ctx = _fixture.CreateFreshContext();
             var history = new FDApprovalHistory
             {
-                FdId = 9998, Action = "TEST", FromStatus = "DRAFT",
-                ToStatus = "SUBMITTED", ActionBy = 1, ActionDate = DateTime.UtcNow,
+                FdId = fdId, Action = "TEST", FromStatus = "DRAFT",
+                ToStatus = "PENDING_FD_ADMIN", ActionBy = 1, ActionDate = DateTime.UtcNow,
                 Comments = "Test", OldValues = "{\"Status\":\"DRAFT\"}",
                 NewValues = "{\"Status\":\"SUBMITTED\"}"
             };
@@ -190,13 +218,14 @@ namespace FinTrustFDManager.BAL.Tests.IntegrationTests
         public async Task Migration_VerifyFDAmendmentColumns()
         {
             // Create a real FD first to satisfy FK constraint
-            var fd = CreateFd(9999);
-            await _fdService.CreateAsync(fd);
+            var fd = CreateFd(1);
+            var created = await _fdService.CreateAsync(ToCreateDto(fd), fd.CreatedBy ?? 0);
+            var fdId = created.FdId;
 
             using var ctx = _fixture.CreateFreshContext();
             var amendment = new FDAmendment
             {
-                FdId = 9999, Status = "PENDING_APPROVAL",
+                FdId = fdId, Status = "PENDING_APPROVAL",
                 Reason = "Test amendment",
                 RequestedValues = "{\"EndDate\":\"2026-06-30\"}",
                 OriginalValues = "{\"EndDate\":\"2025-12-31\"}",
@@ -218,11 +247,11 @@ namespace FinTrustFDManager.BAL.Tests.IntegrationTests
         public async Task Audit_CREATE_VerifyDatabaseRow()
         {
             var fd = CreateFd(1);
-            await _fdService.CreateAsync(fd);
+            var created = await _fdService.CreateAsync(ToCreateDto(fd), fd.CreatedBy ?? 0);
 
             using var ctx = _fixture.CreateFreshContext();
             var audit = await ctx.FDApprovalHistories
-                .Where(a => a.FdId == 1 && a.Action == "CREATE")
+                .Where(a => a.FdId == created.FdId && a.Action == "CREATE")
                 .FirstOrDefaultAsync();
 
             Assert.NotNull(audit);
@@ -234,17 +263,17 @@ namespace FinTrustFDManager.BAL.Tests.IntegrationTests
         public async Task Audit_SUBMIT_VerifyDatabaseRow()
         {
             var fd = CreateFd(2);
-            await _fdService.CreateAsync(fd);
-            await _fdService.SubmitAsync(2, 1);
+            var created = await _fdService.CreateAsync(ToCreateDto(fd), fd.CreatedBy ?? 0);
+            await _fdService.SubmitAsync(created.FdId, 1);
 
             using var ctx = _fixture.CreateFreshContext();
             var audit = await ctx.FDApprovalHistories
-                .Where(a => a.FdId == 2 && a.Action == "SUBMIT")
+                .Where(a => a.FdId == created.FdId && a.Action == "SUBMIT")
                 .FirstOrDefaultAsync();
 
             Assert.NotNull(audit);
             Assert.Equal("DRAFT", audit.FromStatus);
-            Assert.Equal("PENDING_APPROVAL", audit.ToStatus);
+            Assert.Equal("PENDING_FD_ADMIN", audit.ToStatus);
             Assert.Equal(1, audit.ActionBy);
         }
 
@@ -252,17 +281,17 @@ namespace FinTrustFDManager.BAL.Tests.IntegrationTests
         public async Task Audit_APPROVE_VerifyDatabaseRow()
         {
             var fd = CreateFd(3);
-            await _fdService.CreateAsync(fd);
-            await _fdService.SubmitAsync(3, 1);
-            await _fdService.ApproveAsync(3, 2);
+            var created = await _fdService.CreateAsync(ToCreateDto(fd), fd.CreatedBy ?? 0);
+            await _fdService.SubmitAsync(created.FdId, 1);
+            await _fdService.ApproveAsync(created.FdId, 2);
 
             using var ctx = _fixture.CreateFreshContext();
             var audit = await ctx.FDApprovalHistories
-                .Where(a => a.FdId == 3 && a.Action == "APPROVE")
+                .Where(a => a.FdId == created.FdId && a.Action == "APPROVE")
                 .FirstOrDefaultAsync();
 
             Assert.NotNull(audit);
-            Assert.Equal("PENDING_APPROVAL", audit.FromStatus);
+            Assert.Equal("PENDING_FD_ADMIN", audit.FromStatus);
             Assert.Equal("APPROVED", audit.ToStatus);
             Assert.Equal(2, audit.ActionBy);
         }
@@ -271,18 +300,18 @@ namespace FinTrustFDManager.BAL.Tests.IntegrationTests
         public async Task Audit_REJECT_VerifyDatabaseRow()
         {
             var fd = CreateFd(4);
-            await _fdService.CreateAsync(fd);
-            await _fdService.SubmitAsync(4, 1);
-            await _fdService.RejectAsync(4, 2, "Needs more info");
+            var created = await _fdService.CreateAsync(ToCreateDto(fd), fd.CreatedBy ?? 0);
+            await _fdService.SubmitAsync(created.FdId, 1);
+            await _fdService.RejectAsync(created.FdId, 2, "Needs more info");
 
             using var ctx = _fixture.CreateFreshContext();
             var audit = await ctx.FDApprovalHistories
-                .Where(a => a.FdId == 4 && a.Action == "REJECT")
+                .Where(a => a.FdId == created.FdId && a.Action == "REJECT")
                 .FirstOrDefaultAsync();
 
             Assert.NotNull(audit);
-            Assert.Equal("PENDING_APPROVAL", audit.FromStatus);
-            Assert.Equal("REJECTED", audit.ToStatus);
+            Assert.Equal("PENDING_FD_ADMIN", audit.FromStatus);
+            Assert.Equal("FD_ADMIN_REJECTED", audit.ToStatus);
             Assert.Equal("Needs more info", audit.Comments);
             Assert.Equal(2, audit.ActionBy);
         }
@@ -291,18 +320,18 @@ namespace FinTrustFDManager.BAL.Tests.IntegrationTests
         public async Task Audit_EDIT_VerifyOldAndNewValues()
         {
             var fd = CreateFd(5);
-            await _fdService.CreateAsync(fd);
+            var created = await _fdService.CreateAsync(ToCreateDto(fd), fd.CreatedBy ?? 0);
 
             // Load fresh detached entity, modify, then update via service
             using var ctx1 = _fixture.CreateFreshContext();
-            var fdFromDb = await ctx1.FDIdentifications.AsNoTracking().FirstOrDefaultAsync(f => f.FdId == 5);
+            var fdFromDb = await ctx1.FDIdentifications.AsNoTracking().FirstOrDefaultAsync(f => f.FdId == created.FdId);
             fdFromDb!.PrincipalAmount = 200_000m;
             fdFromDb.ModifiedBy = 1;
-            await _fdService.UpdateAsync(5, fdFromDb);
+            await _fdService.UpdateAsync(created.FdId, ToUpdateDto(fdFromDb), 1);
 
             using var ctx2 = _fixture.CreateFreshContext();
             var audit = await ctx2.FDApprovalHistories
-                .Where(a => a.FdId == 5 && a.Action == "EDIT")
+                .Where(a => a.FdId == created.FdId && a.Action == "EDIT")
                 .FirstOrDefaultAsync();
 
             Assert.NotNull(audit);
@@ -322,10 +351,10 @@ namespace FinTrustFDManager.BAL.Tests.IntegrationTests
 
             approved.PrincipalAmount = 999_999m;
             await Assert.ThrowsAsync<InvalidOperationException>(
-                () => _fdService.UpdateAsync(10, approved));
+                () => _fdService.UpdateAsync(approved.FdId, ToUpdateDto(approved), 1));
 
             using var ctx = _fixture.CreateFreshContext();
-            var fromDb = await ctx.FDIdentifications.FindAsync(10L);
+            var fromDb = await ctx.FDIdentifications.FindAsync(approved.FdId);
             Assert.NotNull(fromDb);
             Assert.Equal(originalPrincipal, fromDb.PrincipalAmount);
         }
@@ -333,27 +362,27 @@ namespace FinTrustFDManager.BAL.Tests.IntegrationTests
         [Fact]
         public async Task Protection_APPROVED_DeleteRejected()
         {
-            await SeedApprovedFd(11);
+            var approved = await SeedApprovedFd(11);
 
             await Assert.ThrowsAsync<InvalidOperationException>(
-                () => _fdService.DeleteAsync(11));
+                () => _fdService.DeleteAsync(approved.FdId));
 
             using var ctx = _fixture.CreateFreshContext();
-            Assert.NotNull(await ctx.FDIdentifications.FindAsync(11L));
+            Assert.NotNull(await ctx.FDIdentifications.FindAsync(approved.FdId));
         }
 
         [Fact]
         public async Task Protection_DRAFT_AllowsEdit()
         {
             var fd = CreateFd(12);
-            await _fdService.CreateAsync(fd);
+            var created = await _fdService.CreateAsync(ToCreateDto(fd), fd.CreatedBy ?? 0);
 
             fd.PrincipalAmount = 200_000m;
-            var result = await _fdService.UpdateAsync(12, fd);
+            var result = await _fdService.UpdateAsync(created.FdId, ToUpdateDto(fd), 1);
             Assert.NotNull(result);
 
             using var ctx = _fixture.CreateFreshContext();
-            var fromDb = await ctx.FDIdentifications.FindAsync(12L);
+            var fromDb = await ctx.FDIdentifications.FindAsync(created.FdId);
             Assert.Equal(200_000m, fromDb!.PrincipalAmount);
         }
 
@@ -364,7 +393,7 @@ namespace FinTrustFDManager.BAL.Tests.IntegrationTests
         [Fact]
         public async Task Amendment_Request_CreatesAmendmentRow()
         {
-            await SeedApprovedFd(20);
+            var approved = await SeedApprovedFd(20);
 
             var request = new FDAmendmentRequestDto
             {
@@ -372,7 +401,7 @@ namespace FinTrustFDManager.BAL.Tests.IntegrationTests
                 EndDate = new DateTime(2026, 6, 30)
             };
 
-            var amendment = await _amendmentService.RequestAmendmentAsync(20, request, 1);
+            var amendment = await _amendmentService.RequestAmendmentAsync(approved.FdId, request, 1);
 
             Assert.NotNull(amendment);
             Assert.Equal("PENDING_APPROVAL", amendment.Status);
@@ -380,32 +409,32 @@ namespace FinTrustFDManager.BAL.Tests.IntegrationTests
             using var ctx = _fixture.CreateFreshContext();
             var fromDb = await ctx.FDAmendments.FindAsync(amendment.AmendmentId);
             Assert.NotNull(fromDb);
-            Assert.Equal(20, fromDb.FdId);
+            Assert.Equal(approved.FdId, fromDb.FdId);
             Assert.NotNull(fromDb.OriginalValues);
             Assert.NotNull(fromDb.RequestedValues);
 
-            var fd = await ctx.FDIdentifications.FindAsync(20L);
+            var fd = await ctx.FDIdentifications.FindAsync(approved.FdId);
             Assert.Equal(new DateTime(2025, 12, 31), fd!.EndDate);
         }
 
         [Fact]
         public async Task Amendment_Approve_UpdatesFD()
         {
-            await SeedApprovedFd(21);
+            var approved = await SeedApprovedFd(21);
 
             var request = new FDAmendmentRequestDto
             {
                 Reason = "Extend maturity",
                 EndDate = new DateTime(2026, 6, 30)
             };
-            var amendment = await _amendmentService.RequestAmendmentAsync(21, request, 1);
+            var amendment = await _amendmentService.RequestAmendmentAsync(approved.FdId, request, 1);
 
-            var result = await _amendmentService.ApproveAmendmentAsync(21, amendment.AmendmentId, 2);
+            var result = await _amendmentService.ApproveAmendmentAsync(approved.FdId, amendment.AmendmentId, 2);
 
             Assert.True(result);
 
             using var ctx = _fixture.CreateFreshContext();
-            var fd = await ctx.FDIdentifications.FindAsync(21L);
+            var fd = await ctx.FDIdentifications.FindAsync(approved.FdId);
             Assert.Equal(new DateTime(2026, 6, 30), fd!.EndDate);
 
             var amendmentDb = await ctx.FDAmendments.FindAsync(amendment.AmendmentId);
@@ -416,21 +445,21 @@ namespace FinTrustFDManager.BAL.Tests.IntegrationTests
         [Fact]
         public async Task Amendment_Reject_LeavesFDUnchanged()
         {
-            await SeedApprovedFd(22);
+            var approved = await SeedApprovedFd(22);
 
             var request = new FDAmendmentRequestDto
             {
                 Reason = "Change rate",
                 EndDate = new DateTime(2025, 12, 31)
             };
-            var amendment = await _amendmentService.RequestAmendmentAsync(22, request, 1);
+            var amendment = await _amendmentService.RequestAmendmentAsync(approved.FdId, request, 1);
 
-            var result = await _amendmentService.RejectAmendmentAsync(22, amendment.AmendmentId, 2, "Not approved");
+            var result = await _amendmentService.RejectAmendmentAsync(approved.FdId, amendment.AmendmentId, 2, "Not approved");
 
             Assert.True(result);
 
             using var ctx = _fixture.CreateFreshContext();
-            var fd = await ctx.FDIdentifications.FindAsync(22L);
+            var fd = await ctx.FDIdentifications.FindAsync(approved.FdId);
             Assert.Equal(new DateTime(2025, 12, 31), fd!.EndDate);
         }
 
@@ -442,46 +471,46 @@ namespace FinTrustFDManager.BAL.Tests.IntegrationTests
         public async Task MakerChecker_MakerCannotApproveOwnFD()
         {
             var fd = CreateFd(30, createdBy: 1);
-            await _fdService.CreateAsync(fd);
-            await _fdService.SubmitAsync(30, 1);
+            var created = await _fdService.CreateAsync(ToCreateDto(fd), fd.CreatedBy ?? 0);
+            await _fdService.SubmitAsync(created.FdId, 1);
 
             await Assert.ThrowsAsync<InvalidOperationException>(
-                () => _fdService.ApproveAsync(30, 1));
+                () => _fdService.ApproveAsync(created.FdId, 1));
 
             using var ctx = _fixture.CreateFreshContext();
-            var fromDb = await ctx.FDIdentifications.FindAsync(30L);
-            Assert.Equal("PENDING_APPROVAL", fromDb!.Status);
+            var fromDb = await ctx.FDIdentifications.FindAsync(created.FdId);
+            Assert.Equal("PENDING_FD_ADMIN", fromDb!.Status);
         }
 
         [Fact]
         public async Task MakerChecker_DifferentApproverCanApprove()
         {
             var fd = CreateFd(31, createdBy: 1);
-            await _fdService.CreateAsync(fd);
-            await _fdService.SubmitAsync(31, 1);
+            var created = await _fdService.CreateAsync(ToCreateDto(fd), fd.CreatedBy ?? 0);
+            await _fdService.SubmitAsync(created.FdId, 1);
 
-            var result = await _fdService.ApproveAsync(31, 2);
+            var result = await _fdService.ApproveAsync(created.FdId, 2);
             Assert.True(result);
 
             using var ctx = _fixture.CreateFreshContext();
-            var fromDb = await ctx.FDIdentifications.FindAsync(31L);
+            var fromDb = await ctx.FDIdentifications.FindAsync(created.FdId);
             Assert.Equal("APPROVED", fromDb!.Status);
         }
 
         [Fact]
         public async Task MakerChecker_MakerCannotApproveOwnAmendment()
         {
-            await SeedApprovedFd(32, createdBy: 1);
+            var approved = await SeedApprovedFd(32, createdBy: 1);
 
             var request = new FDAmendmentRequestDto
             {
                 Reason = "Self-amendment test",
                 EndDate = new DateTime(2026, 1, 1)
             };
-            var amendment = await _amendmentService.RequestAmendmentAsync(32, request, 1);
+            var amendment = await _amendmentService.RequestAmendmentAsync(approved.FdId, request, 1);
 
             await Assert.ThrowsAsync<InvalidOperationException>(
-                () => _amendmentService.ApproveAmendmentAsync(32, amendment.AmendmentId, 1));
+                () => _amendmentService.ApproveAmendmentAsync(approved.FdId, amendment.AmendmentId, 1));
         }
 
         // ═══════════════════════════════════════════════════════
@@ -492,22 +521,23 @@ namespace FinTrustFDManager.BAL.Tests.IntegrationTests
         public async Task Lifecycle_CreateEditSubmitApprove()
         {
             var fd = CreateFd(40);
-            var created = await _fdService.CreateAsync(fd);
+            var created = await _fdService.CreateAsync(ToCreateDto(fd), fd.CreatedBy ?? 0);
+            var fdId = created.FdId;
             Assert.Equal("DRAFT", created.Status);
 
             fd.PrincipalAmount = 150_000m;
-            await _fdService.UpdateAsync(40, fd);
+            await _fdService.UpdateAsync(fdId, ToUpdateDto(fd), 1);
 
-            await _fdService.SubmitAsync(40, 1);
-            await _fdService.ApproveAsync(40, 2);
+            await _fdService.SubmitAsync(fdId, 1);
+            await _fdService.ApproveAsync(fdId, 2);
 
             using var ctx = _fixture.CreateFreshContext();
-            var final = await ctx.FDIdentifications.FindAsync(40L);
+            var final = await ctx.FDIdentifications.FindAsync(fdId);
             Assert.Equal("APPROVED", final!.Status);
             Assert.Equal(150_000m, final.PrincipalAmount);
 
             var audits = await ctx.FDApprovalHistories
-                .Where(a => a.FdId == 40)
+                .Where(a => a.FdId == fdId)
                 .OrderBy(a => a.ActionDate)
                 .ToListAsync();
 
@@ -525,11 +555,12 @@ namespace FinTrustFDManager.BAL.Tests.IntegrationTests
         public async Task ApprovalHistory_GetByFdId_ReturnsAllActions()
         {
             var fd = CreateFd(50);
-            await _fdService.CreateAsync(fd);
-            await _fdService.SubmitAsync(50, 1);
-            await _fdService.ApproveAsync(50, 2);
+            var created = await _fdService.CreateAsync(ToCreateDto(fd), fd.CreatedBy ?? 0);
+            var fdId = created.FdId;
+            await _fdService.SubmitAsync(fdId, 1);
+            await _fdService.ApproveAsync(fdId, 2);
 
-            var history = (await _fdService.GetApprovalHistoryAsync(50)).ToList();
+            var history = (await _fdService.GetApprovalHistoryAsync(fdId)).ToList();
 
             Assert.True(history.Count >= 3);
             Assert.Contains(history, h => h.Action == "CREATE");
@@ -565,11 +596,11 @@ namespace FinTrustFDManager.BAL.Tests.IntegrationTests
             var fd1 = CreateFd(100);
             var fd2 = CreateFd(101);
 
-            await _fdService.CreateAsync(fd1);
-            await _fdService.CreateAsync(fd2);
+            var created1 = await _fdService.CreateAsync(ToCreateDto(fd1), fd1.CreatedBy ?? 0);
+            var created2 = await _fdService.CreateAsync(ToCreateDto(fd2), fd2.CreatedBy ?? 0);
 
-            var fromDb1 = await ctx.FDIdentifications.FindAsync(100L);
-            var fromDb2 = await ctx.FDIdentifications.FindAsync(101L);
+            var fromDb1 = await ctx.FDIdentifications.FindAsync(created1.FdId);
+            var fromDb2 = await ctx.FDIdentifications.FindAsync(created2.FdId);
 
             Assert.NotNull(fromDb1);
             Assert.NotNull(fromDb2);
@@ -582,20 +613,21 @@ namespace FinTrustFDManager.BAL.Tests.IntegrationTests
         [Fact]
         public async Task Amendment_AuditTrailCreatedForAllActions()
         {
-            await SeedApprovedFd(60);
+            var approved = await SeedApprovedFd(60);
+            var fdId = approved.FdId;
 
             var request = new FDAmendmentRequestDto
             {
                 Reason = "Audit trail test",
                 EndDate = new DateTime(2026, 3, 31)
             };
-            var amendment = await _amendmentService.RequestAmendmentAsync(60, request, 1);
+            var amendment = await _amendmentService.RequestAmendmentAsync(fdId, request, 1);
 
-            await _amendmentService.ApproveAmendmentAsync(60, amendment.AmendmentId, 2);
+            await _amendmentService.ApproveAmendmentAsync(fdId, amendment.AmendmentId, 2);
 
             using var ctx = _fixture.CreateFreshContext();
             var audits = await ctx.FDApprovalHistories
-                .Where(a => a.FdId == 60)
+                .Where(a => a.FdId == fdId)
                 .ToListAsync();
 
             Assert.Contains(audits, a => a.Action == "AMENDMENT_REQUEST");
@@ -603,3 +635,4 @@ namespace FinTrustFDManager.BAL.Tests.IntegrationTests
         }
     }
 }
+

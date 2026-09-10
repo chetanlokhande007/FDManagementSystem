@@ -35,6 +35,8 @@ namespace FinTrustFDManager.BAL.Tests
                 .Options;
 
             _context = new ApplicationDbContext(options);
+            _context.Database.EnsureCreated();
+            FinTrustFDManager.BAL.Tests.IntegrationTests.DatabaseFixture.SeedMasterData(_context);
             _cashFlowRepo = new FDCashFlowRepository(_context);
             _interestRepo = new FDInterestRepository(_context);
             _fdRepo = new FDIdentificationRepository(_context);
@@ -42,12 +44,9 @@ namespace FinTrustFDManager.BAL.Tests
 
             var loggerCashFlow = new Mock<ILogger<FDCashFlowService>>();
             var loggerInterest = new Mock<ILogger<FDInterestService>>();
-            var benchmarkRateHistoryService = new Mock<IBenchmarkRateHistoryService>();
-            benchmarkRateHistoryService.Setup(s => s.GetEffectiveRateAsync(It.IsAny<int>(), It.IsAny<DateTime>()))
-                .ReturnsAsync(0m);
 
             _interestService = new FDInterestService(
-                _interestRepo, _fdRepo, _cashFlowRepo, benchmarkRateHistoryService.Object, _unitOfWork, loggerInterest.Object);
+                _interestRepo, _fdRepo, _cashFlowRepo, _unitOfWork, loggerInterest.Object);
 
             _cashFlowService = new FDCashFlowService(
                 _cashFlowRepo, _interestService, _fdRepo, _unitOfWork, loggerCashFlow.Object);
@@ -646,3 +645,4 @@ namespace FinTrustFDManager.BAL.Tests
         }
     }
 }
+

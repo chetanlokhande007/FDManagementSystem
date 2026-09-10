@@ -11,6 +11,7 @@ namespace FinTrustFDManager.BAL.DTOs
         public decimal InterestRate { get; set; }
         public string InterestRateType { get; set; } = "FIXED";
         public string InterestFrequency { get; set; } = string.Empty;
+        public string PaymentConvention { get; set; } = "CASH";
         public string CompoundingFrequency { get; set; } = "Not Applicable";
         public bool IsCompounding { get; set; }
         public string CalculationBasis { get; set; } = "ACTUAL_365";

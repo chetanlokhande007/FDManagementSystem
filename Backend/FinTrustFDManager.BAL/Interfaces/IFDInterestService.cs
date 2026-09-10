@@ -1,3 +1,4 @@
+using FinTrustFDManager.BAL.DTOs;
 using FinTrustFDManager.Model.Entities.Investment;
 using System;
 using System.Collections.Generic;
@@ -22,5 +23,13 @@ namespace FinTrustFDManager.BAL.Interfaces
         Task<bool> DeleteAsync(long id);
 
         Task<bool> RegenerateCashFlowsAsync(long fdId);
+
+        /// <summary>
+        /// P0-2 (BUG-002): authoritative cash-flow summary for an FD.
+        /// Single source of truth for the Cash Flow tab metadata
+        /// (rate, compounding, basis, tenor, reference) and schedule.
+        /// Throws KeyNotFoundException when the FD does not exist.
+        /// </summary>
+        Task<FDCashFlowSummaryDto> GetSummaryAsync(long fdId);
     }
 }

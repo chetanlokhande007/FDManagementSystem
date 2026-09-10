@@ -22,6 +22,10 @@ namespace FinTrustFDManager.Model.Entities.Investment
 
         public decimal InterestAmount { get; set; }
 
+        public decimal AccruedInterest { get; set; }
+
+        public decimal CapitalizedInterest { get; set; }
+
         public decimal ClosingBalance { get; set; }
 
         public decimal CashFlowAmount { get; set; }

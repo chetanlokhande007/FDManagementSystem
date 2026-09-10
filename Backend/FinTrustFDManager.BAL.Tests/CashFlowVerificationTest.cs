@@ -24,7 +24,7 @@ namespace FinTrustFDManager.BAL.Tests
             decimal balance = principal;
             decimal accrued = 0;
 
-            decimal Calc(int days) => FinancialCalculator.CalculateInterest(balance, rate, days, basis);
+            decimal Calc(int days) => Math.Round(FinancialCalculator.CalculateInterest(balance, rate, days, basis), 2, MidpointRounding.AwayFromZero);
 
             // ── Row 1: FD Created ──
             // Opening=₹0.00, Interest=₹0.00, Closing=₹25,000.00, CashFlow=₹25,000.00

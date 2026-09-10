@@ -13,6 +13,8 @@ export interface FDCashFlow {
   interestRate: number;
   openingBalance: number;
   interestAmount: number;
+  accruedInterest: number;
+  capitalizedInterest: number;
   closingBalance: number;
   cashFlowAmount: number;
   direction: string;

@@ -24,7 +24,7 @@ namespace FinTrustFDManager.BAL.Common
         {
             string basis = calculationBasis?.ToUpper()?.Trim() ?? "";
 
-            if (basis == "30/360" || basis == "360/360")
+            if (basis.Contains("30/360") || basis.Contains("30_360") || basis.Contains("30-360") || basis.Contains("360/360"))
             {
                 int d1 = startDate.Day;
                 int d2 = endDate.Day;
@@ -42,15 +42,15 @@ namespace FinTrustFDManager.BAL.Common
         {
             string basis = calculationBasis?.ToUpper()?.Trim() ?? "";
 
-            if (basis == "ACTUAL_360" || basis == "ACTUAL/360")
+            if (basis.Contains("360") && basis.Contains("ACTUAL"))
             {
                 return 360m;
             }
-            else if (basis == "ACTUAL_365" || basis == "ACTUAL/365")
+            else if (basis.Contains("365") && basis.Contains("ACTUAL"))
             {
                 return 365m;
             }
-            else if (basis == "30/360" || basis == "360/360")
+            else if (basis.Contains("30/360") || basis.Contains("30_360") || basis.Contains("30-360") || basis.Contains("360/360"))
             {
                 return 360m;
             }

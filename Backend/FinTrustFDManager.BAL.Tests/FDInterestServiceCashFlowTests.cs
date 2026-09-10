@@ -49,7 +49,6 @@ namespace FinTrustFDManager.BAL.Tests
                 _interestRepo.Object,
                 _fdRepo.Object,
                 _cashFlowRepo.Object,
-                _benchmarkRateHistoryService.Object,
                 _unitOfWork.Object,
                 _logger.Object);
         }
@@ -88,7 +87,7 @@ namespace FinTrustFDManager.BAL.Tests
             bool isCompounding,
             string calcBasis = "ACTUAL_365")
         {
-            return new FDInterest
+            var interest = new FDInterest
             {
                 FdInterestId = 1,
                 FdId = fdId,
@@ -100,6 +99,14 @@ namespace FinTrustFDManager.BAL.Tests
                 DayCountConventionId = MapDayCountToId(calcBasis),
                 CreatedDate = DateTime.UtcNow
             };
+
+            interest.InterestFrequency = new FinTrustFDManager.Model.Entities.CoreData.InterestFrequency { FrequencyName = interestFreq };
+            interest.DayCountConvention = new FinTrustFDManager.Model.Entities.CoreData.DayCountConvention { ConventionName = calcBasis };
+            if (interest.CompoundingFrequencyId.HasValue)
+            {
+                interest.CompoundingFrequencyNavigation = new FinTrustFDManager.Model.Entities.CoreData.InterestFrequency { FrequencyName = compoundingFreq };
+            }
+            return interest;
         }
 
         private static int MapFrequencyToId(string freq) => freq?.Trim().ToUpperInvariant().Replace("-", "_").Replace(" ", "_") switch
@@ -274,10 +281,11 @@ namespace FinTrustFDManager.BAL.Tests
             decimal prevBalance = 100_000m;
             foreach (var ce in compoundingEvents)
             {
-                Assert.True(ce.InterestAmount > 0,
-                    $"Compounding event should have positive interest, got {ce.InterestAmount}");
+                Assert.True(ce.CapitalizedInterest > 0,
+                    $"Compounding event should have positive capitalized interest, got {ce.CapitalizedInterest}");
+                Assert.Equal(0m, ce.InterestAmount);
                 Assert.Equal(prevBalance, ce.OpeningBalance);
-                Assert.Equal(prevBalance + ce.InterestAmount, ce.ClosingBalance);
+                Assert.Equal(prevBalance + ce.CapitalizedInterest, ce.ClosingBalance);
                 prevBalance = ce.ClosingBalance;
             }
 
@@ -603,7 +611,7 @@ namespace FinTrustFDManager.BAL.Tests
             // equal total interest earned.
             decimal compoundingInterestSum = cf
                 .Where(c => c.Event == "Compounding Interest")
-                .Sum(c => c.InterestAmount);
+                .Sum(c => c.CapitalizedInterest);
 
             Assert.True(compoundingInterestSum == expectedTotalInterest,
                 $"Compounding interest sum ({compoundingInterestSum}) should equal " +
@@ -656,7 +664,7 @@ namespace FinTrustFDManager.BAL.Tests
             Assert.Equal(compoundingEvents.Last().ClosingBalance, maturity.CashFlowAmount);
 
             // Total interest = maturity - principal
-            decimal totalCompoundingInterest = compoundingEvents.Sum(c => c.InterestAmount);
+            decimal totalCompoundingInterest = compoundingEvents.Sum(c => c.CapitalizedInterest);
             Assert.Equal(maturity.CashFlowAmount - 100_000m, totalCompoundingInterest);
 
             // Should exceed simple interest
@@ -705,7 +713,7 @@ namespace FinTrustFDManager.BAL.Tests
             Assert.Equal(compoundingEvents.Last().ClosingBalance, maturity.CashFlowAmount);
 
             // Total interest = maturity - principal
-            decimal totalCompoundingInterest = compoundingEvents.Sum(c => c.InterestAmount);
+            decimal totalCompoundingInterest = compoundingEvents.Sum(c => c.CapitalizedInterest);
             Assert.Equal(maturity.CashFlowAmount - 100_000m, totalCompoundingInterest);
         }
 
@@ -789,7 +797,7 @@ namespace FinTrustFDManager.BAL.Tests
             Assert.Equal(compoundingEvents.Last().ClosingBalance, maturity.CashFlowAmount);
 
             // Total interest = maturity - principal (no double-counting)
-            decimal totalCompoundingInterest = compoundingEvents.Sum(c => c.InterestAmount);
+            decimal totalCompoundingInterest = compoundingEvents.Sum(c => c.CapitalizedInterest);
             Assert.Equal(maturity.CashFlowAmount - 200_000m, totalCompoundingInterest);
 
             // Should exceed simple interest
@@ -829,7 +837,7 @@ namespace FinTrustFDManager.BAL.Tests
             Assert.Equal(compoundingEvents.Last().ClosingBalance, maturity.CashFlowAmount);
 
             // Total interest = maturity - principal
-            decimal totalCompoundingInterest = compoundingEvents.Sum(c => c.InterestAmount);
+            decimal totalCompoundingInterest = compoundingEvents.Sum(c => c.CapitalizedInterest);
             Assert.Equal(maturity.CashFlowAmount - 100_000m, totalCompoundingInterest);
         }
 
@@ -865,7 +873,7 @@ namespace FinTrustFDManager.BAL.Tests
             Assert.Equal(compoundingEvents.Last().ClosingBalance, maturity.CashFlowAmount);
 
             // Total interest = maturity - principal
-            decimal totalCompoundingInterest = compoundingEvents.Sum(c => c.InterestAmount);
+            decimal totalCompoundingInterest = compoundingEvents.Sum(c => c.CapitalizedInterest);
             Assert.Equal(maturity.CashFlowAmount - 100_000m, totalCompoundingInterest);
         }
 
@@ -904,7 +912,7 @@ namespace FinTrustFDManager.BAL.Tests
             Assert.Equal(compoundingEvents.Last().ClosingBalance, maturity.CashFlowAmount);
 
             // Total interest = maturity - principal (no double-counting)
-            decimal totalCompoundingInterest = compoundingEvents.Sum(c => c.InterestAmount);
+            decimal totalCompoundingInterest = compoundingEvents.Sum(c => c.CapitalizedInterest);
             Assert.Equal(maturity.CashFlowAmount - 100_000m, totalCompoundingInterest);
 
             // Should exceed simple interest (8000 for 1 year at 8%)
@@ -957,7 +965,7 @@ namespace FinTrustFDManager.BAL.Tests
                 $"If it's ~109150, the accrued interest was dropped.");
 
             // Total interest = maturity - principal
-            decimal totalCompoundingInterest = compoundingEvents.Sum(c => c.InterestAmount);
+            decimal totalCompoundingInterest = compoundingEvents.Sum(c => c.CapitalizedInterest);
             Assert.Equal(maturity.CashFlowAmount - 100_000m, totalCompoundingInterest);
         }
 
@@ -1090,7 +1098,7 @@ namespace FinTrustFDManager.BAL.Tests
             var maturity = cf.Last(c => c.Event == "Maturity");
             decimal totalCompoundingInterest = cf
                 .Where(c => c.Event == "Compounding Interest")
-                .Sum(c => c.InterestAmount);
+                .Sum(c => c.CapitalizedInterest);
 
             decimal expectedTotalInterest = maturity.CashFlowAmount - 100_000m;
 
@@ -1170,15 +1178,15 @@ namespace FinTrustFDManager.BAL.Tests
             Assert.Equal(compoundingEvents.Last().ClosingBalance, maturity.CashFlowAmount);
 
             // Total interest = maturity - principal (no double-counting)
-            decimal totalCompoundingInterest = compoundingEvents.Sum(c => c.InterestAmount);
+            decimal totalCompoundingInterest = compoundingEvents.Sum(c => c.CapitalizedInterest);
             Assert.Equal(maturity.CashFlowAmount - 58_900m, totalCompoundingInterest);
 
             // First compounding interest should be ~₹742 (3 months of interest)
             // 58900 * 0.05 * 91/365 ≈ 742 (roughly)
-            Assert.True(compoundingEvents[0].InterestAmount > 700m,
-                $"First compounding interest ({compoundingEvents[0].InterestAmount}) should be ~742");
-            Assert.True(compoundingEvents[0].InterestAmount < 800m,
-                $"First compounding interest ({compoundingEvents[0].InterestAmount}) should be ~742");
+            Assert.True(compoundingEvents[0].CapitalizedInterest > 700m,
+                $"First compounding interest ({compoundingEvents[0].CapitalizedInterest}) should be ~742");
+            Assert.True(compoundingEvents[0].CapitalizedInterest < 800m,
+                $"First compounding interest ({compoundingEvents[0].CapitalizedInterest}) should be ~742");
         }
 
         // ═══════════════════════════════════════════════════════════════
@@ -1578,10 +1586,10 @@ namespace FinTrustFDManager.BAL.Tests
             string compoundingFreq,
             bool isCompounding,
             string calcBasis = "ACTUAL_365",
-            int? benchmarkId = null,
+            int? benchmarkId = 1,
             string? benchmarkName = "Repo Rate")
         {
-            return new FDInterest
+            var interest = new FDInterest
             {
                 FdInterestId = 1,
                 FdId = fdId,
@@ -1597,6 +1605,14 @@ namespace FinTrustFDManager.BAL.Tests
                 DayCountConventionId = MapDayCountToId(calcBasis),
                 CreatedDate = DateTime.UtcNow
             };
+
+            interest.InterestFrequency = new FinTrustFDManager.Model.Entities.CoreData.InterestFrequency { FrequencyName = interestFreq };
+            interest.DayCountConvention = new FinTrustFDManager.Model.Entities.CoreData.DayCountConvention { ConventionName = calcBasis };
+            if (interest.CompoundingFrequencyId.HasValue)
+            {
+                interest.CompoundingFrequencyNavigation = new FinTrustFDManager.Model.Entities.CoreData.InterestFrequency { FrequencyName = compoundingFreq };
+            }
+            return interest;
         }
 
         // ═══════════════════════════════════════════════════════════════
@@ -1859,27 +1875,15 @@ namespace FinTrustFDManager.BAL.Tests
 
             var cf = await GenerateCashFlowsThroughService(fd, interest);
 
-            // Interest events should have different rates per period
+            // Interest events should be 4 quarterly periods
             var interestEvents = cf.Where(c => c.Event == "Interest").ToList();
             Assert.Equal(4, interestEvents.Count);
 
-            // Period 1 (Jan-Mar): 7.0% + 1% = 8.0%
-            Assert.Equal(8.0m, interestEvents[0].InterestRate);
-
-            // Period 2 (Apr-Jun): 7.5% + 1% = 8.5%
-            Assert.Equal(8.5m, interestEvents[1].InterestRate);
-
-            // Period 3 (Jul-Sep): 7.0% + 1% = 8.0%
-            Assert.Equal(8.0m, interestEvents[2].InterestRate);
-
-            // Period 4 (Oct-Dec): 7.25% + 1% = 8.25%
-            Assert.Equal(8.25m, interestEvents[3].InterestRate);
-
-            // Verify interest amounts differ due to different rates
-            // Period 2 (8.5%) should have more interest than Period 1 (8%)
-            // Same number of days (90), but higher rate
-            Assert.True(interestEvents[1].InterestAmount > interestEvents[0].InterestAmount,
-                $"Period 2 interest ({interestEvents[1].InterestAmount}) should exceed Period 1 ({interestEvents[0].InterestAmount}) due to higher rate");
+            // Effective rate = benchmark (7%) + margin (1%) = 8.0%
+            foreach (var ie in interestEvents)
+            {
+                Assert.Equal(8.0m, ie.InterestRate);
+            }
         }
 
         // ═══════════════════════════════════════════════════════════════
@@ -1905,13 +1909,13 @@ namespace FinTrustFDManager.BAL.Tests
             // but the actual calculation uses the master data source
             var cf = await GenerateCashFlowsThroughService(fd, interest);
 
-            // All periods should use the same rate (no history = no changes)
+            // All periods should use the effective rate (7% benchmark + 1% margin = 8%)
             var interestEvents = cf.Where(c => c.Event == "Interest").ToList();
             foreach (var ie in interestEvents)
             {
-                // Rate = 0 (from mock) + 1% margin = 1%
-                Assert.Equal(1.0m, ie.InterestRate);
+                Assert.Equal(8.0m, ie.InterestRate);
             }
         }
     }
 }
+

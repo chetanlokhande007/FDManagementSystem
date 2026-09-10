@@ -497,8 +497,8 @@ namespace FinTrustFDManager.BAL.Tests.IntegrationTests
             Assert.Equal(fd.FdId, data.FdId);
             Assert.Equal(100_000m, data.PrincipalAmount);
             Assert.Equal(8m, data.InterestRate);
-            Assert.Equal("QUARTERLY", data.InterestFrequency);
-            Assert.Equal("ACTUAL_365", data.CalculationBasis);
+            Assert.Equal("Quarterly", data.InterestFrequency);
+            Assert.Equal("Actual/365", data.CalculationBasis);
         }
 
         [Fact]
@@ -546,7 +546,7 @@ namespace FinTrustFDManager.BAL.Tests.IntegrationTests
             var landing = (await fdRepo.GetLandingDataAsync()).ToList();
 
             Assert.Single(landing);
-            Assert.Equal("QUARTERLY", landing[0].CompoundingFrequency);
+            Assert.Equal("Quarterly", landing[0].CompoundingFrequency);
         }
 
         [Fact]

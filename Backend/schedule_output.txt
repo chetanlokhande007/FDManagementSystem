@@ -1,0 +1,31 @@
+=== SCENARIO A: Monthly Interest, Quarterly Compounding ===
+Event                | Start  | End    | Days |    Opening | Interest |    Closing | CashFlow | Direction
+-------------------------------------------------------------------------------------------------------------
+FD Created           | 01-Jan | 01-Jan |    0 |       0.00 |     0.00 |   85000.00 | 85000.00 | OUTFLOW
+Interest             | 01-Jan | 01-Feb |   30 |   85000.00 |   354.17 |   85000.00 |     0.00 | INTERNAL
+Interest             | 01-Feb | 01-Mar |   30 |   85000.00 |   354.17 |   85000.00 |     0.00 | INTERNAL
+Interest             | 01-Mar | 01-Apr |   30 |   85000.00 |   354.17 |   85000.00 |     0.00 | INTERNAL
+Compounding Interest | 01-Jan | 01-Apr |   90 |   85000.00 |     0.00 |   86062.50 |     0.00 | INTERNAL
+Interest             | 01-Apr | 01-May |   30 |   86062.50 |   358.59 |   86062.50 |     0.00 | INTERNAL
+Interest             | 01-May | 01-Jun |   30 |   86062.50 |   358.59 |   86062.50 |     0.00 | INTERNAL
+Interest             | 01-Jun | 01-Jul |   30 |   86062.50 |   358.59 |   86062.50 |     0.00 | INTERNAL
+Compounding Interest | 01-Apr | 01-Jul |   90 |   86062.50 |     0.00 |   87138.28 |     0.00 | INTERNAL
+Maturity             | 01-Jul | 01-Jul |    0 |   87138.28 |     0.00 |       0.00 | 87138.28 | INFLOW
+
+=== SCENARIO B: Monthly Interest, Monthly Compounding ===
+Event                | Start  | End    | Days |    Opening | Interest |    Closing | CashFlow | Direction
+-------------------------------------------------------------------------------------------------------------
+FD Created           | 01-Jan | 01-Jan |    0 |       0.00 |     0.00 |   85000.00 | 85000.00 | OUTFLOW
+Interest             | 01-Jan | 01-Feb |   30 |   85000.00 |   354.17 |   85000.00 |     0.00 | INTERNAL
+Compounding Interest | 01-Jan | 01-Feb |   30 |   85000.00 |     0.00 |   85354.17 |     0.00 | INTERNAL
+Interest             | 01-Feb | 01-Mar |   30 |   85354.17 |   355.64 |   85354.17 |     0.00 | INTERNAL
+Compounding Interest | 01-Feb | 01-Mar |   30 |   85354.17 |     0.00 |   85709.81 |     0.00 | INTERNAL
+Interest             | 01-Mar | 01-Apr |   30 |   85709.81 |   357.12 |   85709.81 |     0.00 | INTERNAL
+Compounding Interest | 01-Mar | 01-Apr |   30 |   85709.81 |     0.00 |   86066.93 |     0.00 | INTERNAL
+Interest             | 01-Apr | 01-May |   30 |   86066.93 |   358.61 |   86066.93 |     0.00 | INTERNAL
+Compounding Interest | 01-Apr | 01-May |   30 |   86066.93 |     0.00 |   86425.54 |     0.00 | INTERNAL
+Interest             | 01-May | 01-Jun |   30 |   86425.54 |   360.11 |   86425.54 |     0.00 | INTERNAL
+Compounding Interest | 01-May | 01-Jun |   30 |   86425.54 |     0.00 |   86785.65 |     0.00 | INTERNAL
+Interest             | 01-Jun | 01-Jul |   30 |   86785.65 |   361.61 |   86785.65 |     0.00 | INTERNAL
+Compounding Interest | 01-Jun | 01-Jul |   30 |   86785.65 |     0.00 |   87147.26 |     0.00 | INTERNAL
+Maturity             | 01-Jul | 01-Jul |    0 |   87147.26 |     0.00 |       0.00 | 87147.26 | INFLOW

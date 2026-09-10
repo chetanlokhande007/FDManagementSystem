@@ -23,7 +23,7 @@
 
   <!-- FD Detail Content -->
   <div *ngIf="!loading && !hasError && fd" class="detail-content">
-    
+
     <!-- Header Card -->
     <div class="detail-header-card">
       <div class="header-left">
@@ -152,7 +152,8 @@
           <polyline points="12 6 12 12 16 14"></polyline>
         </svg>
         Approval History
-        <svg class="arrow-icon" [class.rotated]="showHistory" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <svg class="arrow-icon" [class.rotated]="showHistory" width="14" height="14" viewBox="0 0 24 24" fill="none"
+          stroke="currentColor" stroke-width="2">
           <polyline points="6 9 12 15 18 9"></polyline>
         </svg>
       </button>
@@ -227,8 +228,8 @@
       <p>Provide a reason for rejecting <strong>{{ fd?.fdReferenceNo }}</strong>:</p>
       <div class="form-group">
         <label>Rejection Reason *</label>
-        <textarea [(ngModel)]="rejectComments" rows="3" 
-                  placeholder="Enter rejection reason (minimum 5 characters)"></textarea>
+        <textarea [(ngModel)]="rejectComments" rows="3"
+          placeholder="Enter rejection reason (minimum 5 characters)"></textarea>
         <small *ngIf="rejectComments && rejectComments.length < 5" class="validation-error">
           Must be at least 5 characters ({{ rejectComments.length }}/5)
         </small>
@@ -236,8 +237,8 @@
     </div>
     <div class="modal-footer">
       <button class="btn-cancel" (click)="closeRejectModal()">Cancel</button>
-      <button class="btn-reject-confirm" (click)="confirmReject()" 
-              [disabled]="isProcessing || !rejectComments || rejectComments.length < 5">
+      <button class="btn-reject-confirm" (click)="confirmReject()"
+        [disabled]="isProcessing || !rejectComments || rejectComments.length < 5">
         {{ isProcessing ? 'Processing...' : 'Reject FD' }}
       </button>
     </div>
@@ -256,7 +257,7 @@
       <div class="form-group">
         <label>Reason / Instructions *</label>
         <textarea [(ngModel)]="returnComments" rows="3"
-                  placeholder="Describe the changes needed (minimum 5 characters)"></textarea>
+          placeholder="Describe the changes needed (minimum 5 characters)"></textarea>
         <small *ngIf="returnComments && returnComments.length < 5" class="validation-error">
           Must be at least 5 characters ({{ returnComments.length }}/5)
         </small>
@@ -265,7 +266,7 @@
     <div class="modal-footer">
       <button class="btn-cancel" (click)="closeReturnModal()">Cancel</button>
       <button class="btn-return-confirm" (click)="confirmReturn()"
-              [disabled]="isProcessing || !returnComments || returnComments.length < 5">
+        [disabled]="isProcessing || !returnComments || returnComments.length < 5">
         {{ isProcessing ? 'Processing...' : 'Send Back' }}
       </button>
     </div>

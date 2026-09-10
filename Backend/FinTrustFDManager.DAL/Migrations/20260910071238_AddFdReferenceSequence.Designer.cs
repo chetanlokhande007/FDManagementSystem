@@ -3,6 +3,7 @@ using System;
 using FinTrustFDManager.DAL.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
@@ -11,9 +12,11 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace FinTrustFDManager.DAL.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260910071238_AddFdReferenceSequence")]
+    partial class AddFdReferenceSequence
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -539,12 +542,6 @@ namespace FinTrustFDManager.DAL.Migrations
 
                     NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<long>("CashFlowId"));
 
-                    b.Property<decimal>("AccruedInterest")
-                        .HasColumnType("numeric");
-
-                    b.Property<decimal>("CapitalizedInterest")
-                        .HasColumnType("numeric");
-
                     b.Property<decimal>("CashFlowAmount")
                         .HasColumnType("numeric");
 
@@ -964,21 +961,21 @@ namespace FinTrustFDManager.DAL.Migrations
                         new
                         {
                             Id = 1,
-                            CreatedDate = new DateTime(2026, 9, 10, 9, 40, 34, 362, DateTimeKind.Utc).AddTicks(1309),
+                            CreatedDate = new DateTime(2026, 9, 10, 7, 12, 36, 607, DateTimeKind.Utc).AddTicks(2352),
                             IsActive = true,
                             RoleName = "Admin"
                         },
                         new
                         {
                             Id = 2,
-                            CreatedDate = new DateTime(2026, 9, 10, 9, 40, 34, 362, DateTimeKind.Utc).AddTicks(1311),
+                            CreatedDate = new DateTime(2026, 9, 10, 7, 12, 36, 607, DateTimeKind.Utc).AddTicks(2355),
                             IsActive = true,
                             RoleName = "CA"
                         },
                         new
                         {
                             Id = 3,
-                            CreatedDate = new DateTime(2026, 9, 10, 9, 40, 34, 362, DateTimeKind.Utc).AddTicks(1312),
+                            CreatedDate = new DateTime(2026, 9, 10, 7, 12, 36, 607, DateTimeKind.Utc).AddTicks(2357),
                             IsActive = true,
                             RoleName = "Approver"
                         });

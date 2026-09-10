@@ -197,7 +197,10 @@ namespace FinTrustFDManager.BAL.Services
             bool isCompounding = interest?.IsCompounding ?? false;
             var maturityRow = records.FirstOrDefault(r => r.Event == "Maturity");
 
-            decimal totalInterest = records.Where(r => r.Event != "FD Created").Sum(r => r.InterestAmount);
+            // In the refactored engine, InterestAmount strictly represents unique economic 
+            // interest accrued (PeriodInterest). Compounding/capitalization rows have 
+            // InterestAmount = 0 to prevent double-counting.
+            decimal totalInterest = records.Sum(r => r.InterestAmount);
             decimal maturityAmount = maturityRow?.CashFlowAmount ?? principal;
 
             int totalDays = (fd.EndDate.Date - fd.StartDate.Date).Days;
@@ -218,6 +221,8 @@ namespace FinTrustFDManager.BAL.Services
                 InterestRate = x.InterestRate,
                 OpeningBalance = x.OpeningBalance,
                 InterestAmount = x.InterestAmount,
+                AccruedInterest = x.AccruedInterest,
+                CapitalizedInterest = x.CapitalizedInterest,
                 ClosingBalance = x.ClosingBalance,
                 CashFlowAmount = x.CashFlowAmount,
                 Direction = x.Direction,
@@ -235,6 +240,7 @@ namespace FinTrustFDManager.BAL.Services
                 InterestRate = effectiveRate,
                 InterestRateType = interest?.InterestRateType ?? "FIXED",
                 InterestFrequency = interest?.InterestFrequency?.FrequencyName ?? "Monthly",
+                PaymentConvention = string.IsNullOrWhiteSpace(interest?.PaymentConvention) ? "CASH" : interest.PaymentConvention,
                 CompoundingFrequency = interest?.CompoundingFrequencyNavigation?.FrequencyName ?? "Not Applicable",
                 IsCompounding = isCompounding,
                 CalculationBasis = interest?.DayCountConvention?.ConventionName ?? "ACTUAL_365",

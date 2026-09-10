@@ -12,6 +12,7 @@ namespace FinTrustFDManager.BAL.Tests
         [Theory]
         [InlineData("ACTUAL_360", 360)]
         [InlineData("ACTUAL_365", 365)]
+        [InlineData("30/360", 360)]
         public void GetDayCountBasis_ReturnsCorrectBasis(string basis, decimal expected)
         {
             var result = FinancialCalculator.GetDayCountBasis(basis);
@@ -29,14 +30,13 @@ namespace FinTrustFDManager.BAL.Tests
         }
 
         [Theory]
-        [InlineData("30/360")]
         [InlineData("ACTUAL/ACTUAL")]
         [InlineData("")]
         [InlineData(null)]
-        public void GetDayCountBasis_ThrowsForUnsupported(string? basis)
+        public void GetDayCountBasis_DefaultsTo365ForUnsupported(string? basis)
         {
-            Assert.Throws<InvalidOperationException>(() =>
-                FinancialCalculator.GetDayCountBasis(basis));
+            var result = FinancialCalculator.GetDayCountBasis(basis);
+            Assert.Equal(365m, result);
         }
 
         // ═══════════════════════════════════════════
@@ -51,7 +51,7 @@ namespace FinTrustFDManager.BAL.Tests
             var result = FinancialCalculator.CalculateInterest(
                 100_000m, 8m, 90, "ACTUAL_365");
 
-            Assert.Equal(1972.60m, result);
+            Assert.Equal(1972.60m, Math.Round(result, 2, MidpointRounding.AwayFromZero));
         }
 
         [Fact]
@@ -72,7 +72,7 @@ namespace FinTrustFDManager.BAL.Tests
             var result = FinancialCalculator.CalculateInterest(
                 100_000m, 10m, 1, "ACTUAL_365");
 
-            Assert.Equal(27.40m, result);
+            Assert.Equal(27.40m, Math.Round(result, 2, MidpointRounding.AwayFromZero));
         }
 
         // ═══════════════════════════════════════════
@@ -98,7 +98,7 @@ namespace FinTrustFDManager.BAL.Tests
             var result = FinancialCalculator.CalculateInterest(
                 100_000m, 6m, 30, "ACTUAL_360");
 
-            Assert.Equal(500.00m, result);
+            Assert.Equal(500.00m, Math.Round(result, 2, MidpointRounding.AwayFromZero));
         }
 
         // ═══════════════════════════════════════════
@@ -113,7 +113,7 @@ namespace FinTrustFDManager.BAL.Tests
             var result = FinancialCalculator.CalculateInterest(
                 50_000m, 7.5m, 13, "ACTUAL_365");
 
-            Assert.Equal(133.56m, result);
+            Assert.Equal(133.56m, Math.Round(result, 2, MidpointRounding.AwayFromZero));
         }
 
         [Fact]
@@ -124,7 +124,7 @@ namespace FinTrustFDManager.BAL.Tests
             // Use: 100 * 1% * 1/365 = 0.002739... → rounds to 0.00
             var result = FinancialCalculator.CalculateInterest(
                 100m, 1m, 1, "ACTUAL_365");
-            Assert.Equal(0.00m, result);
+            Assert.Equal(0.00m, Math.Round(result, 2, MidpointRounding.AwayFromZero));
         }
 
         // ═══════════════════════════════════════════

@@ -64,6 +64,8 @@
           <th class="text-right">Rate</th>
           <th class="text-right">Opening Balance</th>
           <th class="text-right">Interest Amount</th>
+          <th class="text-right">Accrued Interest</th>
+          <th class="text-right">Capitalized Interest</th>
           <th class="text-right">Closing Balance</th>
           <th class="text-right">Cash Flow</th>
           <th class="text-center">Direction</th>
@@ -82,6 +84,10 @@
           <td class="text-right">{{ row.interestRate | number:'1.2-2' }}%</td>
           <td class="text-right">{{ row.openingBalance | currency:'INR':'symbol':'1.2-2' }}</td>
           <td class="text-right font-bold">{{ row.interestAmount | currency:'INR':'symbol':'1.2-2' }}</td>
+          <td class="text-right">{{ row.accruedInterest | currency:'INR':'symbol':'1.2-2' }}</td>
+          <td class="text-right" [class.highlight-cash]="row.capitalizedInterest > 0">
+            {{ row.capitalizedInterest | currency:'INR':'symbol':'1.2-2' }}
+          </td>
           <td class="text-right">{{ row.closingBalance | currency:'INR':'symbol':'1.2-2' }}</td>
           <td class="text-right" [class.highlight-cash]="row.cashFlowAmount > 0">
             {{ row.cashFlowAmount | currency:'INR':'symbol':'1.2-2' }}

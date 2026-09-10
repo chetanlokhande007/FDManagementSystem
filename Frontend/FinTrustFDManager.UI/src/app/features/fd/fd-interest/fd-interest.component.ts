@@ -56,7 +56,11 @@ export class FdInterestComponent implements OnInit, OnChanges {
       compoundingFrequencyId: [null],
       isCompounding: [false],
       dayCountConventionId: [null, Validators.required],
-      paymentConvention: ['']
+      // P0-1 (BUG-001): default must be 'CASH', not ''. An empty string was sent
+      // to the backend whenever the user never touched this field, and the engine
+      // only treated null as the default — so periodic interest silently deferred
+      // to maturity and the Cash Flow tab showed 0.00 for every interest row.
+      paymentConvention: ['CASH']
     });
   }
 
@@ -144,7 +148,7 @@ export class FdInterestComponent implements OnInit, OnChanges {
       compoundingFrequencyId: interest.compoundingFrequencyId || null,
       isCompounding: interest.isCompounding || false,
       dayCountConventionId: interest.dayCountConventionId || null,
-      paymentConvention: interest.paymentConvention || ''
+      paymentConvention: interest.paymentConvention || 'CASH'
     }, { emitEvent: true });
     this.toggleCompoundingFrequency(interest.isCompounding || false);
     this.calculateEffectiveRate();

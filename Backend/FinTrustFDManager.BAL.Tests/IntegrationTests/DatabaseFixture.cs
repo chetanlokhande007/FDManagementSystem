@@ -24,6 +24,59 @@ namespace FinTrustFDManager.BAL.Tests.IntegrationTests
                 .Options;
 
             Context = new ApplicationDbContext(options);
+            Context.Database.EnsureCreated();
+            SeedMasterData(Context);
+        }
+
+        public static void SeedMasterData(ApplicationDbContext context)
+        {
+            if (!context.Countries.Any())
+            {
+                context.Countries.Add(new Model.Entities.MasterData.Country
+                {
+                    CountryId = 1,
+                    CountryCode = "IND",
+                    CountryName = "India",
+                    Description = "India"
+                });
+                context.SaveChanges();
+            }
+
+            if (!context.Entities.Any())
+            {
+                context.Entities.Add(new Model.Entities.Entity
+                {
+                    EntityId = 1,
+                    EntityCode = "ENT01",
+                    EntityName = "Entity 1",
+                    CountryId = 1
+                });
+                context.SaveChanges();
+            }
+
+            if (!context.CounterParties.Any())
+            {
+                context.CounterParties.Add(new Model.Entities.CounterParty
+                {
+                    CounterPartyId = 1,
+                    CounterPartyCode = "CP01",
+                    CounterPartyName = "Counterparty 1",
+                    CountryId = 1
+                });
+                context.SaveChanges();
+            }
+
+            if (!context.Currencies.Any())
+            {
+                context.Currencies.Add(new Model.Entities.Currency
+                {
+                    CurrencyId = 1,
+                    CurrencyCode = "INR",
+                    CurrencyName = "Indian Rupee",
+                    Symbol = "₹"
+                });
+                context.SaveChanges();
+            }
         }
 
         /// <summary>

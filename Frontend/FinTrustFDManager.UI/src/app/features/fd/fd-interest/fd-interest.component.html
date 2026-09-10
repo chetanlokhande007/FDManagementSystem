@@ -69,7 +69,12 @@
 
       <div class="form-group">
         <label>Payment Convention</label>
-        <input type="text" formControlName="paymentConvention">
+        <!-- P0-1 (BUG-025): constrained select instead of free text — prevents
+             typos/empty values from silently changing cash-flow behaviour. -->
+        <select formControlName="paymentConvention">
+          <option value="CASH">CASH (paid periodically)</option>
+          <option value="MATURITY">MATURITY (paid at maturity)</option>
+        </select>
       </div>
 
     </div>

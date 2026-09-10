@@ -44,6 +44,8 @@ namespace FinTrustFDManager.BAL.Services
                 InterestRate = x.InterestRate,
                 OpeningBalance = x.OpeningBalance,
                 InterestAmount = x.InterestAmount,
+                AccruedInterest = x.AccruedInterest,
+                CapitalizedInterest = x.CapitalizedInterest,
                 ClosingBalance = x.ClosingBalance,
                 CashFlowAmount = x.CashFlowAmount,
                 Direction = x.Direction,
@@ -73,6 +75,8 @@ namespace FinTrustFDManager.BAL.Services
                 InterestRate = x.InterestRate,
                 OpeningBalance = x.OpeningBalance,
                 InterestAmount = x.InterestAmount,
+                AccruedInterest = x.AccruedInterest,
+                CapitalizedInterest = x.CapitalizedInterest,
                 ClosingBalance = x.ClosingBalance,
                 CashFlowAmount = x.CashFlowAmount,
                 Direction = x.Direction,
@@ -84,50 +88,23 @@ namespace FinTrustFDManager.BAL.Services
         }
 
         // GET BY FD ID
+        // P0-2 (BUG-002): delegates to FDInterestService.GetSummaryAsync — the single
+        // authoritative summary builder — so the Cash Flow tab metadata (rate,
+        // compounding frequency, calculation basis, tenor, reference) is populated
+        // from the same source that builds the schedule, instead of a
+        // metadata-less local aggregation.
         public async Task<FDCashFlowSummaryDto> GetByFdIdAsync(long fdId)
         {
-            var cashFlowEntities = await _repository.GetByFdIdAsync(fdId);
-            
-            var cashFlows = cashFlowEntities.Select(x => new FDCashFlowDto
+            try
             {
-                CashFlowId = x.CashFlowId,
-                FdId = x.FdId,
-                Event = x.Event,
-                StartDate = x.StartDate,
-                EndDate = x.EndDate,
-                Days = x.Days,
-                InterestRate = x.InterestRate,
-                OpeningBalance = x.OpeningBalance,
-                InterestAmount = x.InterestAmount,
-                ClosingBalance = x.ClosingBalance,
-                CashFlowAmount = x.CashFlowAmount,
-                Direction = x.Direction,
-                CurrencyCode = x.CurrencyCode,
-                Status = x.Status,
-                ReferenceNo = x.ReferenceNo,
-                CreatedDate = x.CreatedDate
-            }).ToList();
-
-            decimal principal = cashFlows.FirstOrDefault(c => c.Event == "FD Created")?.CashFlowAmount ?? 0;
-            decimal totalInflows = cashFlows.Where(c => c.Direction == "INFLOW").Sum(c => c.CashFlowAmount);
-            decimal totalInterest = totalInflows - principal;
-            var maturityRow = cashFlows.FirstOrDefault(c => c.Event == "Maturity");
-            decimal maturityAmount = 0;
-            if (maturityRow != null)
-            {
-                maturityAmount = cashFlows
-                    .Where(c => c.EndDate == maturityRow.EndDate && c.Direction == "INFLOW")
-                    .Sum(c => c.CashFlowAmount);
+                return await _interestService.GetSummaryAsync(fdId);
             }
-
-            return new FDCashFlowSummaryDto
+            catch (KeyNotFoundException)
             {
-                FdId = fdId,
-                PrincipalAmount = principal,
-                TotalInterest = totalInterest,
-                MaturityAmount = maturityAmount,
-                Schedule = cashFlows
-            };
+                // Preserve the existing lenient controller contract:
+                // unknown FD -> empty summary rather than 404.
+                return new FDCashFlowSummaryDto { FdId = fdId };
+            }
         }
 
         // CREATE
@@ -144,6 +121,8 @@ namespace FinTrustFDManager.BAL.Services
                 InterestRate = dto.InterestRate,
                 OpeningBalance = dto.OpeningBalance,
                 InterestAmount = dto.InterestAmount,
+                AccruedInterest = dto.AccruedInterest,
+                CapitalizedInterest = dto.CapitalizedInterest,
                 ClosingBalance = dto.ClosingBalance,
                 CashFlowAmount = dto.CashFlowAmount,
                 Direction = dto.Direction,
@@ -219,6 +198,8 @@ namespace FinTrustFDManager.BAL.Services
                 InterestRate = result.InterestRate,
                 OpeningBalance = result.OpeningBalance,
                 InterestAmount = result.InterestAmount,
+                AccruedInterest = result.AccruedInterest,
+                CapitalizedInterest = result.CapitalizedInterest,
                 ClosingBalance = result.ClosingBalance,
                 CashFlowAmount = result.CashFlowAmount,
                 Direction = result.Direction,

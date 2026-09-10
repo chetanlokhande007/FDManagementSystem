@@ -13,6 +13,8 @@ namespace FinTrustFDManager.BAL.DTOs
         public decimal InterestRate { get; set; }
         public decimal OpeningBalance { get; set; }
         public decimal InterestAmount { get; set; }
+        public decimal AccruedInterest { get; set; }
+        public decimal CapitalizedInterest { get; set; }
         public decimal ClosingBalance { get; set; }
         public decimal CashFlowAmount { get; set; }
         public string Direction { get; set; } = string.Empty;
