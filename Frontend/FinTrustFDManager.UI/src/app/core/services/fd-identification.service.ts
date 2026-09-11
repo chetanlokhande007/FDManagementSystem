@@ -23,6 +23,7 @@ export interface FDLanding {
   interestFrequency?: string;
   compoundingFrequency?: string;
   calculationBasis?: string;
+  paymentConvention?: string;
   totalPrincipal?: number;
   totalGrossInterest?: number;
   totalTds?: number;
