@@ -97,13 +97,7 @@ namespace FinTrustFDManager.BAL.Common
 
             decimal balance = principal;
             decimal accruedInterest = 0m;
-
-            // Start of the current compounding cycle. Compounding rows are generated
-            // INDEPENDENTLY from the compounding-frequency calendar: each
-            // "Compounding Interest" row spans from the start of its own cycle to the
-            // cycle boundary (e.g. 02-Jan -> 02-Apr for a quarterly cycle), never just
-            // the final interest sub-period (02-Mar -> 02-Apr).
-            DateTime compoundingCycleStart = startDate;
+            DateTime currentCompoundingStart = startDate;
 
             for (int i = 0; i < sortedDates.Count - 1; i++)
             {
@@ -145,9 +139,9 @@ namespace FinTrustFDManager.BAL.Common
                             EndDate = periodEnd,
                             Days = days,
                             InterestRate = effectiveRate,
-                            OpeningBalance = balance,
+                            OpeningBalance = Math.Round(balance, 2, MidpointRounding.AwayFromZero),
                             InterestAmount = Math.Round(periodInterest, 2, MidpointRounding.AwayFromZero),
-                            ClosingBalance = balance,
+                            ClosingBalance = Math.Round(balance, 2, MidpointRounding.AwayFromZero),
                             CashFlowAmount = Math.Round(accruedInterest, 2, MidpointRounding.AwayFromZero),
                             Direction = "INFLOW",
                             CurrencyCode = fd.CurrencyNavigation?.CurrencyCode ?? "INR",
@@ -164,12 +158,12 @@ namespace FinTrustFDManager.BAL.Common
                             EndDate = periodEnd,
                             Days = 0,
                             InterestRate = effectiveRate,
-                            OpeningBalance = balance,
+                            OpeningBalance = Math.Round(balance, 2, MidpointRounding.AwayFromZero),
                             InterestAmount = 0m,
                             AccruedInterest = 0m,
                             CapitalizedInterest = 0m,
                             ClosingBalance = 0m,
-                            CashFlowAmount = balance,
+                            CashFlowAmount = Math.Round(balance, 2, MidpointRounding.AwayFromZero),
                             Direction = "INFLOW",
                             CurrencyCode = fd.CurrencyNavigation?.CurrencyCode ?? "INR",
                             Status = "PENDING",
@@ -187,7 +181,7 @@ namespace FinTrustFDManager.BAL.Common
                             EndDate = periodEnd,
                             Days = days,
                             InterestRate = effectiveRate,
-                            OpeningBalance = balance,
+                            OpeningBalance = Math.Round(balance, 2, MidpointRounding.AwayFromZero),
                             InterestAmount = Math.Round(periodInterest, 2, MidpointRounding.AwayFromZero),
                             AccruedInterest = 0m,
                             CapitalizedInterest = 0m,
@@ -210,7 +204,7 @@ namespace FinTrustFDManager.BAL.Common
                 // Interest accrual detail row (period level, driven by the
                 // user-selected INTEREST frequency). In compounding mode nothing
                 // is paid in cash here; the accrual is capitalized by the
-                // cycle-spanning "Compounding Interest" row below.
+                // zero-day "Compounding Interest" row below.
                 // ─────────────────────────────────────────────────────────────
                 if (isInterestDate || (isMaturity && isCompounding && intMonths.HasValue))
                 {
@@ -224,11 +218,11 @@ namespace FinTrustFDManager.BAL.Common
                         EndDate = periodEnd,
                         Days = days,
                         InterestRate = effectiveRate,
-                        OpeningBalance = balance,
+                        OpeningBalance = Math.Round(balance, 2, MidpointRounding.AwayFromZero),
                         InterestAmount = Math.Round(periodInterest, 2, MidpointRounding.AwayFromZero),
                         AccruedInterest = Math.Round(accruedInterest, 2, MidpointRounding.AwayFromZero),
                         CapitalizedInterest = 0m,
-                        ClosingBalance = balance,
+                        ClosingBalance = Math.Round(balance, 2, MidpointRounding.AwayFromZero),
                         CashFlowAmount = paysCash ? Math.Round(accruedInterest, 2, MidpointRounding.AwayFromZero) : 0m,
                         Direction = paysCash ? "INFLOW" : "INTERNAL",
                         CurrencyCode = fd.CurrencyNavigation?.CurrencyCode ?? "INR",
@@ -244,18 +238,17 @@ namespace FinTrustFDManager.BAL.Common
                 }
 
                 // ─────────────────────────────────────────────────────────────
-                // Compounding boundary: capitalize the WHOLE cycle.
-                // FIX: StartDate is the start of the compounding cycle, Days is
-                // the actual cycle length — both derived from the user-selected
-                // compounding frequency. No hardcoded day counts.
+                // Compounding boundary: capitalize accumulated interest.
+                // Emits a "Compounding Interest" row spanning the full
+                // compounding cycle from currentCompoundingStart to periodEnd.
                 // ─────────────────────────────────────────────────────────────
                 if (isCompoundingDate)
                 {
                     balance = CapitalizeCycle(
-                        cashFlows, fd, effectiveRate, calcBasis, now,
-                        compoundingCycleStart, periodEnd, balance, accruedInterest);
+                        cashFlows, fd, effectiveRate, now,
+                        currentCompoundingStart, periodEnd, balance, accruedInterest, calcBasis);
                     accruedInterest = 0m;
-                    compoundingCycleStart = periodEnd;
+                    currentCompoundingStart = periodEnd;
                 }
 
                 // ─────────────────────────────────────────────────────────────
@@ -270,10 +263,10 @@ namespace FinTrustFDManager.BAL.Common
                     if (!isCompoundingDate)
                     {
                         balance = CapitalizeCycle(
-                            cashFlows, fd, effectiveRate, calcBasis, now,
-                            compoundingCycleStart, periodEnd, balance, accruedInterest);
+                            cashFlows, fd, effectiveRate, now,
+                            currentCompoundingStart, periodEnd, balance, accruedInterest, calcBasis);
                         accruedInterest = 0m;
-                        compoundingCycleStart = periodEnd;
+                        currentCompoundingStart = periodEnd;
                     }
 
                     cashFlows.Add(new FDCashFlow
@@ -284,12 +277,12 @@ namespace FinTrustFDManager.BAL.Common
                         EndDate = periodEnd,
                         Days = 0,
                         InterestRate = effectiveRate,
-                        OpeningBalance = balance,
+                        OpeningBalance = Math.Round(balance, 2, MidpointRounding.AwayFromZero),
                         InterestAmount = 0m,
                         AccruedInterest = 0m,
                         CapitalizedInterest = 0m,
                         ClosingBalance = 0m,
-                        CashFlowAmount = balance,
+                        CashFlowAmount = Math.Round(balance, 2, MidpointRounding.AwayFromZero),
                         Direction = "INFLOW",
                         CurrencyCode = fd.CurrencyNavigation?.CurrencyCode ?? "INR",
                         Status = "PENDING",
@@ -312,38 +305,40 @@ namespace FinTrustFDManager.BAL.Common
         }
 
         /// <summary>
-        /// Emits the cycle-spanning "Compounding Interest" row for the cycle
-        /// [cycleStart, cycleEnd] and returns the new balance after capitalization.
-        /// The capitalized amount is the rounded accumulated interest so the row
-        /// satisfies OpeningBalance + InterestAmount == ClosingBalance exactly.
+        /// Emits the "Compounding Interest" row spanning [<paramref name="compStartDate"/>, <paramref name="compEndDate"/>]
+        /// and returns the new balance after capitalization.
+        /// The capitalized amount is the accumulated interest so the row
+        /// satisfies OpeningBalance + CapitalizedInterest == ClosingBalance exactly.
         /// </summary>
         private static decimal CapitalizeCycle(
             List<FDCashFlow> cashFlows,
             FDIdentification fd,
             decimal effectiveRate,
-            string calcBasis,
             DateTime now,
-            DateTime cycleStart,
-            DateTime cycleEnd,
+            DateTime compStartDate,
+            DateTime compEndDate,
             decimal balance,
-            decimal accruedInterest)
+            decimal accruedInterest,
+            string calcBasis)
         {
-            int cycleDays = FinancialCalculator.CalculateDays(cycleStart, cycleEnd, calcBasis);
-            decimal capitalizedInterest = Math.Round(accruedInterest, 2, MidpointRounding.AwayFromZero);
+            decimal roundedBalance = Math.Round(balance, 2, MidpointRounding.AwayFromZero);
+            decimal roundedCapitalized = Math.Round(accruedInterest, 2, MidpointRounding.AwayFromZero);
+            decimal newBalance = roundedBalance + roundedCapitalized;
+            int days = FinancialCalculator.CalculateDays(compStartDate, compEndDate, calcBasis);
 
             cashFlows.Add(new FDCashFlow
             {
                 FdId = fd.FdId,
                 Event = "Compounding Interest",
-                StartDate = cycleStart,
-                EndDate = cycleEnd,
-                Days = cycleDays,
+                StartDate = compStartDate,
+                EndDate = compEndDate,
+                Days = days,
                 InterestRate = effectiveRate,
-                OpeningBalance = balance,
-                InterestAmount = 0m,
-                AccruedInterest = 0m,
-                CapitalizedInterest = capitalizedInterest,
-                ClosingBalance = balance + capitalizedInterest,
+                OpeningBalance = roundedBalance,
+                InterestAmount = roundedCapitalized,
+                AccruedInterest = roundedCapitalized,
+                CapitalizedInterest = roundedCapitalized,
+                ClosingBalance = newBalance,
                 CashFlowAmount = 0m,
                 Direction = "INTERNAL",
                 CurrencyCode = fd.CurrencyNavigation?.CurrencyCode ?? "INR",
@@ -352,8 +347,17 @@ namespace FinTrustFDManager.BAL.Common
                 CreatedDate = now
             });
 
-            return balance + capitalizedInterest;
+            return newBalance;
         }
+
+        public static int GetEventPriority(string? eventName) => eventName switch
+        {
+            "FD Created" => 1,
+            "Interest" => 2,
+            "Compounding Interest" => 3,
+            "Maturity" => 4,
+            _ => 5
+        };
 
         private static bool IsMultipleMonths(DateTime start, DateTime end, int months)
         {

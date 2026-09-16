@@ -309,10 +309,7 @@ export class FDDetailComponent implements OnInit {
         catchError(() => of(null))
       ).subscribe(freshCashFlows => {
         if (freshCashFlows && freshCashFlows.schedule) {
-          freshCashFlows.schedule = freshCashFlows.schedule.sort((a: any, b: any) => {
-            const timeDiff = new Date(a.startDate).getTime() - new Date(b.startDate).getTime();
-            return timeDiff === 0 ? a.cashFlowId - b.cashFlowId : timeDiff;
-          });
+          freshCashFlows.schedule = this.sortCashFlowSchedule(freshCashFlows.schedule);
         }
         this.cashFlowSummary = freshCashFlows;
         // Update cache with fresh cash flow data
@@ -383,10 +380,7 @@ export class FDDetailComponent implements OnInit {
 
     this.interestData = result.interest;
     if (result.cashFlowSummary && result.cashFlowSummary.schedule && Array.isArray(result.cashFlowSummary.schedule)) {
-      result.cashFlowSummary.schedule = result.cashFlowSummary.schedule.sort((a: any, b: any) => {
-        const timeDiff = new Date(a.startDate).getTime() - new Date(b.startDate).getTime();
-        return timeDiff === 0 ? a.cashFlowId - b.cashFlowId : timeDiff;
-      });
+      result.cashFlowSummary.schedule = this.sortCashFlowSchedule(result.cashFlowSummary.schedule);
       this.cashFlowSummary = result.cashFlowSummary;
     } else {
       this.cashFlowSummary = null;
@@ -608,10 +602,7 @@ export class FDDetailComponent implements OnInit {
               catchError(() => of(null))
             ).subscribe(cashFlowSummary => {
               if (cashFlowSummary && cashFlowSummary.schedule) {
-                cashFlowSummary.schedule = cashFlowSummary.schedule.sort((a: any, b: any) => {
-                  const timeDiff = new Date(a.startDate).getTime() - new Date(b.startDate).getTime();
-                  return timeDiff === 0 ? a.cashFlowId - b.cashFlowId : timeDiff;
-                });
+                cashFlowSummary.schedule = this.sortCashFlowSchedule(cashFlowSummary.schedule);
               }
               this.cashFlowSummary = cashFlowSummary;
 
@@ -729,10 +720,7 @@ export class FDDetailComponent implements OnInit {
       catchError(() => of(null))
     ).subscribe(cashFlowSummary => {
       if (cashFlowSummary && cashFlowSummary.schedule) {
-        cashFlowSummary.schedule = cashFlowSummary.schedule.sort((a: any, b: any) => {
-          const timeDiff = new Date(a.startDate).getTime() - new Date(b.startDate).getTime();
-          return timeDiff === 0 ? a.cashFlowId - b.cashFlowId : timeDiff;
-        });
+        cashFlowSummary.schedule = this.sortCashFlowSchedule(cashFlowSummary.schedule);
       }
       this.cashFlowSummary = cashFlowSummary;
 
@@ -867,6 +855,25 @@ export class FDDetailComponent implements OnInit {
 
   goBack(): void {
     this.router.navigate(['/fd']);
+  }
+
+  private sortCashFlowSchedule(schedule: any[]): any[] {
+    const eventPriority: Record<string, number> = {
+      'FD Created': 1,
+      'Interest': 2,
+      'Compounding Interest': 3,
+      'Maturity': 4
+    };
+    return schedule.sort((a: any, b: any) => {
+      const startDiff = new Date(a.startDate).getTime() - new Date(b.startDate).getTime();
+      if (startDiff !== 0) return startDiff;
+      const endDiff = new Date(a.endDate).getTime() - new Date(b.endDate).getTime();
+      if (endDiff !== 0) return endDiff;
+      const pA = eventPriority[a.event] || 5;
+      const pB = eventPriority[b.event] || 5;
+      if (pA !== pB) return pA - pB;
+      return (a.cashFlowId || 0) - (b.cashFlowId || 0);
+    });
   }
 
 }

@@ -1,3 +1,4 @@
+using FinTrustFDManager.BAL.Common;
 using FinTrustFDManager.BAL.DTOs;
 using FinTrustFDManager.BAL.Interfaces;
 using FinTrustFDManager.DAL.Interfaces;
@@ -179,6 +180,9 @@ namespace FinTrustFDManager.BAL.Services
             // (the IDs will be new after regeneration, so return the first matching by position)
             var updatedCashFlows = (await _repository.GetByFdIdAsync(dto.FdId))
                 .OrderBy(c => c.StartDate)
+                .ThenBy(c => c.EndDate)
+                .ThenBy(c => FDScheduleEngine.GetEventPriority(c.Event))
+                .ThenBy(c => c.CashFlowId)
                 .ToList();
 
             if (updatedCashFlows.Count == 0)

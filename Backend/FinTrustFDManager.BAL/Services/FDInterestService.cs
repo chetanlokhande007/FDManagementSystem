@@ -1,3 +1,4 @@
+using FinTrustFDManager.BAL.Common;
 using FinTrustFDManager.BAL.DTOs;
 using FinTrustFDManager.BAL.Interfaces;
 using FinTrustFDManager.DAL.Interfaces;
@@ -55,6 +56,9 @@ namespace FinTrustFDManager.BAL.Services
             if (fd == null)
                 throw new KeyNotFoundException($"FD with ID {model.FdId} not found.");
 
+            if (!FinTrustFDManager.Model.Enums.FDStatus.IsEditable(fd.Status))
+                throw new InvalidOperationException($"Cannot modify interest configuration because FD is in {fd.Status} status.");
+
             ValidateFdDates(fd);
 
             var existing = await _interestRepository.GetByFdIdAsync(model.FdId);
@@ -92,6 +96,9 @@ namespace FinTrustFDManager.BAL.Services
             var fd = await _fdRepository.GetByIdAsync(existingInterest.FdId);
             if (fd == null)
                 throw new KeyNotFoundException($"FD with ID {existingInterest.FdId} not found.");
+
+            if (!FinTrustFDManager.Model.Enums.FDStatus.IsEditable(fd.Status))
+                throw new InvalidOperationException($"Cannot modify interest configuration because FD is in {fd.Status} status.");
 
             ValidateFdDates(fd);
 
@@ -189,18 +196,36 @@ namespace FinTrustFDManager.BAL.Services
 
             var interest = await _interestRepository.GetByFdIdAsync(fdId);
             var records = (await _cashFlowRepository.GetByFdIdAsync(fdId))
-                .OrderBy(c => c.StartDate)
-                .ThenBy(c => c.CreatedDate)
+                .OrderBy(c => c.EndDate)
+                .ThenBy(c => FDScheduleEngine.GetEventPriority(c.Event))
+                .ThenBy(c => c.CashFlowId)
                 .ToList();
 
             decimal principal = fd.PrincipalAmount;
             bool isCompounding = interest?.IsCompounding ?? false;
             var maturityRow = records.FirstOrDefault(r => r.Event == "Maturity");
 
-            // In the refactored engine, InterestAmount strictly represents unique economic 
-            // interest accrued (PeriodInterest). Compounding/capitalization rows have 
-            // InterestAmount = 0 to prevent double-counting.
-            decimal totalInterest = records.Sum(r => r.InterestAmount);
+            // Authoritative invariant:  TotalInterest = MaturitySettlement − Principal.
+            //
+            // For COMPOUNDING FDs the canonical source of truth is Sum(CapitalizedInterest)
+            // from the Compounding Interest rows.  Each CapitalizeCycle accumulates period
+            // interest at full decimal precision and rounds only once per compounding cycle,
+            // so Sum(CapitalizedInterest) == MaturityAmount − Principal by construction.
+            //
+            // Summing the individually-rounded InterestAmount values on each Interest row
+            // (each rounded via Math.Round(periodInterest, 2, AwayFromZero) at generation
+            // time) can diverge from the maturity balance by ±1 cent per compounding cycle
+            // due to the well-known "sum of rounds ≠ round of sum" effect.
+            //
+            // For NON-COMPOUNDING FDs, there are no capitalization events and the maturity
+            // row carries the accumulated balance, so MaturityAmount − Principal is the
+            // right answer there too. We still derive it from Sum(InterestAmount) because
+            // those values are individually paid out and must reconcile to the displayed rows.
+            decimal totalInterest = isCompounding
+                ? records
+                    .Where(r => r.Event == "Compounding Interest")
+                    .Sum(r => r.CapitalizedInterest)   // == MaturityAmount - Principal exactly
+                : records.Sum(r => r.InterestAmount);
             decimal maturityAmount = maturityRow?.CashFlowAmount ?? principal;
 
             int totalDays = (fd.EndDate.Date - fd.StartDate.Date).Days;

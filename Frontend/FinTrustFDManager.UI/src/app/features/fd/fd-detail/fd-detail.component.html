@@ -213,7 +213,7 @@
     <!-- INTEREST TAB -->
     <div *ngIf="activeTab === 'interest'">
       <app-fd-interest *ngIf="!loading && fdId" [fdId]="fdId" [interestData]="interestData"
-        [interestFrequencies]="interestFrequencies" [dayCountConventions]="dayCountConventions" [benchmarks]="benchmarks" (interestSaved)="onInterestSaved($event)"></app-fd-interest>
+        [interestFrequencies]="interestFrequencies" [dayCountConventions]="dayCountConventions" [benchmarks]="benchmarks" [isProtected]="isProtectedStatus" (interestSaved)="onInterestSaved($event)"></app-fd-interest>
       <div *ngIf="loading" class="tab-content skeleton-area">
         <div class="skeleton-grid">
           <div *ngFor="let s of [1,2,3,4,5,6]" class="skeleton-field">

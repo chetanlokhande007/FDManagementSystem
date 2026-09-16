@@ -81,7 +81,7 @@
     <div *ngIf="errorMessage" style="color: #dc2626; background-color: #fef2f2; border: 1px solid #fecaca; padding: 0.75rem; border-radius: 0.375rem; margin-bottom: 1rem; font-size: 0.875rem;">
       {{ errorMessage }}
     </div>
-    <div class="form-actions">
+    <div class="form-actions" *ngIf="!isProtected">
       <button type="submit" class="save-btn" [disabled]="isSaving">
         {{ isEdit ? 'Update Interest' : 'Save Interest' }}
       </button>

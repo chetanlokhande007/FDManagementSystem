@@ -34,6 +34,7 @@ namespace FinTrustFDManager.DAL.Repositories
             return await _context.FDCashFlows
                 .AsNoTracking()
                 .Where(x => x.FdId == fdId)
+                .OrderBy(x => x.CashFlowId)
                 .ToListAsync();
         }
 

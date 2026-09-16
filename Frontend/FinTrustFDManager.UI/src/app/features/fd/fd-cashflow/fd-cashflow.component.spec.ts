@@ -294,6 +294,24 @@ describe('FdCashflowComponent', () => {
     it('should render compounding frequency when enabled', () => {
       expect(fixture.nativeElement.textContent).toContain('QUARTERLY');
     });
+
+    it('should format UTC midnight dates correctly regardless of local timezone', () => {
+      const utcSummary = JSON.parse(JSON.stringify(mockSummary));
+      utcSummary.cashFlows[0].startDate = '2026-01-01T00:00:00Z';
+      utcSummary.cashFlows[0].endDate = '2026-02-01T00:00:00Z';
+      
+      setupWithData(
+        utcSummary,
+        { fdReferenceNo: 'FD-0001', principalAmount: 100000, currencyCode: 'INR' },
+        { interestRate: 8, isCompounding: true, interestFrequency: 'QUARTERLY', compoundingFrequency: 'QUARTERLY' }
+      );
+      
+      const compiled = fixture.nativeElement as HTMLElement;
+      expect(compiled.textContent).toContain('01-Jan-2026');
+      expect(compiled.textContent).toContain('01-Feb-2026');
+      expect(compiled.textContent).not.toContain('31-Dec-2025');
+      expect(compiled.textContent).not.toContain('31-Jan-2026');
+    });
   });
 
   // ═══════════════════════════════════════════════════════

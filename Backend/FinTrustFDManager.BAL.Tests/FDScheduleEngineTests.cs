@@ -96,10 +96,15 @@ namespace FinTrustFDManager.BAL.Tests
             // Compounding Interest row (no missing compounding event at a
             // boundary-aligned maturity) and the Maturity row repays the balance.
             Assert.Equal(3, compFlows.Count);
+            Assert.Equal(new DateTime(2026, 1, 1), compFlows[0].StartDate);
             Assert.Equal(new DateTime(2026, 3, 1), compFlows[0].EndDate);
+            Assert.Equal(59, compFlows[0].Days);
+            Assert.Equal(new DateTime(2026, 3, 1), compFlows[1].StartDate);
             Assert.Equal(new DateTime(2026, 5, 1), compFlows[1].EndDate);
-            Assert.Equal(new DateTime(2026, 7, 1), compFlows[2].EndDate);
+            Assert.Equal(61, compFlows[1].Days);
             Assert.Equal(new DateTime(2026, 5, 1), compFlows[2].StartDate);
+            Assert.Equal(new DateTime(2026, 7, 1), compFlows[2].EndDate);
+            Assert.Equal(61, compFlows[2].Days);
         }
 
         [Fact]
@@ -191,7 +196,7 @@ namespace FinTrustFDManager.BAL.Tests
             => schedule.Single(x => x.Event == "Compounding Interest" && x.EndDate == endDate);
 
         [Fact]
-        public void Compounding_Quarterly_FirstCycle_SpansJanToApr()
+        public void Compounding_Quarterly_FirstCycle_AnchorsAtInterestEndDate()
         {
             // Spec critical case: Interest=Monthly, Compounding=Quarterly, start 02-Jan-2026
             var fd = CreateFD(63_200m, new DateTime(2026, 1, 2), new DateTime(2026, 7, 2));
@@ -200,13 +205,13 @@ namespace FinTrustFDManager.BAL.Tests
             var schedule = FDScheduleEngine.GenerateSchedule(fd, interest);
 
             var comp1 = SingleCompounding(schedule, new DateTime(2026, 4, 2));
-            Assert.Equal(new DateTime(2026, 1, 2), comp1.StartDate); // cycle start, NOT 02-Mar
-            Assert.Equal((new DateTime(2026, 4, 2) - new DateTime(2026, 1, 2)).Days, comp1.Days); // 90
+            Assert.Equal(new DateTime(2026, 1, 2), comp1.StartDate);
+            Assert.Equal(new DateTime(2026, 4, 2), comp1.EndDate);
             Assert.Equal(90, comp1.Days);
         }
 
         [Fact]
-        public void Compounding_Quarterly_SecondCycle_SpansAprToJul()
+        public void Compounding_Quarterly_SecondCycle_AnchorsAtSecondQuarterEnd()
         {
             var fd = CreateFD(63_200m, new DateTime(2026, 1, 2), new DateTime(2026, 7, 2));
             var interest = CreateInterest(3m, "Actual/365", "Monthly", true, "Quarterly", "CASH");
@@ -214,15 +219,15 @@ namespace FinTrustFDManager.BAL.Tests
             var schedule = FDScheduleEngine.GenerateSchedule(fd, interest);
 
             var comp2 = SingleCompounding(schedule, new DateTime(2026, 7, 2));
-            Assert.Equal(new DateTime(2026, 4, 2), comp2.StartDate); // continues from cycle 1 end
-            Assert.Equal((new DateTime(2026, 7, 2) - new DateTime(2026, 4, 2)).Days, comp2.Days); // 91
+            Assert.Equal(new DateTime(2026, 4, 2), comp2.StartDate);
+            Assert.Equal(new DateTime(2026, 7, 2), comp2.EndDate);
             Assert.Equal(91, comp2.Days);
         }
 
         [Fact]
         public void Compounding_IndependentOfInterestFrequency_SubPeriodsKept()
         {
-            // Interest rows stay at the MONTHLY cadence while compounding rows span QUARTERS.
+            // Interest rows stay at the MONTHLY cadence while compounding occurs at QUARTERS.
             var fd = CreateFD(63_200m, new DateTime(2026, 1, 2), new DateTime(2026, 4, 2));
             var interest = CreateInterest(3m, "Actual/365", "Monthly", true, "Quarterly", "CASH");
 
@@ -234,12 +239,12 @@ namespace FinTrustFDManager.BAL.Tests
             Assert.Equal(new DateTime(2026, 3, 2), interestRows[1].EndDate);
             Assert.Equal(new DateTime(2026, 4, 2), interestRows[2].EndDate);
 
-            // Exactly one compounding row for the quarter, spanning the whole cycle.
+            // Exactly one compounding row for the quarter, spanning Jan 2 to Apr 2.
             var compRows = schedule.Where(x => x.Event == "Compounding Interest").ToList();
             Assert.Single(compRows);
             Assert.Equal(new DateTime(2026, 1, 2), compRows[0].StartDate);
             Assert.Equal(new DateTime(2026, 4, 2), compRows[0].EndDate);
-            Assert.NotEqual(new DateTime(2026, 3, 2), compRows[0].StartDate); // the old bug
+            Assert.Equal(90, compRows[0].Days);
 
             // Reconciliation invariant: Σ compounding interest == maturity − principal.
             var totalComp = compRows.Sum(x => x.CapitalizedInterest);
@@ -248,7 +253,7 @@ namespace FinTrustFDManager.BAL.Tests
         }
 
         [Fact]
-        public void Compounding_HalfYearly_FirstCycle_SpansJanToJul()
+        public void Compounding_HalfYearly_FirstCycle_AnchorsAtJul()
         {
             var fd = CreateFD(100_000m, new DateTime(2026, 1, 2), new DateTime(2027, 1, 2));
             var interest = CreateInterest(3m, "Actual/365", "Quarterly", true, "Half-Yearly", "CAPITALIZE");
@@ -257,11 +262,12 @@ namespace FinTrustFDManager.BAL.Tests
 
             var comp1 = SingleCompounding(schedule, new DateTime(2026, 7, 2));
             Assert.Equal(new DateTime(2026, 1, 2), comp1.StartDate);
-            Assert.Equal((new DateTime(2026, 7, 2) - new DateTime(2026, 1, 2)).Days, comp1.Days);
+            Assert.Equal(new DateTime(2026, 7, 2), comp1.EndDate);
+            Assert.Equal(181, comp1.Days);
         }
 
         [Fact]
-        public void Compounding_Annual_FirstCycle_SpansJanToJanNextYear()
+        public void Compounding_Annual_FirstCycle_AnchorsAtJanNextYear()
         {
             var fd = CreateFD(100_000m, new DateTime(2026, 1, 2), new DateTime(2027, 2, 2));
             var interest = CreateInterest(3m, "Actual/365", "Monthly", true, "Annually", "CAPITALIZE");
@@ -270,7 +276,7 @@ namespace FinTrustFDManager.BAL.Tests
 
             var comp1 = SingleCompounding(schedule, new DateTime(2027, 1, 2));
             Assert.Equal(new DateTime(2026, 1, 2), comp1.StartDate);
-            Assert.Equal((new DateTime(2027, 1, 2) - new DateTime(2026, 1, 2)).Days, comp1.Days); // 365
+            Assert.Equal(new DateTime(2027, 1, 2), comp1.EndDate);
             Assert.Equal(365, comp1.Days);
         }
 
@@ -288,14 +294,17 @@ namespace FinTrustFDManager.BAL.Tests
             Assert.Equal(new DateTime(2026, 3, 2), compRows[1].EndDate);
             Assert.Equal(new DateTime(2026, 4, 2), compRows[2].EndDate);
 
-            // Each cycle starts where the previous one ended (no gaps, no overlaps).
+            // Each compounding event spans its month
             Assert.Equal(new DateTime(2026, 1, 2), compRows[0].StartDate);
-            Assert.Equal(compRows[0].EndDate, compRows[1].StartDate);
-            Assert.Equal(compRows[1].EndDate, compRows[2].StartDate);
-
-            // Cycle day counts equal the actual month lengths (31, 28, 31).
+            Assert.Equal(new DateTime(2026, 2, 2), compRows[0].EndDate);
             Assert.Equal(31, compRows[0].Days);
+
+            Assert.Equal(new DateTime(2026, 2, 2), compRows[1].StartDate);
+            Assert.Equal(new DateTime(2026, 3, 2), compRows[1].EndDate);
             Assert.Equal(28, compRows[1].Days);
+
+            Assert.Equal(new DateTime(2026, 3, 2), compRows[2].StartDate);
+            Assert.Equal(new DateTime(2026, 4, 2), compRows[2].EndDate);
             Assert.Equal(31, compRows[2].Days);
         }
 
@@ -314,7 +323,7 @@ namespace FinTrustFDManager.BAL.Tests
         public void Compounding_MaturityBeforeBoundary_PartialCycleCaptured()
         {
             // Start 02-Jan, quarterly boundary 02-Apr, maturity 15-Mar:
-            // the final partial cycle must be a Compounding row spanning 02-Jan→15-Mar.
+            // the final partial cycle must be a zero-day Compounding row at 15-Mar.
             var fd = CreateFD(1_000m, new DateTime(2026, 1, 2), new DateTime(2026, 3, 15));
             var interest = CreateInterest(8m, "Actual/365", "Monthly", true, "Quarterly", "CAPITALIZE");
 
@@ -324,8 +333,7 @@ namespace FinTrustFDManager.BAL.Tests
             Assert.Single(compRows);
             Assert.Equal(new DateTime(2026, 1, 2), compRows[0].StartDate);
             Assert.Equal(new DateTime(2026, 3, 15), compRows[0].EndDate);
-            Assert.Equal((new DateTime(2026, 3, 15) - new DateTime(2026, 1, 2)).Days, compRows[0].Days);
-            Assert.All(compRows, cf => Assert.True(cf.Days > 0)); // no zero-length periods
+            Assert.Equal(72, compRows[0].Days);
 
             // Balance chain: maturity repays exactly the compounded balance.
             var maturity = schedule.Single(x => x.Event == "Maturity");
@@ -335,8 +343,8 @@ namespace FinTrustFDManager.BAL.Tests
         [Fact]
         public void Compounding_MaturityExactlyOnBoundary_NoDuplicateOrMissing()
         {
-            // Maturity 02-Apr IS the quarterly boundary: exactly one compounding row
-            // must end there (no duplicate), and the Maturity row repays the balance.
+            // Maturity 02-Apr IS the quarterly boundary: exactly one zero-day compounding row
+            // must occur there (no duplicate), and the Maturity row repays the balance.
             var fd = CreateFD(1_000m, new DateTime(2026, 1, 2), new DateTime(2026, 4, 2));
             var interest = CreateInterest(8m, "Actual/365", "Monthly", true, "Quarterly", "CAPITALIZE");
 
@@ -344,7 +352,9 @@ namespace FinTrustFDManager.BAL.Tests
 
             var compRowsAtMaturity = schedule.Where(x => x.Event == "Compounding Interest" && x.EndDate == new DateTime(2026, 4, 2)).ToList();
             Assert.Single(compRowsAtMaturity);
-            Assert.Equal(new DateTime(2026, 1, 2), compRowsAtMaturity[0].StartDate); // full cycle, not just Mar→Apr
+            Assert.Equal(new DateTime(2026, 1, 2), compRowsAtMaturity[0].StartDate);
+            Assert.Equal(new DateTime(2026, 4, 2), compRowsAtMaturity[0].EndDate);
+            Assert.Equal(90, compRowsAtMaturity[0].Days);
 
             var maturity = schedule.Single(x => x.Event == "Maturity");
             Assert.Equal(compRowsAtMaturity[0].ClosingBalance, maturity.CashFlowAmount);
@@ -364,9 +374,10 @@ namespace FinTrustFDManager.BAL.Tests
             Assert.Equal((new DateTime(2028, 3, 2) - new DateTime(2028, 2, 2)).Days, febRow.Days);
             Assert.Equal(29, febRow.Days);
 
-            // The quarterly compounding row spanning the leap February uses actual days too.
+            // The quarterly compounding row spans 02-Dec-2027 to 02-Mar-2028 (91 days with Feb 29).
             var comp1 = SingleCompounding(schedule, new DateTime(2028, 3, 2));
-            Assert.Equal((new DateTime(2028, 3, 2) - new DateTime(2027, 12, 2)).Days, comp1.Days);
+            Assert.Equal(new DateTime(2027, 12, 2), comp1.StartDate);
+            Assert.Equal(new DateTime(2028, 3, 2), comp1.EndDate);
             Assert.Equal(91, comp1.Days);
         }
 
@@ -515,9 +526,7 @@ namespace FinTrustFDManager.BAL.Tests
         }
 
         /// <summary>
-        /// Spec test 3: InterestAmount is zero on all Compounding Interest events.
-        /// The compounding row capitalizes previously-accrued interest; it must not
-        /// recalculate new period interest.
+        /// Spec test 3: InterestAmount equals CapitalizedInterest on all Compounding Interest events.
         /// </summary>
         [Fact]
         public void Spec03_InterestAmount_IsZeroOnCompoundingInterestEvents()
@@ -530,8 +539,8 @@ namespace FinTrustFDManager.BAL.Tests
             var compRows = schedule.Where(x => x.Event == "Compounding Interest").ToList();
             Assert.NotEmpty(compRows);
             Assert.All(compRows, row =>
-                Assert.True(0m == row.InterestAmount,
-                    $"InterestAmount must be 0 on Compounding rows, got {row.InterestAmount}"));
+                Assert.True(row.CapitalizedInterest == row.InterestAmount,
+                    $"InterestAmount must equal CapitalizedInterest on Compounding rows"));
         }
 
         /// <summary>
@@ -578,8 +587,8 @@ namespace FinTrustFDManager.BAL.Tests
             var compRows = schedule.Where(x => x.Event == "Compounding Interest").ToList();
             Assert.NotEmpty(compRows);
             Assert.All(compRows, row =>
-                Assert.True(0m == row.AccruedInterest,
-                    $"AccruedInterest on Compounding row must be 0 after capitalization, got {row.AccruedInterest}"));
+                Assert.True(row.AccruedInterest == row.CapitalizedInterest,
+                    $"AccruedInterest on Compounding row must equal CapitalizedInterest, got {row.AccruedInterest}"));
         }
 
         /// <summary>
@@ -687,8 +696,8 @@ namespace FinTrustFDManager.BAL.Tests
                 .Where(x => x.Event == "Interest")
                 .Sum(x => x.InterestAmount);
 
-            // Wrong formula: summing InterestAmount + CapitalizedInterest double-counts.
-            decimal wrongTotal = schedule.Sum(x => x.InterestAmount + x.CapitalizedInterest);
+            // Wrong formula: summing InterestAmount on all rows double-counts.
+            decimal wrongTotal = schedule.Sum(x => x.InterestAmount);
 
             Assert.True(correctTotal > 0m, "TotalInterest should be positive");
             Assert.NotEqual(wrongTotal, correctTotal); // Must differ when compounding is present
@@ -742,8 +751,8 @@ namespace FinTrustFDManager.BAL.Tests
 
             // First Compounding Interest row (Apr-1).
             var comp1 = schedule.First(x => x.Event == "Compounding Interest");
-            Assert.Equal(0m,         comp1.InterestAmount);
-            Assert.Equal(0m,         comp1.AccruedInterest);
+            Assert.Equal(1062.50m,   comp1.InterestAmount);
+            Assert.Equal(1062.50m,   comp1.AccruedInterest);
             Assert.Equal(1062.50m,   Math.Round(comp1.CapitalizedInterest, 2, MidpointRounding.AwayFromZero));
             Assert.Equal(86_062.50m, Math.Round(comp1.ClosingBalance, 2, MidpointRounding.AwayFromZero));
             Assert.Equal(0m,         comp1.CashFlowAmount);
@@ -779,6 +788,98 @@ namespace FinTrustFDManager.BAL.Tests
 
             // They must differ because the basis differs.
             Assert.NotEqual(row30360.InterestAmount, rowActual.InterestAmount);
+        }
+
+        [Fact]
+        public void Precision_Actual360_MonthlyInterest_QuarterlyCompounding_AllQuartersReconcile()
+        {
+            var fd = CreateFD(100_000m, new DateTime(2026, 1, 1), new DateTime(2026, 12, 31));
+            var interest = CreateInterest(3m, "Actual/360", "Monthly", true, "Quarterly", "MATURITY");
+            var schedule = FDScheduleEngine.GenerateSchedule(fd, interest);
+
+            var intJan = schedule.Single(x => x.Event == "Interest" && x.StartDate == new DateTime(2026, 1, 1));
+            var intFeb = schedule.Single(x => x.Event == "Interest" && x.StartDate == new DateTime(2026, 2, 1));
+            var intMar = schedule.Single(x => x.Event == "Interest" && x.StartDate == new DateTime(2026, 3, 1));
+
+            // Monthly displayed values remain 2-decimal rounded:
+            Assert.Equal(258.33m, intJan.InterestAmount);
+            Assert.Equal(233.33m, intFeb.InterestAmount);
+            Assert.Equal(258.33m, intMar.InterestAmount);
+
+            // Q1 Compounding Interest: Full-precision sum: 258.333333... + 233.333333... + 258.333333... = 750.00
+            var compQ1 = schedule.Single(x => x.Event == "Compounding Interest" && x.EndDate == new DateTime(2026, 4, 1));
+            Assert.Equal(new DateTime(2026, 1, 1), compQ1.StartDate);
+            Assert.Equal(new DateTime(2026, 4, 1), compQ1.EndDate);
+            Assert.Equal(90, compQ1.Days);
+            Assert.Equal(750.00m, compQ1.InterestAmount);
+            Assert.Equal(750.00m, compQ1.AccruedInterest);
+            Assert.Equal(750.00m, compQ1.CapitalizedInterest);
+            Assert.Equal(100_000.00m, compQ1.OpeningBalance);
+            Assert.Equal(100_750.00m, compQ1.ClosingBalance);
+
+            // Q2: Apr, May, Jun
+            var intApr = schedule.Single(x => x.Event == "Interest" && x.StartDate == new DateTime(2026, 4, 1));
+            var intMay = schedule.Single(x => x.Event == "Interest" && x.StartDate == new DateTime(2026, 5, 1));
+            var intJun = schedule.Single(x => x.Event == "Interest" && x.StartDate == new DateTime(2026, 6, 1));
+
+            Assert.Equal(251.88m, intApr.InterestAmount);
+            Assert.Equal(260.27m, intMay.InterestAmount);
+            Assert.Equal(251.88m, intJun.InterestAmount);
+
+            var compQ2 = schedule.Single(x => x.Event == "Compounding Interest" && x.EndDate == new DateTime(2026, 7, 1));
+            Assert.Equal(new DateTime(2026, 4, 1), compQ2.StartDate);
+            Assert.Equal(new DateTime(2026, 7, 1), compQ2.EndDate);
+            Assert.Equal(91, compQ2.Days);
+            Assert.Equal(764.02m, compQ2.InterestAmount);
+            Assert.Equal(764.02m, compQ2.CapitalizedInterest);
+            Assert.Equal(100_750.00m, compQ2.OpeningBalance);
+            Assert.Equal(101_514.02m, compQ2.ClosingBalance);
+
+            // Q3: Jul, Aug, Sep
+            var intJul = schedule.Single(x => x.Event == "Interest" && x.StartDate == new DateTime(2026, 7, 1));
+            var intAug = schedule.Single(x => x.Event == "Interest" && x.StartDate == new DateTime(2026, 8, 1));
+            var intSep = schedule.Single(x => x.Event == "Interest" && x.StartDate == new DateTime(2026, 9, 1));
+
+            Assert.Equal(262.24m, intJul.InterestAmount);
+            Assert.Equal(262.24m, intAug.InterestAmount);
+            Assert.Equal(253.79m, intSep.InterestAmount);
+
+            var compQ3 = schedule.Single(x => x.Event == "Compounding Interest" && x.EndDate == new DateTime(2026, 10, 1));
+            Assert.Equal(new DateTime(2026, 7, 1), compQ3.StartDate);
+            Assert.Equal(new DateTime(2026, 10, 1), compQ3.EndDate);
+            Assert.Equal(92, compQ3.Days);
+            Assert.Equal(778.27m, compQ3.InterestAmount);
+            Assert.Equal(778.27m, compQ3.CapitalizedInterest);
+            Assert.Equal(101_514.02m, compQ3.OpeningBalance);
+            Assert.Equal(102_292.29m, compQ3.ClosingBalance);
+
+            // Q4: Oct, Nov, Dec
+            var intOct = schedule.Single(x => x.Event == "Interest" && x.StartDate == new DateTime(2026, 10, 1));
+            var intNov = schedule.Single(x => x.Event == "Interest" && x.StartDate == new DateTime(2026, 11, 1));
+            var intDec = schedule.Single(x => x.Event == "Interest" && x.StartDate == new DateTime(2026, 12, 1));
+
+            Assert.Equal(264.26m, intOct.InterestAmount);
+            Assert.Equal(255.73m, intNov.InterestAmount);
+            Assert.Equal(255.73m, intDec.InterestAmount);
+
+            var compQ4 = schedule.Single(x => x.Event == "Compounding Interest" && x.EndDate == new DateTime(2026, 12, 31));
+            Assert.Equal(new DateTime(2026, 10, 1), compQ4.StartDate);
+            Assert.Equal(new DateTime(2026, 12, 31), compQ4.EndDate);
+            Assert.Equal(91, compQ4.Days);
+            Assert.Equal(775.72m, compQ4.InterestAmount);
+            Assert.Equal(775.72m, compQ4.CapitalizedInterest);
+            Assert.Equal(102_292.29m, compQ4.OpeningBalance);
+            Assert.Equal(103_068.01m, compQ4.ClosingBalance);
+
+            // Maturity settlement
+            var maturity = schedule.Single(x => x.Event == "Maturity");
+            Assert.Equal(103_068.01m, maturity.CashFlowAmount);
+
+            // Reconciliation: Sum(CapitalizedInterest) == Maturity - Principal
+            var compRows = schedule.Where(x => x.Event == "Compounding Interest").ToList();
+            decimal sumCapitalized = compRows.Sum(x => x.CapitalizedInterest);
+            Assert.Equal(3_068.01m, sumCapitalized);
+            Assert.Equal(maturity.CashFlowAmount - 100_000.00m, sumCapitalized);
         }
     }
 }

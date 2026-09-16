@@ -283,7 +283,7 @@ namespace FinTrustFDManager.BAL.Tests
             {
                 Assert.True(ce.CapitalizedInterest > 0,
                     $"Compounding event should have positive capitalized interest, got {ce.CapitalizedInterest}");
-                Assert.Equal(0m, ce.InterestAmount);
+                Assert.Equal(ce.CapitalizedInterest, ce.InterestAmount);
                 Assert.Equal(prevBalance, ce.OpeningBalance);
                 Assert.Equal(prevBalance + ce.CapitalizedInterest, ce.ClosingBalance);
                 prevBalance = ce.ClosingBalance;
@@ -1913,8 +1913,25 @@ namespace FinTrustFDManager.BAL.Tests
             var interestEvents = cf.Where(c => c.Event == "Interest").ToList();
             foreach (var ie in interestEvents)
             {
-                Assert.Equal(8.0m, ie.InterestRate);
+                Assert.Equal(8m, ie.InterestRate);
             }
+        }
+
+        // ---------------------------------------------------------------
+        //  FD-0041 REGRESSION: TotalInterest = MaturityAmount - Principal
+        // ---------------------------------------------------------------
+        [Fact]
+        public async Task FD0041_Regression_TotalInterest_EqualsMaturityMinusPrincipal()
+        {
+            var fd = CreateFd(41, 45_200m, new DateTime(2026, 9, 3), new DateTime(2027, 11, 24));
+            var interest = CreateInterest(41, 5m, "MONTHLY", "HALF_YEARLY", true, "ACTUAL_365");
+            var cf = await GenerateCashFlowsThroughService(fd, interest);
+            var maturity = cf.Single(c => c.Event == "Maturity");
+            var compoundEvents = cf.Where(c => c.Event == "Compounding Interest").ToList();
+            Assert.Equal(3, compoundEvents.Count);
+            decimal sumCap = compoundEvents.Sum(c => c.CapitalizedInterest);
+            Assert.Equal(maturity.CashFlowAmount - 45_200m, sumCap);
+            Assert.True(sumCap > 2_800m && sumCap < 2_850m, $"Total interest ({sumCap}) expected ~2821.68");
         }
     }
 }

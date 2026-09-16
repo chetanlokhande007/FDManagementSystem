@@ -20,6 +20,7 @@ export class FdInterestComponent implements OnInit, OnChanges {
   @Input() interestFrequencies: any[] = [];
   @Input() dayCountConventions: any[] = [];
   @Input() benchmarks: Benchmark[] = [];
+  @Input() isProtected = false;
   @Output() interestSaved = new EventEmitter<any>();
 
   /** Frequencies valid for compounding — excludes "At Maturity" */
@@ -160,6 +161,10 @@ export class FdInterestComponent implements OnInit, OnChanges {
       this.loadBenchmarks();
     }
 
+    if (this.isProtected) {
+      this.interestForm.disable();
+    }
+
     if (this.interestData) {
       this.isEdit = true;
       this.isReadOnly = true;
@@ -191,6 +196,14 @@ export class FdInterestComponent implements OnInit, OnChanges {
   ngOnChanges(changes: SimpleChanges): void {
     if (!this.interestForm) {
       return; // form not created yet, ngOnInit will handle it
+    }
+
+    if (changes['isProtected']) {
+      if (this.isProtected) {
+        this.interestForm.disable({ emitEvent: false });
+      } else {
+        this.interestForm.enable({ emitEvent: false });
+      }
     }
 
     if (changes['benchmarks'] && this.benchmarks && this.benchmarks.length > 0) {

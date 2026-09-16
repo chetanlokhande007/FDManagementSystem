@@ -1,5 +1,5 @@
 <div class="cashflow-wrapper" *ngIf="summary">
-  
+
   <!-- Unified Configuration Metadata Header -->
   <div class="header-metadata-card">
     <div class="meta-item">
@@ -47,7 +47,8 @@
     <div class="metric-card card-purple">
       <div class="metric-title">Maturity Settlement</div>
       <div class="metric-number">{{ summary.maturityAmount | currency:'INR':'symbol':'1.2-2' }}</div>
-      <div class="metric-sub">{{ summary.isCompounding ? 'Principal + Accumulated Interest' : 'Principal Returned' }}</div>
+      <div class="metric-sub">{{ summary.isCompounding ? 'Principal + Accumulated Interest' : 'Principal Returned' }}
+      </div>
     </div>
   </div>
 
@@ -72,14 +73,14 @@
         </tr>
       </thead>
       <tbody>
-        <tr *ngFor="let row of cashFlows; let i = index" 
-            [class.row-accent]="row.event === 'Compounding Interest' || row.event === 'Maturity'">
+        <tr *ngFor="let row of cashFlows; let i = index"
+          [class.row-accent]="row.event === 'Compounding Interest' || row.event === 'Maturity'">
           <td>{{ i + 1 }}</td>
           <td>
             <span class="pill" [ngClass]="getBadgeClass(row.event)">{{ row.event }}</span>
           </td>
-          <td>{{ row.startDate | date:'dd-MMM-yyyy' }}</td>
-          <td>{{ row.endDate | date:'dd-MMM-yyyy' }}</td>
+          <td>{{ row.startDate | date:'dd-MMM-yyyy':'UTC' }}</td>
+          <td>{{ row.endDate | date:'dd-MMM-yyyy':'UTC' }}</td>
           <td class="text-center">{{ row.days }}</td>
           <td class="text-right">{{ row.interestRate | number:'1.2-2' }}%</td>
           <td class="text-right">{{ row.openingBalance | currency:'INR':'symbol':'1.2-2' }}</td>

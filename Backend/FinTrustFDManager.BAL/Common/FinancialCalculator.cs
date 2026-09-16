@@ -14,10 +14,10 @@ namespace FinTrustFDManager.BAL.Common
                 return 0;
 
             decimal dayCountBasis = GetDayCountBasis(calculationBasis);
-            // Intermediate calculations use full precision, round only at the end.
-            decimal calculatedInterest = openingBalance * (interestRate / 100m) * (days / dayCountBasis);
+            // Intermediate calculations use full precision (multiplication before division), round only at the end.
+            decimal calculatedInterest = (openingBalance * (interestRate / 100m) * days) / dayCountBasis;
             
-            return calculatedInterest; // Removed rounding here to preserve precision
+            return calculatedInterest;
         }
 
         public static int CalculateDays(DateTime startDate, DateTime endDate, string calculationBasis)
