@@ -99,6 +99,40 @@
   background: #fef2f2;
 }
 
+/* ── Show/Hide Password Toggle ──────────────────────────── */
+.password-input-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.password-input-wrapper input {
+  padding-right: 44px; /* room for the eye icon */
+}
+
+.toggle-password-btn {
+  position: absolute;
+  right: 12px;
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  color: var(--text-secondary, #64748b);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: color 0.2s ease;
+  line-height: 1;
+}
+
+.toggle-password-btn:hover {
+  color: var(--primary-blue, #2c7aee);
+}
+
+.toggle-password-btn:focus {
+  outline: none;
+}
+
 .error-msg {
   color: var(--danger, #ef4444);
   font-size: 12px;

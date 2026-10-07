@@ -18,6 +18,11 @@ export class LoginComponent {
   loginForm: FormGroup;
   isSubmitting = false;
   errorMessage = '';
+  showPassword = false;
+
+  togglePassword() {
+    this.showPassword = !this.showPassword;
+  }
 
   constructor() {
     this.loginForm = this.fb.group({

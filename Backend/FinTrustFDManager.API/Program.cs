@@ -11,22 +11,36 @@ using FinTrustFDManager.BAL.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
+// =====================================================
+// DATABASE
+// =====================================================
+
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
     options.UseNpgsql(
         builder.Configuration.GetConnectionString("DefaultConnection")
     ));
 
+// =====================================================
+// CONTROLLERS
+// =====================================================
+
 builder.Services.AddControllers();
 builder.Services.AddMemoryCache();
 
-// ── Health Checks ──
+// =====================================================
+// HEALTH CHECKS
+// =====================================================
+
 builder.Services.AddHealthChecks()
     .AddNpgSql(
         builder.Configuration.GetConnectionString("DefaultConnection")!,
         name: "postgresql",
         tags: new[] { "db" });
 
-// ── Repositories ──
+// =====================================================
+// REPOSITORIES
+// =====================================================
+
 builder.Services.AddScoped<IFDIdentificationRepository, FDIdentificationRepository>();
 builder.Services.AddScoped<IFDInterestRepository, FDInterestRepository>();
 builder.Services.AddScoped<IFDCashFlowRepository, FDCashFlowRepository>();
@@ -46,7 +60,10 @@ builder.Services.AddScoped<IBenchmarkRepository, BenchmarkRepository>();
 builder.Services.AddScoped<IBenchmarkRateHistoryRepository, BenchmarkRateHistoryRepository>();
 builder.Services.AddScoped<IFDAmendmentRepository, FDAmendmentRepository>();
 
-// ── Services ──
+// =====================================================
+// SERVICES
+// =====================================================
+
 builder.Services.AddScoped<IFDIdentificationService, FDIdentificationService>();
 builder.Services.AddScoped<IFDInterestService, FDInterestService>();
 builder.Services.AddScoped<IFDCashFlowService, FDCashFlowService>();
@@ -54,8 +71,8 @@ builder.Services.AddScoped<IBenchmarkService, BenchmarkService>();
 builder.Services.AddScoped<IBenchmarkRateHistoryService, BenchmarkRateHistoryService>();
 builder.Services.AddScoped<IFDAmendmentService, FDAmendmentService>();
 builder.Services.AddScoped<IUnitOfWork, UnitOfWork>();
-builder.Services.AddBAL();
 
+builder.Services.AddBAL();
 
 // =====================================================
 // CORS - ANGULAR FRONTEND
@@ -67,7 +84,8 @@ builder.Services.AddCors(options =>
     {
         policy
             .WithOrigins(
-                "http://localhost:4200",
+                "http://localhost:82",      // Angular IIS
+                "http://localhost:4200",    // Angular development
                 "http://localhost",
                 "http://localhost:80",
                 "http://frontend",
@@ -76,12 +94,20 @@ builder.Services.AddCors(options =>
             .AllowAnyMethod();
     });
 });
+
+// =====================================================
+// JWT AUTHENTICATION
+// =====================================================
+
 var jwtKey = builder.Configuration["Jwt:Key"];
 
 builder.Services.AddAuthentication(options =>
 {
-    options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
-    options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
+    options.DefaultAuthenticateScheme =
+        JwtBearerDefaults.AuthenticationScheme;
+
+    options.DefaultChallengeScheme =
+        JwtBearerDefaults.AuthenticationScheme;
 })
 .AddJwtBearer(options =>
 {
@@ -101,59 +127,101 @@ builder.Services.AddAuthentication(options =>
     };
 });
 
+// =====================================================
+// SWAGGER
+// =====================================================
+
 builder.Services.AddSwaggerGen();
 
 var app = builder.Build();
 
-if (app.Environment.IsDevelopment())
-{
-    app.UseSwagger();
+// =====================================================
+// SWAGGER
+// Enabled for IIS / Production
+// =====================================================
 
-    app.UseSwaggerUI();
-}
+app.UseSwagger();
+app.UseSwaggerUI();
+
+// =====================================================
+// HTTPS
+// =====================================================
 
 app.UseHttpsRedirection();
 
-// ── Global Exception Handler ──
-// Maps known exceptions to appropriate HTTP status codes.
-// In production, never exposes internal details.
+// =====================================================
+// GLOBAL EXCEPTION HANDLER
+// =====================================================
+
 app.UseExceptionHandler(error =>
 {
     error.Run(async context =>
     {
         context.Response.ContentType = "application/json";
-        var exception = context.Features.Get<Microsoft.AspNetCore.Diagnostics.IExceptionHandlerFeature>();
+
+        var exception =
+            context.Features.Get<
+                Microsoft.AspNetCore.Diagnostics.IExceptionHandlerFeature>();
+
         if (exception != null)
         {
             var statusCode = exception.Error switch
             {
-                KeyNotFoundException => StatusCodes.Status404NotFound,
-                InvalidOperationException => StatusCodes.Status400BadRequest,
-                ArgumentException => StatusCodes.Status400BadRequest,
-                _ => StatusCodes.Status500InternalServerError
+                KeyNotFoundException =>
+                    StatusCodes.Status404NotFound,
+
+                InvalidOperationException =>
+                    StatusCodes.Status400BadRequest,
+
+                ArgumentException =>
+                    StatusCodes.Status400BadRequest,
+
+                _ =>
+                    StatusCodes.Status500InternalServerError
             };
+
             context.Response.StatusCode = statusCode;
 
             var message = app.Environment.IsDevelopment()
                 ? exception.Error.Message
-                : statusCode == StatusCodes.Status500InternalServerError
+                : statusCode ==
+                    StatusCodes.Status500InternalServerError
                     ? "An unexpected error occurred."
                     : exception.Error.Message;
 
-            await context.Response.WriteAsJsonAsync(new { message });
+            await context.Response.WriteAsJsonAsync(
+                new { message });
         }
     });
 });
 
+// =====================================================
+// CORS
+// =====================================================
+
 app.UseCors("AngularPolicy");
 
-// IMPORTANT: Authentication must come BEFORE Authorization
+// =====================================================
+// AUTHENTICATION & AUTHORIZATION
+// =====================================================
+
 app.UseAuthentication();
 app.UseAuthorization();
 
+// =====================================================
+// CONTROLLERS
+// =====================================================
+
 app.MapControllers();
 
-// ── Health Check endpoint (no auth required) ──
+// =====================================================
+// HEALTH CHECK
+// =====================================================
+
 app.MapHealthChecks("/health");
+
+// =====================================================
+// RUN APPLICATION
+// =====================================================
 
 app.Run();
